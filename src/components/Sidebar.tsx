@@ -3,11 +3,32 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function Sidebar() {
-    const [businessName, setBusinessName] = useState('Bizim Köfteci');
+    const [businessName, setBusinessName] = useState('');
 
     useEffect(() => {
+        // Try local storage first for speed
         const savedName = localStorage.getItem('oneqr_business_name');
         if (savedName) setBusinessName(savedName);
+
+        // Fetch source of truth
+        const fetchName = async () => {
+            const { createClient } = await import('@/lib/supabase');
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: rest } = await supabase
+                .from('restaurants')
+                .select('name')
+                .eq('owner_id', user.id)
+                .single();
+
+            if (rest) {
+                setBusinessName(rest.name);
+                localStorage.setItem('oneqr_business_name', rest.name);
+            }
+        };
+        fetchName();
     }, []);
 
     return (

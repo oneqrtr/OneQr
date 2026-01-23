@@ -18,11 +18,22 @@ export default function QrPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data: rest } = await supabase
-                .from('restaurants')
-                .select('slug, name')
-                .eq('owner_id', user.id)
-                .single();
+            // Retry logic
+            let rest = null;
+            for (let i = 0; i < 3; i++) {
+                const { data } = await supabase
+                    .from('restaurants')
+                    .select('slug, name')
+                    .eq('owner_id', user.id)
+                    .maybeSingle();
+
+                if (data) {
+                    rest = data;
+                    break;
+                }
+                // Wait 500ms
+                await new Promise(r => setTimeout(r, 500));
+            }
 
             if (rest) {
                 setSlug(rest.slug);
@@ -77,6 +88,9 @@ export default function QrPage() {
 
     if (!slug) return <div>Yükleniyor...</div>;
 
+    // Determine base URL dynamically if on client
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://oneqr.tr';
+
     return (
         <>
             <Topbar title="QR Kod İşlemleri" />
@@ -88,7 +102,7 @@ export default function QrPage() {
                         <div ref={qrRef} style={{ background: 'white', padding: '30px', textAlign: 'center', minWidth: '300px' }}>
                             <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '24px', color: '#111827' }}>{businessName}</div>
                             <QRCodeSVG
-                                value={`https://oneqr.tr/m/${slug}`}
+                                value={`${baseUrl}/m/${slug}`}
                                 size={200}
                                 level="H"
                                 imageSettings={{
@@ -100,7 +114,7 @@ export default function QrPage() {
                                     excavate: true,
                                 }}
                             />
-                            <div style={{ marginTop: '24px', fontSize: '0.9rem', color: '#6B7280', fontWeight: 500 }}>Masa 1</div>
+                            <div style={{ marginTop: '24px', fontSize: '0.9rem', color: '#6B7280', fontWeight: 500 }}>{businessName}</div>
                         </div>
                     </div>
 

@@ -15,6 +15,7 @@ interface Product {
     name: string;
     price: number;
     description?: string;
+    image_url?: string;
     is_available: boolean;
     display_order: number;
 }
@@ -32,6 +33,7 @@ export default function MenuManagementPage() {
     // Form States
     const [newCategoryName, setNewCategoryName] = useState('');
     const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
+    const [productImage, setProductImage] = useState<File | null>(null);
 
     const supabase = createClient();
 
@@ -82,10 +84,13 @@ export default function MenuManagementPage() {
         fetchData();
     }, []);
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleAddCategory = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!restaurantId || !newCategoryName) return;
 
+        setIsSaving(true);
         const { error } = await supabase
             .from('categories')
             .insert({
@@ -94,7 +99,12 @@ export default function MenuManagementPage() {
                 display_order: categories.length + 1
             });
 
-        if (!error) {
+        setIsSaving(false);
+
+        if (error) {
+            console.error('Error adding category:', error);
+            alert(`Hata oluştu: ${error.message}`);
+        } else {
             setNewCategoryName('');
             setIsCatModalOpen(false);
             fetchData();
@@ -105,6 +115,28 @@ export default function MenuManagementPage() {
         e.preventDefault();
         if (!editingProduct.category_id || !editingProduct.name) return;
 
+        let imageUrl = null;
+
+        if (productImage) {
+            const fileExt = productImage.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const { error: uploadError, data } = await supabase.storage
+                .from('products')
+                .upload(fileName, productImage);
+
+            if (uploadError) {
+                console.error('Upload Error', uploadError);
+                alert('Resim yüklenirken hata oluştu');
+                return;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('products')
+                .getPublicUrl(fileName);
+
+            imageUrl = publicUrl;
+        }
+
         const { error } = await supabase
             .from('products')
             .insert({
@@ -112,12 +144,14 @@ export default function MenuManagementPage() {
                 name: editingProduct.name,
                 price: editingProduct.price,
                 description: editingProduct.description,
+                image_url: imageUrl,
                 is_available: true,
                 display_order: 1 // simplified
             });
 
         if (!error) {
             setEditingProduct({ category_id: '', name: '', price: 0, description: '', is_available: true });
+            setProductImage(null);
             setIsProductModalOpen(false);
             fetchData();
         }
@@ -167,9 +201,14 @@ export default function MenuManagementPage() {
                                                 <div style={{ fontWeight: 600 }}>{product.name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{product.price} ₺</div>
                                             </div>
-                                            <button onClick={() => handleDeleteProduct(product.id)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
-                                                <i className="fa-solid fa-trash"></i>
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                {product.image_url && (
+                                                    <img src={product.image_url} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                                                )}
+                                                <button onClick={() => handleDeleteProduct(product.id)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
+                                                    <i className="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -197,7 +236,9 @@ export default function MenuManagementPage() {
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
                                 <button type="button" onClick={() => setIsCatModalOpen(false)} className="btn btn-outline btn-sm">İptal</button>
-                                <button type="submit" className="btn btn-primary btn-sm">Kaydet</button>
+                                <button type="submit" disabled={isSaving} className="btn btn-primary btn-sm">
+                                    {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -248,6 +289,15 @@ export default function MenuManagementPage() {
                                     value={editingProduct.description || ''}
                                     onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}
                                     rows={3}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Ürün Görseli</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="form-input"
+                                    onChange={e => setProductImage(e.target.files ? e.target.files[0] : null)}
                                 />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>

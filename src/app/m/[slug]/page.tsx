@@ -204,8 +204,15 @@ export default function PublicMenuPage() {
                                                 {product.price} {restaurant.currency}
                                             </div>
                                         </div>
-                                        {/* Placeholder for image if we had one */}
-                                        {/* <div style={{ width: '80px', height: '80px', background: '#F3F4F6', borderRadius: '8px' }}></div> */}
+                                        {product.image_url && (
+                                            <div style={{ width: '80px', height: '80px', flexShrink: 0 }}>
+                                                <img
+                                                    src={product.image_url}
+                                                    alt={product.name}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

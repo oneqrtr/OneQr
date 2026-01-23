@@ -20,24 +20,32 @@ export default function AdminDashboard() {
 
                 if (!user) return;
 
-                // 1. Get Restaurant ID
-                const { data: restaurant } = await supabase
-                    .from('restaurants')
-                    .select('id')
-                    .eq('owner_id', user.id)
-                    .single();
+                // 1. Get Restaurant ID with simple retry logic
+                // Retry up to 3 times with 1s delay to handle replication lag
+                let restaurant = null;
+                for (let i = 0; i < 3; i++) {
+                    const { data } = await supabase
+                        .from('restaurants')
+                        .select('id')
+                        .eq('owner_id', user.id)
+                        .maybeSingle();
+
+                    if (data) {
+                        restaurant = data;
+                        break;
+                    }
+                    // Wait 1s before retry
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+
+                if (!restaurant) {
+                    // Critical: If STILL no restaurant found after retries, redirect to onboarding
+                    window.location.href = '/onboarding';
+                    return;
+                }
 
                 if (restaurant) {
                     // 2. Get Product Count
-                    const { count: productCount } = await supabase
-                        .from('products')
-                        .select('*', { count: 'exact', head: true }) // head: true means do not return rows, just count
-                        .eq('is_available', true)
-                    // In a real scenario we'd join with categories -> restaurant, but currently simplified 
-                    // Since we don't have direct restaurant_id on products, we need to filter by categories belonging to this restaurant
-                    // But for v1 schema, let's do a join query or 2-step
-
-                    // Actually, let's just get categories first
                     const { data: categories } = await supabase
                         .from('categories')
                         .select('id')
@@ -56,7 +64,7 @@ export default function AdminDashboard() {
                     }
 
                     setStats({
-                        totalViews: 0, // Not tracking views yet
+                        totalViews: 0,
                         activeProducts: realProductCount,
                         categoryCount: categoryIds.length
                     });

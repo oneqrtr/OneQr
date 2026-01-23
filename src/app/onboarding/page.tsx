@@ -13,6 +13,7 @@ export default function OnboardingPage() {
 
     // Form State
     const [businessName, setBusinessName] = useState('');
+    const [businessSlug, setBusinessSlug] = useState('');
     const [categoryName, setCategoryName] = useState('Popüler Ürünler');
     const [productName, setProductName] = useState('');
     const [productPrice, setProductPrice] = useState('');
@@ -21,16 +22,79 @@ export default function OnboardingPage() {
     const [createdSlug, setCreatedSlug] = useState('');
 
     const slugify = (text: string) => {
+        const trMap: { [key: string]: string } = {
+            'ç': 'c', 'Ç': 'c',
+            'ğ': 'g', 'Ğ': 'g',
+            'ş': 's', 'Ş': 's',
+            'ü': 'u', 'Ü': 'u',
+            'ı': 'i', 'I': 'i',
+            'İ': 'i',
+            'ö': 'o', 'Ö': 'o'
+        };
+
         return text
-            .toString()
+            .split('')
+            .map(char => trMap[char] || char)
+            .join('')
             .toLowerCase()
-            .normalize('NFD') // Change diacritics
-            .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-            .replace(/\s+/g, '-') // Spaces to -
+            .replace(/\s+/g, '-')     // Spaces to -
             .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-            .replace(/\-\-+/g, '-') // Replace multiple - with single -
-            .replace(/^-+/, '') // Trim - from start
-            .replace(/-+$/, ''); // Trim - from end
+            .replace(/\-\-+/g, '-')   // Replace multiple - with single -
+            .replace(/^-+/, '')       // Trim - from start
+            .replace(/-+$/, '');      // Trim - from end
+    };
+
+    // State to track if slug was manually edited
+    // State to track if slug was manually edited
+    const [isSlugEdited, setIsSlugEdited] = useState(false);
+    const [isSlugAvailable, setIsSlugAvailable] = useState(true);
+    const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+    // Debounce timer
+    const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+
+    const checkSlugAvailability = async (slug: string) => {
+        if (!slug) return;
+        setIsCheckingSlug(true);
+        const supabase = createClient();
+        const { data } = await supabase
+            .from('restaurants')
+            .select('id')
+            .eq('slug', slug)
+            .maybeSingle();
+
+        // If data exists, slug is NOT available
+        setIsSlugAvailable(!data);
+        setIsCheckingSlug(false);
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const name = e.target.value;
+        setBusinessName(name);
+
+        if (!isSlugEdited) {
+            const newSlug = slugify(name);
+            setBusinessSlug(newSlug);
+
+            // Debounce check
+            if (timer) clearTimeout(timer);
+            const newTimer = setTimeout(() => {
+                checkSlugAvailability(newSlug);
+            }, 500);
+            setTimer(newTimer);
+        }
+    };
+
+    const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newSlug = slugify(e.target.value);
+        setBusinessSlug(newSlug);
+        setIsSlugEdited(true);
+
+        // Debounce check
+        if (timer) clearTimeout(timer);
+        const newTimer = setTimeout(() => {
+            checkSlugAvailability(newSlug);
+        }, 500);
+        setTimer(newTimer);
     };
 
     const handleComplete = async () => {
@@ -47,17 +111,32 @@ export default function OnboardingPage() {
                 throw new Error('Kullanıcı oturumu bulunamadı.');
             }
 
-            // 2. Generate Slug
-            let slug = slugify(businessName);
-            // Append random 4 characters to ensure uniqueness (simple strategy)
-            slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+            // 2. Check Slug Availability
+            let finalSlug = businessSlug || slugify(businessName);
+            if (!finalSlug) {
+                throw new Error('Lütfen geçerli bir işletme linki belirleyin.');
+            }
+
+            // Simple check if slug exists
+            const { data: existing } = await supabase
+                .from('restaurants')
+                .select('id')
+                .eq('slug', finalSlug)
+                .single();
+
+            if (existing) {
+                // Suggest a new slug
+                finalSlug = `${finalSlug}-${Math.floor(Math.random() * 1000)}`;
+                alert(`Seçtiğiniz link dolu. Sizin için güncelledik: ${finalSlug}`);
+                setBusinessSlug(finalSlug);
+            }
 
             // 3. Create Restaurant
             const { data: restaurant, error: restError } = await supabase
                 .from('restaurants')
                 .insert({
                     name: businessName,
-                    slug: slug,
+                    slug: finalSlug,
                     owner_id: user.id
                 })
                 .select()
@@ -94,8 +173,8 @@ export default function OnboardingPage() {
             }
 
             // Success
-            setCreatedSlug(slug);
-            // Save local fallback just in case, but actual source of truth is now Supabase
+            setCreatedSlug(finalSlug);
+            // Save local fallback just in case
             localStorage.setItem('oneqr_business_name', businessName);
             setStep(3);
 
@@ -151,8 +230,39 @@ export default function OnboardingPage() {
                                             placeholder="Örn: Lezzet Durağı"
                                             required
                                             value={businessName}
-                                            onChange={(e) => setBusinessName(e.target.value)}
+                                            onChange={handleNameChange}
                                         />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="businessSlug" className="form-label">İşletme Linki (oneqr.tr/m/...)</label>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <span style={{ background: '#F3F4F6', padding: '10px 12px', border: '1px solid var(--border-color)', borderRight: 'none', borderRadius: '8px 0 0 8px', color: '#6B7280', fontSize: '0.9rem' }}>oneqr.tr/m/</span>
+                                            <input
+                                                type="text"
+                                                id="businessSlug"
+                                                className="form-input"
+                                                style={{
+                                                    borderRadius: '0 8px 8px 0',
+                                                    borderColor: !isSlugAvailable ? '#EF4444' : businessSlug && isSlugAvailable ? '#10B981' : ''
+                                                }}
+                                                placeholder="lezzet-duragi"
+                                                value={businessSlug}
+                                                onChange={handleSlugChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div style={{ marginTop: '4px', minHeight: '20px' }}>
+                                            {isCheckingSlug ? (
+                                                <p style={{ fontSize: '0.8rem', color: '#6B7280' }}>Kontrol ediliyor...</p>
+                                            ) : !isSlugAvailable ? (
+                                                <p style={{ fontSize: '0.8rem', color: '#EF4444' }}>Bu link maalesef kullanımda. Lütfen başka bir link seçin.</p>
+                                            ) : businessSlug ? (
+                                                <p style={{ fontSize: '0.8rem', color: '#10B981' }}>Bu link kullanılabilir.</p>
+                                            ) : (
+                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>Türkçe karakter ve boşluk kullanmayınız. Otomatik düzenlenecektir.</p>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="form-group">
@@ -164,7 +274,7 @@ export default function OnboardingPage() {
                                     <button
                                         type="button"
                                         className="btn btn-primary"
-                                        disabled={!businessName}
+                                        disabled={!businessName || !businessSlug || !isSlugAvailable || isCheckingSlug}
                                         onClick={() => setStep(2)}
                                     >
                                         Devam Et
@@ -258,7 +368,7 @@ export default function OnboardingPage() {
                                                 />
                                             )}
                                         </div>
-                                        <p style={{ fontSize: '0.9rem', fontWeight: 500, marginTop: '16px' }}>Masa 1</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '16px', color: '#111827' }}>{businessName}</p>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>oneqr.tr/m/{createdSlug}</p>
                                     </div>
                                 </div>
