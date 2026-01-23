@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap - OneQR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="auth-body">
+    <div class="auth-card">
+        <div class="auth-header">
+            <a href="index.html" class="logo" style="display: block; margin-bottom: 24px;">OneQR</a>
+            <h1>Hoş Geldiniz</h1>
+            <p>Hesabınıza giriş yapın</p>
+        </div>
+        <form action="onboarding.html">
+            <div class="form-group">
+                <label for="email" class="form-label">E-posta Adresi</label>
+                <input type="email" id="email" class="form-input" placeholder="mail@ornek.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">Şifre</label>
+                <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Giriş Yap</button>
+        </form>
+        <div class="form-footer">
+            <p>Hesabınız yok mu? <a href="register.html">Ücretsiz Kayıt Ol</a></p>
+            <p style="margin-top: 12px;"><a href="#" style="color: var(--text-light); font-size: 0.85rem;">Şifremi
+                    Unuttum</a></p>
+        </div>
+    </div>
+</body>
+
+</html>

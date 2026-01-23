@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - OneQR</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Specific overrides for Super Admin if needed */
+        .sidebar {
+            background-color: #111827;
+            color: #fff;
+            border-right: none;
+        }
+
+        .sidebar-brand {
+            color: #fff;
+        }
+
+        .nav-item {
+            color: #9CA3AF;
+        }
+
+        .nav-item:hover {
+            background-color: #1F2937;
+            color: #fff;
+        }
+
+        .nav-item.active {
+            background-color: #374151;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-body">
+        <!-- Dark Sidebar for Distinction -->
+        <aside class="sidebar">
+            <div class="sidebar-header" style="border-bottom: 1px solid #1F2937;">
+                <div class="sidebar-brand">OneQR Admin</div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+                    Genel Bakış
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+                    Müşteriler
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon"><i class="fa-solid fa-money-bill"></i></span>
+                    Ödemeler
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="page-title">Müşteri Listesi</div>
+                <div class="user-profile">
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600; font-size: 0.85rem;">Super Admin</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>İşletme Adı</th>
+                                <th>E-posta</th>
+                                <th>Kayıt Tarihi</th>
+                                <th>Durum</th>
+                                <th>Plan</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 500;">Lezzet Durağı</td>
+                                <td style="color: var(--text-light);">info@lezzetduragi.com</td>
+                                <td>22.01.2024</td>
+                                <td><span class="status-badge status-active">Aktif</span></td>
+                                <td>Standart</td>
+                                <td><a href="#" class="btn btn-sm btn-outline"><i class="fa-solid fa-eye"></i></a></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 500;">Burger Kingim</td>
+                                <td style="color: var(--text-light);">ali@burger.com</td>
+                                <td>20.01.2024</td>
+                                <td><span class="status-badge status-trial">Deneme</span></td>
+                                <td>Deneme</td>
+                                <td><a href="#" class="btn btn-sm btn-outline"><i class="fa-solid fa-eye"></i></a></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 500;">Cafe Misto</td>
+                                <td style="color: var(--text-light);">selam@misto.com</td>
+                                <td>15.01.2024</td>
+                                <td><span class="status-badge status-expired">Süresi Doldu</span></td>
+                                <td>Deneme</td>
+                                <td><a href="#" class="btn btn-sm btn-outline"><i class="fa-solid fa-eye"></i></a></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 500;">Kebapçı İskender</td>
+                                <td style="color: var(--text-light);">iskender@kebap.com</td>
+                                <td>01.01.2024</td>
+                                <td><span class="status-badge status-active">Aktif</span></td>
+                                <td>Premium</td>
+                                <td><a href="#" class="btn btn-sm btn-outline"><i class="fa-solid fa-eye"></i></a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

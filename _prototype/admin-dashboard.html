@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetim Paneli - OneQR</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-body">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="#" class="sidebar-brand">OneQR</a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+                    Panel
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon"><i class="fa-solid fa-utensils"></i></span>
+                    Menü Yönetimi
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon"><i class="fa-solid fa-qrcode"></i></span>
+                    QR Kodlar
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon"><i class="fa-solid fa-palette"></i></span>
+                    Tema
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+                    Ayarlar
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">BK</div>
+                    <div style="flex: 1; overflow: hidden;">
+                        <div style="font-weight: 600; font-size: 0.9rem;">Bizim Köfteci</div>
+                        <div
+                            style="color: var(--text-light); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            Premium Plan</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="page-title">Genel Bakış</div>
+                <div class="topbar-actions">
+                    <a href="public-menu.html" target="_blank" class="btn btn-sm btn-outline">
+                        <i class="fa-solid fa-external-link-alt" style="margin-right: 6px;"></i> Menüyü Gör
+                    </a>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- Status Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">Toplam Görüntülenme</div>
+                        <div class="stat-value">1,245</div>
+                        <div style="font-size: 0.8rem; color: #10B981; margin-top: 4px;">▲ %12 bu hafta</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Aktif Ürünler</div>
+                        <div class="stat-value">34</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Kalan Deneme Süresi</div>
+                        <div class="stat-value highlight-orange">5 Gün</div>
+                        <div style="margin-top: 8px;">
+                            <a href="#" style="font-size: 0.85rem; color: var(--primary-color); font-weight: 500;">Şimdi
+                                Yükselt →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Quick Actions Placeholders -->
+                <div
+                    style="background: white; border-radius: 12px; border: 1px solid var(--border-color); padding: 24px; min-height: 300px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center;">
+                    <div style="font-size: 2rem; color: #E5E7EB; margin-bottom: 16px;">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h3 style="font-size: 1.1rem; margin-bottom: 8px;">Analitik Verileri</h3>
+                    <p style="color: var(--text-light); max-width: 400px;">Detaylı ziyaretçi istatistikleri ve sipariş
+                        trendleri yakında burada olacak.</p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
