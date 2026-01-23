@@ -12,7 +12,7 @@
   --font-family: 'Inter', sans-serif;
 
   --container-width: 1200px;
-  --header-height: 80px;
+  --header-height: 100px;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
