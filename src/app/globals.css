@@ -802,9 +802,8 @@ ul {
 }
 
 .sidebar-brand {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-nav {

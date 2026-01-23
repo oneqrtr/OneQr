@@ -7,6 +7,12 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'OneQR - Restoranlar İçin Akıllı QR Menü Sistemi',
   description: 'Restoran ve kafeler için en hızlı, modern ve uygun fiyatlı QR menü çözümü.',
+  icons: {
+    icon: [
+      { url: '/logo-standard.png', media: '(prefers-color-scheme: light)' },
+      { url: '/logo-negative.png', media: '(prefers-color-scheme: dark)' },
+    ]
+  }
 }
 
 export default function RootLayout({

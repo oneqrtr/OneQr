@@ -13,26 +13,28 @@ export default function Sidebar() {
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <Link href="/admin" className="sidebar-brand">OneQR</Link>
+                <Link href="/admin" className="sidebar-brand">
+                    <img src="/logo-standard.png" alt="OneQR" style={{ height: '32px' }} />
+                </Link>
             </div>
             <nav className="sidebar-nav">
                 <Link href="/admin" className="nav-item active">
                     <span className="nav-icon"><i className="fa-solid fa-chart-pie"></i></span>
                     Panel
                 </Link>
-                <Link href="#" className="nav-item">
+                <Link href="/admin/menu" className="nav-item">
                     <span className="nav-icon"><i className="fa-solid fa-utensils"></i></span>
                     Menü Yönetimi
                 </Link>
-                <Link href="#" className="nav-item">
+                <Link href="/admin/qr" className="nav-item">
                     <span className="nav-icon"><i className="fa-solid fa-qrcode"></i></span>
                     QR Kodlar
                 </Link>
-                <Link href="#" className="nav-item">
+                <Link href="/admin/theme" className="nav-item">
                     <span className="nav-icon"><i className="fa-solid fa-palette"></i></span>
                     Tema
                 </Link>
-                <Link href="#" className="nav-item">
+                <Link href="/admin/settings" className="nav-item">
                     <span className="nav-icon"><i className="fa-solid fa-gear"></i></span>
                     Ayarlar
                 </Link>
