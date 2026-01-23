@@ -55,8 +55,8 @@ export default function Home() {
         <div className="container hero-container">
           <div className="hero-content reveal active">
             <span className="badge">🚀 7 Gün Ücretsiz Deneme</span>
-            <h1>Restoranınız İçin <br /> <span className="text-gradient">Akıllı QR Menü</span></h1>
-            <p>Müşterilerinize modern, temassız ve hızlı bir menü deneyimi sunun. Dakikalar içinde menünüzü oluşturun, QR kodlarınızı masalara yerleştirin.</p>
+            <h1>İşletmeniz İçin <br /> <span className="text-gradient">Akıllı QR Menü & Katalog</span></h1>
+            <p>Cafe, restoran, otel veya mağazanız için modern, temassız ve hızlı bir dijital katalog deneyimi sunun. Dakikalar içinde ürünlerinizi ekleyin, QR kodunuzu oluşturun.</p>
             <div className="hero-actions">
               <Link href="/register" className="btn btn-primary">Hemen Başla</Link>
               <a href="#nasil-calisir" className="btn btn-outline">Detaylı Bilgi</a>
@@ -76,23 +76,23 @@ export default function Home() {
         <div className="container">
           <div className="section-header">
             <h2>Nasıl Çalışır?</h2>
-            <p>3 basit adımda dijital menünüzü yayınlayın.</p>
+            <p>3 basit adımda dijital menünüzü veya kataloğunuzu yayınlayın.</p>
           </div>
           <div className="steps-grid">
             <div className="step-card reveal active">
               <div className="step-icon">1</div>
               <h3>Hesabını Oluştur</h3>
-              <p>Restoran bilgilerini gir ve menü kategorilerini hızlıca tanımla.</p>
+              <p>İşletme bilgilerini gir ve ürün kategorilerini hızlıca tanımla.</p>
             </div>
             <div className="step-card reveal active">
               <div className="step-icon">2</div>
-              <h3>Menünü Yükle</h3>
-              <p>Ürün fotoğraflarını, açıklamalarını ve fiyatlarını sisteme ekle. Sürükle bırak ile düzenle.</p>
+              <h3>Ürünlerini Yükle</h3>
+              <p>Ürün fotoğraflarını, açıklamalarını ve fiyatlarını sisteme ekle. Restoran menüsü veya ürün kataloğu olarak düzenle.</p>
             </div>
             <div className="step-card reveal active">
               <div className="step-icon">3</div>
               <h3>QR Kodunu Paylaş</h3>
-              <p>Sistem tarafından üretilen QR kodu indir, masalarına yerleştir ve siparişleri karşıla.</p>
+              <p>Sistem tarafından üretilen QR kodu indir, masalarına, vitrinine veya sosyal medyada paylaş.</p>
             </div>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function Home() {
         <div className="container footer-container">
           <div className="footer-left">
             <a href="#" className="logo footer-logo">OneQR</a>
-            <p>Restoranlar için yeni nesil menü çözümleri.</p>
+            <p>İşletmeler için yeni nesil dijital menü ve katalog çözümleri.</p>
           </div>
           <div className="footer-links">
             <h4>Hızlı Erişim</h4>
