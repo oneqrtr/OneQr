@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 
-// Types
+import Link from 'next/link'; // Not strictly needed but good practice if link used later or just clean up
+import ContactFab from '@/components/ContactFab';
+
 interface Restaurant {
     id: string;
     name: string;
@@ -12,11 +14,24 @@ interface Restaurant {
     theme_color: string;
     currency: string;
     logo_url?: string;
+    description?: string;
+    hero_image_url?: string;
+    phone_number?: string;
+    whatsapp_number?: string;
+    is_call_enabled?: boolean;
+    is_whatsapp_enabled?: boolean;
+    // Location
+    is_location_enabled?: boolean;
+    location_lat?: number;
+    location_lng?: number;
 }
+// ... (rest of the file until ContactFab props)
+
 
 interface Category {
     id: string;
     name: string;
+    description?: string;
 }
 
 interface Product {
@@ -38,6 +53,7 @@ export default function PublicMenuPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [activeCategory, setActiveCategory] = useState<string>('');
+    const [selectedImage, setSelectedImage] = useState<string>(''); // For Image Modal
 
     useEffect(() => {
         const fetchMenu = async () => {
@@ -71,7 +87,6 @@ export default function PublicMenuPage() {
                 }
 
                 // 3. Fetch Products
-                // In a perfect world we filter by restaurant directly, but through categories is cleaner with current schema
                 if (catData && catData.length > 0) {
                     const catIds = catData.map(c => c.id);
                     const { data: prodData, error: prodError } = await supabase
@@ -116,33 +131,64 @@ export default function PublicMenuPage() {
     return (
         <div style={{ minHeight: '100vh', background: '#F9FAFB', paddingBottom: '80px' }}>
 
-            {/* Header / Cover */}
-            <header style={{ background: 'white', padding: '24px', textAlign: 'center', borderBottom: '1px solid #E5E7EB', position: 'sticky', top: 0, zIndex: 10 }}>
-                <div style={{
-                    width: '64px',
-                    height: '64px',
-                    background: restaurant.theme_color,
-                    borderRadius: '50%',
-                    margin: '0 auto 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold'
-                }}>
-                    {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
+            {/* Header / Cover - Not Sticky */}
+            <header style={{ background: 'white', padding: '0', textAlign: 'center', borderBottom: '1px solid #E5E7EB' }}>
+                {/* Hero Image */}
+                {restaurant.hero_image_url && (
+                    <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
+                        <img src={restaurant.hero_image_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                )}
+
+                <div style={{ padding: '24px', paddingTop: restaurant.hero_image_url ? '0' : '24px' }}>
+                    <div style={{
+                        width: '100px',
+                        height: '100px',
+                        background: restaurant.theme_color,
+                        borderRadius: '50%',
+                        margin: restaurant.hero_image_url ? '-50px auto 12px' : '0 auto 12px', // Pull up if hero exists
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '2rem',
+                        fontWeight: 'bold',
+                        border: '4px solid white', // Add border to separate from hero
+                        position: 'relative',
+                        zIndex: 11,
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}>
+                        {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
+                    </div>
+
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>{restaurant.name}</h1>
+
+                    {restaurant.description && (
+                        <p style={{ color: '#6B7280', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto 16px', lineHeight: '1.5' }}>
+                            {restaurant.description}
+                        </p>
+                    )}
                 </div>
-                <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>{restaurant.name}</h1>
-                {/* Categories Scroll */}
+            </header>
+
+            {/* Sticky Category Bar */}
+            <div style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 20,
+                background: 'white',
+                padding: '12px 0',
+                borderBottom: '1px solid #E5E7EB',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}>
                 <div style={{
                     display: 'flex',
                     gap: '12px',
                     overflowX: 'auto',
-                    padding: '16px 0 4px',
-                    marginTop: '12px',
+                    padding: '0 20px',
                     scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
+                    msOverflowStyle: 'none',
+                    justifyContent: 'flex-start' // Align left for better scrolling experience on mobile
                 }}>
                     {categories.map(cat => (
                         <button
@@ -150,8 +196,15 @@ export default function PublicMenuPage() {
                             onClick={() => {
                                 const element = document.getElementById(`cat-${cat.id}`);
                                 if (element) {
-                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    // Offset for sticky header
+                                    // Adjust offset: height of sticky bar (approx 60px) + some buffer
+                                    const headerOffset = 70;
+                                    const elementPosition = element.getBoundingClientRect().top;
+                                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                                    window.scrollTo({
+                                        top: offsetPosition,
+                                        behavior: "smooth"
+                                    });
                                 }
                                 setActiveCategory(cat.id);
                             }}
@@ -165,14 +218,15 @@ export default function PublicMenuPage() {
                                 fontSize: '0.9rem',
                                 fontWeight: 500,
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s',
+                                flexShrink: 0 // Prevent shrinking
                             }}
                         >
                             {cat.name}
                         </button>
                     ))}
                 </div>
-            </header>
+            </div>
 
             {/* Menu Content */}
             <main style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
@@ -182,9 +236,16 @@ export default function PublicMenuPage() {
 
                     return (
                         <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom: '32px', scrollMarginTop: '180px' }}>
-                            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${restaurant.theme_color}` }}>
-                                {cat.name}
-                            </h2>
+                            <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${restaurant.theme_color}` }}>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>
+                                    {cat.name}
+                                </h2>
+                                {cat.description && (
+                                    <p style={{ fontSize: '0.9rem', color: '#6B7280', fontStyle: 'italic' }}>
+                                        {cat.description}
+                                    </p>
+                                )}
+                            </div>
                             <div style={{ display: 'grid', gap: '16px' }}>
                                 {catProducts.map(product => (
                                     <div key={product.id} style={{
@@ -205,7 +266,7 @@ export default function PublicMenuPage() {
                                             </div>
                                         </div>
                                         {product.image_url && (
-                                            <div style={{ width: '80px', height: '80px', flexShrink: 0 }}>
+                                            <div style={{ width: '100px', height: '100px', flexShrink: 0, cursor: 'pointer' }} onClick={() => setSelectedImage(product.image_url || '')}>
                                                 <img
                                                     src={product.image_url}
                                                     alt={product.name}
@@ -222,8 +283,74 @@ export default function PublicMenuPage() {
             </main>
 
             <footer style={{ textAlign: 'center', padding: '20px', color: '#9CA3AF', fontSize: '0.8rem' }}>
-                <p>Bu menü <strong style={{ color: '#374151' }}>OneQR</strong> altyapısı ile oluşturulmuştur.</p>
+                <p>Bu menü <Link href="/" style={{ color: '#374151', fontWeight: 'bold', textDecoration: 'none' }}>OneQR</Link> altyapısı ile oluşturulmuştur.</p>
             </footer>
+
+            {/* Image Modal */}
+            {selectedImage && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '20px',
+                    backdropFilter: 'blur(5px)'
+                }} onClick={() => setSelectedImage('')}>
+                    <div style={{ position: 'relative', maxWidth: '100%', maxHeight: '90vh' }}>
+                        <button
+                            onClick={() => setSelectedImage('')}
+                            style={{
+                                position: 'absolute',
+                                top: '-40px',
+                                right: '0',
+                                background: 'rgba(0,0,0,0.5)',
+                                border: 'none',
+                                color: 'white',
+                                width: '30px',
+                                height: '30px',
+                                borderRadius: '50%',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.2rem',
+                                zIndex: 1001
+                            }}
+                        >
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                        <img
+                            src={selectedImage}
+                            alt="Full Screen"
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '80vh',
+                                borderRadius: '8px',
+                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                            }}
+                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the image
+                        />
+                    </div>
+                </div>
+            )}
+
+
+            <ContactFab
+                callEnabled={restaurant.is_call_enabled || false}
+                whatsappEnabled={restaurant.is_whatsapp_enabled || false}
+                locationEnabled={restaurant.is_location_enabled || false}
+                phoneNumber={restaurant.phone_number}
+                whatsappNumber={restaurant.whatsapp_number}
+                locationLat={restaurant.location_lat}
+                locationLng={restaurant.location_lng}
+                themeColor={restaurant.theme_color}
+            />
 
         </div>
     );

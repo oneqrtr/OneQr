@@ -38,11 +38,21 @@ export default function RegisterPage() {
         router.push('/onboarding');
     };
 
+    const handleGoogleLogin = async () => {
+        const supabase = createClient();
+        await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+    };
+
     return (
         <div className="auth-card">
             <div className="auth-header">
                 <Link href="/" className="logo" style={{ display: 'block', marginBottom: '24px' }}>
-                    <img src="/logo-standard.png" alt="OneQR" style={{ height: '40px' }} />
+                    <img src="/logoblack.png" alt="OneQR" style={{ height: '40px' }} />
                 </Link>
                 <h1>Hesap Oluştur</h1>
                 <p>7 günlük ücretsiz denemenizi başlatın</p>
@@ -53,6 +63,21 @@ export default function RegisterPage() {
                     {error}
                 </div>
             )}
+
+            <button
+                onClick={handleGoogleLogin}
+                className="btn btn-outline"
+                style={{ width: '100%', marginBottom: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}
+            >
+                <i className="fa-brands fa-google" style={{ color: '#DB4437' }}></i>
+                Google ile Üye Ol
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>VEYA</span>
+                <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+            </div>
 
             <form onSubmit={handleRegister}>
                 <div className="form-group">

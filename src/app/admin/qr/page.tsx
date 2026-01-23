@@ -50,6 +50,8 @@ export default function QrPage() {
             const canvas = await html2canvas(qrRef.current, {
                 scale: 2, // High resolution
                 backgroundColor: '#ffffff',
+                useCORS: true, // Enable CORS for images
+                logging: false
             });
             const imgData = canvas.toDataURL('image/png');
 
@@ -79,7 +81,9 @@ export default function QrPage() {
             pdf.setTextColor(100, 100, 100);
             pdf.text('Menüye ulaşmak için kameranızla taratın', pdfWidth / 2, y + imgHeight + 15, { align: 'center' });
 
-            pdf.save(`${businessName}-QR.pdf`);
+            // Use slug for filename if available, otherwise sanitize name
+            const fileName = slug ? `OneQr-${slug}.pdf` : `OneQr-${businessName.replace(/\s+/g, '-')}.pdf`;
+            pdf.save(fileName);
         } catch (error) {
             console.error('PDF creation failed', error);
             alert('PDF oluşturulurken bir hata oluştu.');

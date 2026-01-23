@@ -33,7 +33,7 @@ export default function Home() {
       <nav className="navbar">
         <div className="container nav-container">
           <Link href="/" className="logo">
-            <img src="/logo-standard.png" alt="OneQR" style={{ height: '80px' }} />
+            <img src="/logoblack.png" alt="OneQR" style={{ height: '80px' }} />
           </Link>
           <div className="nav-links">
             <a href="#nasil-calisir">Nasıl Çalışır?</a>

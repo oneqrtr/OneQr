@@ -10,7 +10,13 @@ create table if not exists restaurants (
   owner_id uuid references auth.users not null,
   logo_url text,
   theme_color text default '#2563EB',
-  currency text default '₺'
+  currency text default '₺',
+  description text,
+  hero_image_url text,
+  phone_number text,
+  whatsapp_number text,
+  is_call_enabled boolean default false,
+  is_whatsapp_enabled boolean default false
 );
 
 -- 2. CATEGORIES TABLE
@@ -19,6 +25,7 @@ create table if not exists categories (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   restaurant_id uuid references restaurants(id) on delete cascade not null,
   name text not null,
+  description text,
   display_order integer default 0
 );
 

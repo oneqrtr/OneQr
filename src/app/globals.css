@@ -1103,17 +1103,94 @@ ul {
 }
 
 /* Responsive Admin */
+/* Responsive Admin */
 @media (max-width: 768px) {
+
+  /* Sidebar default state on mobile: Collapsed but visible (Mini Sidebar) */
   .sidebar {
-    transform: translateX(-100%);
+    width: 60px;
+    transform: none;
+    /* Do not hide off-screen */
+    overflow: visible;
+    /* Allow toggle button to stick out */
   }
 
-  .sidebar.open {
-    transform: translateX(0);
+  /* When expanded via the toggle button */
+  .sidebar.expanded {
+    width: 260px;
   }
 
+  /* Sidebar header adjustment for mini state */
+  .sidebar-header {
+    padding: 0 10px;
+    justify-content: center;
+  }
+
+  .sidebar.expanded .sidebar-header {
+    padding: 0 24px;
+  }
+
+  /* Logo sizing in mini state */
+  .sidebar-brand img {
+    height: 40px !important;
+    /* Smaller logo in collapsed state */
+    transition: height 0.3s;
+  }
+
+  .sidebar.expanded .sidebar-brand img {
+    height: 90px !important;
+    /* Full logo when expanded */
+  }
+
+  /* Hide text labels in collapsed state */
+  .nav-item {
+    justify-content: center;
+    padding: 12px 10px;
+  }
+
+  .nav-item span:not(.nav-icon) {
+    display: none;
+  }
+
+  .sidebar.expanded .nav-item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .sidebar.expanded .nav-item span:not(.nav-icon) {
+    display: inline;
+  }
+
+  /* Footer adjustments */
+  .sidebar-footer .user-profile {
+    display: none;
+    /* Hide profile info in collapsed state */
+  }
+
+  .sidebar.expanded .sidebar-footer .user-profile {
+    display: flex;
+  }
+
+  /* Main content pushed by 60px mini sidebar */
   .main-content {
-    margin-left: 0;
+    margin-left: 60px;
+  }
+
+  /* When sidebar expands, overlay or push? 
+     Usually overlay on mobile is safer to avoid squishing content. 
+     Or push if we want. Let's do overlay for cleaner UX if expanded.
+  */
+  .sidebar.expanded {
+    box-shadow: 10px 0 20px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Mobile Toggle & Backdrop Helpers */
+  .mobile-toggle-btn {
+    display: flex !important;
+  }
+
+  .mobile-backdrop {
+    display: block !important;
   }
 
   .topbar {

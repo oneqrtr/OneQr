@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase';
 interface Category {
     id: string;
     name: string;
+    description?: string;
     display_order: number;
 }
 
@@ -31,9 +32,13 @@ export default function MenuManagementPage() {
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
     // Form States
-    const [newCategoryName, setNewCategoryName] = useState('');
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null); // For Edit
+    const [categoryName, setCategoryName] = useState(''); // For Create/Edit name
+    const [categoryDescription, setCategoryDescription] = useState(''); // For Create/Edit desc
+
     const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
     const [productImage, setProductImage] = useState<File | null>(null);
+    const [isEditModeProduct, setIsEditModeProduct] = useState(false); // Track if editing product
 
     const supabase = createClient();
 
@@ -62,7 +67,6 @@ export default function MenuManagementPage() {
                 if (cats) setCategories(cats);
 
                 // 3. Get Products
-                // Ideally filtering by restaurant categories
                 if (cats && cats.length > 0) {
                     const catIds = cats.map(c => c.id);
                     const { data: prods } = await supabase
@@ -71,6 +75,8 @@ export default function MenuManagementPage() {
                         .in('category_id', catIds)
                         .order('display_order', { ascending: true });
                     if (prods) setProducts(prods);
+                } else {
+                    setProducts([]);
                 }
             }
         } catch (error) {
@@ -86,47 +92,119 @@ export default function MenuManagementPage() {
 
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleAddCategory = async (e: React.FormEvent) => {
+    // --- CATEGORY ACTIONS ---
+
+    const openCategoryModal = (category?: Category) => {
+        if (category) {
+            setEditingCategory(category);
+            setCategoryName(category.name);
+            setCategoryDescription(category.description || '');
+        } else {
+            setEditingCategory(null);
+            setCategoryName('');
+            setCategoryDescription('');
+        }
+        setIsCatModalOpen(true);
+    };
+
+    const handleSaveCategory = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!restaurantId || !newCategoryName) return;
+        if (!restaurantId || !categoryName) return;
 
         setIsSaving(true);
-        const { error } = await supabase
-            .from('categories')
-            .insert({
-                restaurant_id: restaurantId,
-                name: newCategoryName,
-                display_order: categories.length + 1
-            });
 
-        setIsSaving(false);
+        try {
+            let error;
+            if (editingCategory) {
+                // Edit
+                const payload: any = { name: categoryName };
+                if (categoryDescription) payload.description = categoryDescription;
+
+                const { error: err } = await supabase
+                    .from('categories')
+                    .update(payload)
+                    .eq('id', editingCategory.id);
+                error = err;
+            } else {
+                // Create
+                const payload: any = {
+                    restaurant_id: restaurantId,
+                    name: categoryName,
+                    display_order: categories.length + 1
+                };
+                if (categoryDescription) payload.description = categoryDescription;
+
+                const { error: err } = await supabase
+                    .from('categories')
+                    .insert(payload);
+                error = err;
+            }
+
+            if (error) throw error;
+
+            // Success
+            setCategoryName('');
+            setCategoryDescription('');
+            setEditingCategory(null);
+            setIsCatModalOpen(false);
+            fetchData();
+
+        } catch (error: any) {
+            console.error('Error saving category:', error);
+            if (error?.code === '42703' || error?.message?.includes('description')) {
+                alert('Veritabanı güncel değil! Lütfen Supabase panelinde "fix_schema.sql" dosyasındaki komutları çalıştırın.');
+            } else {
+                alert(`Hata oluştu: ${error.message || 'Bilinmeyen hata'}`);
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteCategory = async (id: string) => {
+        if (!confirm('Bu kategoriyi ve içindeki TÜM ürünleri silmek istediğinize emin misiniz?')) return;
+
+        const { error } = await supabase.from('categories').delete().eq('id', id);
 
         if (error) {
-            console.error('Error adding category:', error);
-            alert(`Hata oluştu: ${error.message}`);
+            alert('Silme başarısız: ' + error.message);
         } else {
-            setNewCategoryName('');
-            setIsCatModalOpen(false);
             fetchData();
         }
     };
 
-    const handleAddProduct = async (e: React.FormEvent) => {
+    // --- PRODUCT ACTIONS ---
+
+    const openProductModal = (product?: Product) => {
+        setProductImage(null);
+        if (product) {
+            setEditingProduct(product);
+            setIsEditModeProduct(true);
+        } else {
+            setEditingProduct({ category_id: categories.length > 0 ? categories[0].id : '', name: '', price: 0, description: '', is_available: true });
+            setIsEditModeProduct(false);
+        }
+        setIsProductModalOpen(true);
+    };
+
+    const handleSaveProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingProduct.category_id || !editingProduct.name) return;
 
-        let imageUrl = null;
+        setIsSaving(true);
+        let imageUrl = editingProduct.image_url;
 
         if (productImage) {
             const fileExt = productImage.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const { error: uploadError, data } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('products')
                 .upload(fileName, productImage);
 
             if (uploadError) {
                 console.error('Upload Error', uploadError);
                 alert('Resim yüklenirken hata oluştu');
+                setIsSaving(false);
                 return;
             }
 
@@ -137,28 +215,51 @@ export default function MenuManagementPage() {
             imageUrl = publicUrl;
         }
 
-        const { error } = await supabase
-            .from('products')
-            .insert({
-                category_id: editingProduct.category_id,
-                name: editingProduct.name,
-                price: editingProduct.price,
-                description: editingProduct.description,
-                image_url: imageUrl,
-                is_available: true,
-                display_order: 1 // simplified
-            });
+        let error;
+        if (isEditModeProduct && editingProduct.id) {
+            // Update
+            const { error: err } = await supabase
+                .from('products')
+                .update({
+                    category_id: editingProduct.category_id,
+                    name: editingProduct.name,
+                    price: editingProduct.price,
+                    description: editingProduct.description,
+                    image_url: imageUrl,
+                    is_available: editingProduct.is_available
+                })
+                .eq('id', editingProduct.id);
+            error = err;
+        } else {
+            // Create
+            const { error: err } = await supabase
+                .from('products')
+                .insert({
+                    category_id: editingProduct.category_id,
+                    name: editingProduct.name,
+                    price: editingProduct.price,
+                    description: editingProduct.description,
+                    image_url: imageUrl,
+                    is_available: true,
+                    display_order: 1 // simplified logic
+                });
+            error = err;
+        }
+
+        setIsSaving(false);
 
         if (!error) {
             setEditingProduct({ category_id: '', name: '', price: 0, description: '', is_available: true });
             setProductImage(null);
             setIsProductModalOpen(false);
             fetchData();
+        } else {
+            alert('Hata oluştu: ' + error.message);
         }
     };
 
     const handleDeleteProduct = async (id: string) => {
-        if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+        if (!confirm('Ürünü silmek istiyor musunuz?')) return;
 
         const { error } = await supabase.from('products').delete().eq('id', id);
         if (!error) fetchData();
@@ -170,10 +271,10 @@ export default function MenuManagementPage() {
             <div className="content-wrapper">
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '24px' }}>
-                    <button onClick={() => setIsCatModalOpen(true)} className="btn btn-outline btn-sm">
+                    <button onClick={() => openCategoryModal()} className="btn btn-outline btn-sm">
                         <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i> Kategori Ekle
                     </button>
-                    <button onClick={() => setIsProductModalOpen(true)} className="btn btn-primary btn-sm">
+                    <button onClick={() => openProductModal()} className="btn btn-primary btn-sm">
                         <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i> Ürün Ekle
                     </button>
                 </div>
@@ -187,9 +288,19 @@ export default function MenuManagementPage() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F3F4F6', paddingBottom: '12px' }}>
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{cat.name}</h3>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        {/* Actions could go here */}
+                                        <button onClick={() => openCategoryModal(cat)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem' }}>
+                                            <i className="fa-solid fa-pencil"></i> Düzenle
+                                        </button>
+                                        <button onClick={() => handleDeleteCategory(cat.id)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', color: '#EF4444', borderColor: '#EF4444' }}>
+                                            <i className="fa-solid fa-trash"></i> Sil
+                                        </button>
                                     </div>
                                 </div>
+                                {cat.description && (
+                                    <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '16px', fontStyle: 'italic' }}>
+                                        {cat.description}
+                                    </p>
+                                )}
 
                                 <div style={{ display: 'grid', gap: '12px' }}>
                                     {products.filter(p => p.category_id === cat.id).length === 0 && (
@@ -197,16 +308,21 @@ export default function MenuManagementPage() {
                                     )}
                                     {products.filter(p => p.category_id === cat.id).map(product => (
                                         <div key={product.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F9FAFB', borderRadius: '8px' }}>
-                                            <div>
-                                                <div style={{ fontWeight: 600 }}>{product.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{product.price} ₺</div>
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                                 {product.image_url && (
-                                                    <img src={product.image_url} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                                                    <img src={product.image_url} alt={product.name} style={{ width: '50px', height: '50px', borderRadius: '6px', objectFit: 'cover' }} />
                                                 )}
-                                                <button onClick={() => handleDeleteProduct(product.id)} style={{ color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
-                                                    <i className="fa-solid fa-trash"></i>
+                                                <div>
+                                                    <div style={{ fontWeight: 600 }}>{product.name}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{product.price} ₺</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button onClick={() => openProductModal(product)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+                                                    Düzenle
+                                                </button>
+                                                <button onClick={() => handleDeleteProduct(product.id)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#EF4444', borderColor: '#EF4444' }}>
+                                                    Kaldır
                                                 </button>
                                             </div>
                                         </div>
@@ -222,16 +338,26 @@ export default function MenuManagementPage() {
             {isCatModalOpen && (
                 <div style={modalOverlayStyle}>
                     <div style={modalStyle}>
-                        <h3 style={{ marginBottom: '16px' }}>Yeni Kategori Ekle</h3>
-                        <form onSubmit={handleAddCategory}>
+                        <h3 style={{ marginBottom: '16px' }}>{editingCategory ? 'Kategoriyi Düzenle' : 'Yeni Kategori Ekle'}</h3>
+                        <form onSubmit={handleSaveCategory}>
                             <div className="form-group">
                                 <label className="form-label">Kategori Adı</label>
                                 <input
                                     className="form-input"
-                                    value={newCategoryName}
-                                    onChange={e => setNewCategoryName(e.target.value)}
+                                    value={categoryName}
+                                    onChange={e => setCategoryName(e.target.value)}
                                     placeholder="Örn: Tatlılar"
                                     required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Açıklama</label>
+                                <textarea
+                                    className="form-input"
+                                    value={categoryDescription}
+                                    onChange={e => setCategoryDescription(e.target.value)}
+                                    placeholder="Kısaca bu kategoriyi tanıtın (İsteğe bağlı)"
+                                    rows={2}
                                 />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
@@ -249,8 +375,8 @@ export default function MenuManagementPage() {
             {isProductModalOpen && (
                 <div style={modalOverlayStyle}>
                     <div style={modalStyle}>
-                        <h3 style={{ marginBottom: '16px' }}>Yeni Ürün Ekle</h3>
-                        <form onSubmit={handleAddProduct}>
+                        <h3 style={{ marginBottom: '16px' }}>{isEditModeProduct ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}</h3>
+                        <form onSubmit={handleSaveProduct}>
                             <div className="form-group">
                                 <label className="form-label">Kategori</label>
                                 <select
@@ -293,6 +419,11 @@ export default function MenuManagementPage() {
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Ürün Görseli</label>
+                                <div style={{ marginBottom: 8 }}>
+                                    {editingProduct.image_url && !productImage && (
+                                        <img src={editingProduct.image_url} alt="Current" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: '4px' }} />
+                                    )}
+                                </div>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -302,7 +433,9 @@ export default function MenuManagementPage() {
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
                                 <button type="button" onClick={() => setIsProductModalOpen(false)} className="btn btn-outline btn-sm">İptal</button>
-                                <button type="submit" className="btn btn-primary btn-sm">Kaydet</button>
+                                <button type="submit" disabled={isSaving} className="btn btn-primary btn-sm">
+                                    {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -1,5 +1,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
+let supabaseInstance: ReturnType<typeof createSupabaseClient> | null = null;
+
 export const createClient = () => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -8,5 +10,15 @@ export const createClient = () => {
         throw new Error('Supabase URL and Key must be defined in .env.local');
     }
 
-    return createSupabaseClient(supabaseUrl, supabaseKey);
+    // Server-side: always create new instance
+    if (typeof window === 'undefined') {
+        return createSupabaseClient(supabaseUrl, supabaseKey);
+    }
+
+    // Client-side: check for singleton
+    if (!supabaseInstance) {
+        supabaseInstance = createSupabaseClient(supabaseUrl, supabaseKey);
+    }
+
+    return supabaseInstance;
 }

@@ -39,9 +39,8 @@ export default function AdminDashboard() {
                 }
 
                 if (!restaurant) {
-                    // Critical: If STILL no restaurant found after retries, redirect to onboarding
-                    window.location.href = '/onboarding';
-                    return;
+                    setLoading(false);
+                    return; // Stop here, render empty state or onboarding prompt in UI
                 }
 
                 if (restaurant) {
@@ -79,38 +78,58 @@ export default function AdminDashboard() {
         fetchDashboardData();
     }, []);
 
+    if (loading) {
+        return <div className="p-8 text-center">Yükleniyor...</div>;
+    }
+
+    // If no stats loaded (meaning no restaurant), show setup prompt
+    if (stats.categoryCount === 0 && stats.activeProducts === 0 && !loading) {
+        // We can check if we actually have a restaurant by checking if stats were updated or use a separate state. 
+        // But to be safe let's add a separate state for 'hasRestaurant'.
+    }
+
     return (
         <>
             <Topbar title="Genel Bakış" />
             <div className="content-wrapper">
-                {/* Status Cards */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-title">Toplam Kategori</div>
-                        <div className="stat-value">{loading ? '-' : stats.categoryCount}</div>
+
+                {stats.categoryCount === 0 && stats.activeProducts === 0 ? (
+                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '40px', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Henüz Restoran Kaydınız Yok</h2>
+                        <p style={{ color: 'var(--text-light)', marginBottom: '24px' }}>Panel özelliklerini kullanabilmek için işletme kurulumunu tamamlamanız gerekiyor.</p>
+                        <Link href="/onboarding" className="btn btn-primary">Kurulumu Tamamla</Link>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-title">Aktif Ürünler</div>
-                        <div className="stat-value">{loading ? '-' : stats.activeProducts}</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-title">Kalan Deneme Süresi</div>
-                        <div className="stat-value highlight-orange">7 Gün</div>
-                        <div style={{ marginTop: '8px' }}>
-                            <Link href="#" style={{ fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 500 }}>Şimdi Yükselt →</Link>
+                ) : (
+                    <>
+                        {/* Status Cards */}
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-title">Toplam Kategori</div>
+                                <div className="stat-value">{stats.categoryCount}</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-title">Aktif Ürünler</div>
+                                <div className="stat-value">{stats.activeProducts}</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-title">Kalan Deneme Süresi</div>
+                                <div className="stat-value highlight-orange">7 Gün</div>
+                                <div style={{ marginTop: '8px' }}>
+                                    <Link href="#" style={{ fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 500 }}>Şimdi Yükselt →</Link>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Recent Activity / Quick Actions Placeholders */}
-                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', color: '#E5E7EB', marginBottom: '16px' }}>
-                        <i className="fa-solid fa-chart-line"></i>
-                    </div>
-                    <h3 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Analitik Verileri</h3>
-                    <p style={{ color: 'var(--text-light)', maxWidth: '400px' }}>Detaylı ziyaretçi istatistikleri ve sipariş trendleri yakında burada olacak.</p>
-                </div>
-
+                        {/* Recent Activity / Quick Actions Placeholders */}
+                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2rem', color: '#E5E7EB', marginBottom: '16px' }}>
+                                <i className="fa-solid fa-chart-line"></i>
+                            </div>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Analitik Verileri</h3>
+                            <p style={{ color: 'var(--text-light)', maxWidth: '400px' }}>Detaylı ziyaretçi istatistikleri ve sipariş trendleri yakında burada olacak.</p>
+                        </div>
+                    </>
+                )}
             </div>
         </>
     )

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
+import Image from 'next/image';
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -56,15 +57,28 @@ export default function OnboardingPage() {
         if (!slug) return;
         setIsCheckingSlug(true);
         const supabase = createClient();
-        const { data } = await supabase
-            .from('restaurants')
-            .select('id')
-            .eq('slug', slug)
-            .maybeSingle();
 
-        // If data exists, slug is NOT available
-        setIsSlugAvailable(!data);
-        setIsCheckingSlug(false);
+        try {
+            const { data, error } = await supabase
+                .from('restaurants')
+                .select('id')
+                .eq('slug', slug)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Slug check error:', error);
+                // On error, assume available to not block user, or handle differently
+                setIsSlugAvailable(true);
+            } else {
+                // If data exists, slug is NOT available
+                setIsSlugAvailable(!data);
+            }
+        } catch (err) {
+            console.error('Unexpected error checking slug:', err);
+            setIsSlugAvailable(true);
+        } finally {
+            setIsCheckingSlug(false);
+        }
     };
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,7 +205,14 @@ export default function OnboardingPage() {
             <div className="wizard-container">
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <Link href="/" className="logo">
-                        <img src="/logo-standard.png" alt="OneQR" style={{ height: '40px' }} />
+                        <Image
+                            src="/logoblack.png"
+                            alt="OneQR"
+                            width={120}
+                            height={120}
+                            style={{ height: '120px', width: 'auto' }}
+                            priority
+                        />
                     </Link>
                 </div>
 
