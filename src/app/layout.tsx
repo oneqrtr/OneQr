@@ -5,8 +5,9 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'OneQR - Restoranlar İçin Akıllı QR Menü Sistemi',
-  description: 'Restoran ve kafeler için en hızlı, modern ve uygun fiyatlı QR menü çözümü.',
+  title: 'OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi',
+  description: 'Restoran, kafe, otel ve mağazalar için en hızlı dijital QR menü çözümü. Ürünlerinizi dijital ortamda sergileyin, satışlarınızı artırın.',
+  keywords: 'qr menü, dijital menü, restoran qr, cafe menü, karekod menü oluşturma, ücretsiz qr menü, online katalog',
   icons: {
     icon: [
       { url: '/logo-standard.png', media: '(prefers-color-scheme: light)' },
