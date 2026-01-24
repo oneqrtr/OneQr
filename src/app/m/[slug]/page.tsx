@@ -109,6 +109,28 @@ export default function PublicMenuPage() {
         if (slug) fetchMenu();
     }, [slug]);
 
+    // Analytics Tracking
+    useEffect(() => {
+        if (!restaurant) return;
+
+        const trackView = async () => {
+            // Simple check to avoid counting the owner/admin as a visitor usually requires checking auth state, 
+            // but for now we count all page loads or just check local storage to dedup session.
+            // Using a simple session storage flag to dedup views per session
+            const sessionKey = `viewed_${restaurant.id}`;
+            if (sessionStorage.getItem(sessionKey)) return;
+
+            const supabase = createClient();
+            await supabase.from('analytics').insert({
+                restaurant_id: restaurant.id,
+                event_type: 'view_menu'
+            });
+            sessionStorage.setItem(sessionKey, 'true');
+        };
+
+        trackView();
+    }, [restaurant]);
+
     if (loading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '16px' }}>
