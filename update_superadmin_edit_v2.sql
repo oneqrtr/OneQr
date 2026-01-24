@@ -16,7 +16,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
     -- 1. Check Password
-    IF pass <> 'ozgur123' THEN
+    IF pass <> 'OneQr2024!' THEN
         RAISE EXCEPTION 'Unauthorized';
     END IF;
 

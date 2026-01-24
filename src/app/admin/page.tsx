@@ -140,18 +140,19 @@ export default function AdminDashboard() {
                             </div>
                             <div className="stat-card">
                                 <div className="stat-title">
-                                    {subscription?.plan === 'trial' ? 'Kalan Deneme Süresi' : 'Abonelik Durumu'}
+                                    {subscription?.plan === 'trial' ? 'Deneme Sürümü' :
+                                        subscription?.plan === 'monthly' ? 'Aylık Paket' :
+                                            subscription?.plan === 'yearly' ? 'Yıllık Paket' : 'Abonelik Durumu'}
                                 </div>
                                 <div className={`stat-value ${getRemainingDays() < 3 ? 'text-red-500' : 'highlight-orange'}`}>
                                     {subscription?.status === 'passive' ? 'Pasif' :
-                                        getRemainingDays() > 0 ? `${getRemainingDays()} Gün` : 'Süresiz'}
+                                        getRemainingDays() > 0 ? `${getRemainingDays()} Gün Kaldı` : 'Süresi Doldu'}
                                 </div>
-                                <div style={{ marginTop: '8px' }}>
-                                    {subscription?.plan === 'trial' && (
-                                        <Link href="/admin/settings/billing" style={{ fontSize: '0.85rem', color: 'var(--primary-color)', fontWeight: 500 }}>Şimdi Yükselt →</Link>
-                                    )}
-                                    {subscription?.plan === 'pro' && (
-                                        <span style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: 500 }}>Pro Paket Aktif</span>
+                                <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#6B7280' }}>
+                                    {subscription?.plan === 'trial' ? (
+                                        <Link href="/admin/settings/billing" style={{ color: 'var(--primary-color)', fontWeight: 500 }}>Paketi Yükselt →</Link>
+                                    ) : (
+                                        <span>Bitiş: {subscription?.ends_at ? new Date(subscription.ends_at).toLocaleDateString('tr-TR') : '-'}</span>
                                     )}
                                 </div>
                             </div>
