@@ -30,7 +30,7 @@ export default function Topbar({ title }: { title: string }) {
             <div className="page-title">{title}</div>
             <div className="topbar-actions">
                 {slug && (
-                    <Link href={`/m/${slug}`} target="_blank" className="btn btn-sm btn-outline">
+                    <Link href={`/menu/${slug}`} target="_blank" className="btn btn-sm btn-outline">
                         <i className="fa-solid fa-external-link-alt" style={{ marginRight: '6px' }}></i> Menüyü Gör
                     </Link>
                 )}

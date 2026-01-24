@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const { pathname } = request.nextUrl;
 
-    // Simplified Middleware for Single Domain Strategy (oneqr.site)
+    // Simplified Middleware for Single Domain Strategy (oneqr.tr)
     // We are now serving everything (Landing, Admin, Menus) from the same root domain.
 
     // In the future, if we go back to app.subdomain, we can uncomment logic here.

@@ -148,7 +148,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div style={{ marginTop: '32px' }}>
-                  <a href="/m/yicem" target="_blank" className="btn btn-primary">
+                  <a href="/menu/yicem" target="_blank" className="btn btn-primary">
                     <i className="fa-solid fa-up-right-from-square" style={{ marginRight: '8px' }}></i>
                     Canlı Menüye Git
                   </a>
@@ -174,7 +174,7 @@ export default function Home() {
                     position: 'relative'
                   }}>
                     <iframe
-                      src="/m/yicem"
+                      src="/menu/yicem"
                       style={{ border: 'none', width: '100%', height: '100%' }}
                       title="Demo Preview"
                     />

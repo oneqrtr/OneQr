@@ -86,56 +86,85 @@ export default function SuperAdminPage() {
 
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
 
-    const handleUpdate = async (id: string, field: 'status' | 'plan', value: string, newEndsAt?: string) => {
+    const handleUpdate = async (id: string, field: 'status' | 'plan' | 'details', value: any, newEndsAt?: string) => {
         // Optimistic update
         setRestaurants(prev => prev.map(r =>
-            r.id === id ? { ...r, [field]: value, ...(newEndsAt ? { plan_ends_at: newEndsAt } : {}) } : r
+            r.id === id ? {
+                ...r,
+                ...(field === 'status' ? { status: value } : {}),
+                ...(field === 'plan' ? { plan: value, ...(newEndsAt ? { plan_ends_at: newEndsAt } : {}) } : {}),
+                ...(field === 'details' ? { name: value.name, slug: value.slug, plan: value.plan, status: value.status, ...(value.ends_at ? { plan_ends_at: value.ends_at } : {}) } : {})
+            } : r
         ));
 
         const current = restaurants.find(r => r.id === id);
         if (!current) return;
 
-        const newStatus = field === 'status' ? value : current.status;
-        const newPlan = field === 'plan' ? value : current.plan;
+        // Prepare new values based on what Changed
+        let newName = current.name;
+        let newSlug = current.slug;
+        let newStatus = current.status;
+        let newPlan = current.plan;
+        let newEndsAtVal = current.plan_ends_at;
 
-        // This requires updating the RPC function to accept ends_at, or doing a direct update if RLS allows.
-        // Since we are superadmin via RPC, we should probably update the RPC or handle date update separately.
-        // For now, let's assume the RPC functionality for plan also updates date if we modify the SQL.
-        // BUT, looking at previous SQL, superadmin_update_restaurant only takes status and plan.
-        // We need to update the SQL function first. Let's do that in a separate step.
-        // Here we will use a separate RPC call or modifying the existing one.
-        // Let's assume we will update the RPC 'superadmin_update_restaurant' to accept 'new_ends_at'.
+        if (field === 'details') {
+            newName = value.name;
+            newSlug = value.slug;
+            newStatus = value.status;
+            newPlan = value.plan;
+            newEndsAtVal = value.ends_at || current.plan_ends_at;
+        } else if (field === 'status') {
+            newStatus = value;
+        } else if (field === 'plan') {
+            newPlan = value;
+            if (newEndsAt) newEndsAtVal = newEndsAt;
+        }
 
-        const { error } = await supabase.rpc('superadmin_update_restaurant_v2', {
+        // Unified RPC Call
+        const { error } = await supabase.rpc('superadmin_update_restaurant_details', {
             pass: password,
             target_id: id,
+            new_name: newName,
+            new_slug: newSlug,
             new_status: newStatus,
             new_plan: newPlan,
-            new_ends_at: newEndsAt || current.plan_ends_at // Pass the new date or keep existing
+            new_ends_at: newEndsAtVal
         });
 
         if (error) {
-            // If v2 fails (not created yet), try fallback to v1 for status updates only
-            if (field === 'status' && !newEndsAt) {
-                const { error: err2 } = await supabase.rpc('superadmin_update_restaurant', {
-                    pass: password,
-                    target_id: id,
-                    new_status: newStatus,
-                    new_plan: newPlan
-                });
-                if (err2) {
-                    alert('Güncelleme başarısız: ' + err2.message);
-                    fetchRestaurants();
-                }
-            } else {
-                alert('Güncelleme başarısız (SQL Güncellemesi Gerekli): ' + error.message);
-                fetchRestaurants();
-            }
+            alert('Güncelleme başarısız: ' + error.message);
+            // Revert changes by refetching
+            fetchRestaurants();
         } else {
+            // Update local state completely with confirmed values if needed, 
+            // but optimistic update usually suffices. 
+            // We can update the selectedRestaurant if modal is open to reflect changes immediately there too.
+            if (selectedRestaurant && selectedRestaurant.id === id) {
+                setSelectedRestaurant(prev => prev ? ({
+                    ...prev,
+                    name: newName,
+                    slug: newSlug,
+                    status: newStatus,
+                    plan: newPlan,
+                    plan_ends_at: newEndsAtVal
+                }) : null);
+            }
+
+            // Update list exact values
             setRestaurants(prev => prev.map(r =>
-                r.id === id ? { ...r, [field]: value, ...(newEndsAt ? { plan_ends_at: newEndsAt } : {}) } : r
+                r.id === id ? {
+                    ...r,
+                    name: newName,
+                    slug: newSlug,
+                    status: newStatus,
+                    plan: newPlan,
+                    plan_ends_at: newEndsAtVal
+                } : r
             ));
-            setSelectedRestaurant(null); // Close modal
+
+            if (field === 'details') {
+                setSelectedRestaurant(null); // Close modal only on full save
+            }
         }
     };
 
@@ -272,7 +301,7 @@ export default function SuperAdminPage() {
                                             <tr key={rest.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                                                 <td style={{ padding: '16px' }}>
                                                     <div style={{ fontWeight: 600 }}>{rest.name}</div>
-                                                    <a href={`/m/${rest.slug}`} target="_blank" style={{ color: '#2563EB', fontSize: '0.85rem' }}>/m/{rest.slug} ↗</a>
+                                                    <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', fontSize: '0.85rem' }}>/menu/{rest.slug} ↗</a>
                                                 </td>
                                                 <td style={{ padding: '16px' }}>
                                                     <div
@@ -344,7 +373,7 @@ export default function SuperAdminPage() {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                             <div>
                                                 <h3 style={{ fontWeight: 600, fontSize: '1.1rem' }}>{rest.name}</h3>
-                                                <a href={`/m/${rest.slug}`} target="_blank" style={{ color: '#2563EB', fontSize: '0.9rem' }}>/m/{rest.slug} ↗</a>
+                                                <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', fontSize: '0.9rem' }}>/menu/{rest.slug} ↗</a>
                                             </div>
                                             <button onClick={() => handleDelete(rest.id, rest.name)} style={{ background: '#FEE2E2', color: '#EF4444', border: 'none', padding: '8px', borderRadius: '4px' }}>
                                                 <i className="fa-solid fa-trash"></i>
@@ -402,20 +431,73 @@ export default function SuperAdminPage() {
                             const formData = new FormData(e.currentTarget);
                             const newPlan = formData.get('plan') as string;
                             const newEndsAt = formData.get('plan_ends_at') as string;
-                            handleUpdate(selectedRestaurant.id, 'plan', newPlan, newEndsAt);
+                            const newName = formData.get('name') as string;
+                            const newSlug = formData.get('slug') as string;
+                            const newStatus = formData.get('status') as string;
+
+                            handleUpdate(selectedRestaurant.id, 'details', {
+                                name: newName,
+                                slug: newSlug,
+                                plan: newPlan,
+                                status: newStatus,
+                                ends_at: newEndsAt
+                            });
                         }}>
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Plan Tipi</label>
-                                <select
-                                    name="plan"
-                                    defaultValue={selectedRestaurant.plan}
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>İşletme Adı</label>
+                                <input
+                                    name="name"
+                                    type="text"
+                                    defaultValue={selectedRestaurant.name}
                                     style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
-                                >
-                                    <option value="trial">Deneme</option>
-                                    <option value="monthly">Aylık Paket (149 TL)</option>
-                                    <option value="yearly">Yıllık Pro (1199 TL)</option>
-                                    <option value="expired">Süresi Dolmuş</option>
-                                </select>
+                                    required
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
+                                    İşletme Linki (Slug)
+                                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#EF4444', fontWeight: 'normal' }}>Dikkat: Değiştirirseniz eski QR kodlar çalışmaz!</span>
+                                </label>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <span style={{ background: '#F3F4F6', padding: '10px 12px', border: '1px solid #D1D5DB', borderRight: 'none', borderRadius: '8px 0 0 8px', color: '#6B7280', fontSize: '0.9rem' }}>/menu/</span>
+                                    <input
+                                        name="slug"
+                                        type="text"
+                                        defaultValue={selectedRestaurant.slug}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '0 8px 8px 0', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
+                                        required
+                                        pattern="[a-z0-9-]+"
+                                        title="Sadece küçük harf, rakam ve tire (-) kullanılabilir"
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Durum</label>
+                                    <select
+                                        name="status"
+                                        defaultValue={selectedRestaurant.status}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
+                                    >
+                                        <option value="active">Aktif</option>
+                                        <option value="passive">Pasif</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Plan Tipi</label>
+                                    <select
+                                        name="plan"
+                                        defaultValue={selectedRestaurant.plan}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
+                                    >
+                                        <option value="trial">Deneme</option>
+                                        <option value="monthly">Aylık Paket (149 TL)</option>
+                                        <option value="yearly">Yıllık Pro (1199 TL)</option>
+                                        <option value="expired">Süresi Dolmuş</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>

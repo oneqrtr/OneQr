@@ -44,7 +44,7 @@ export default function LoginPage() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `https://oneqr.site/auth/callback`,
+                    redirectTo: `https://oneqr.tr/auth/callback`,
                 },
             });
             if (error) throw error;

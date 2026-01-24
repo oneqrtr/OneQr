@@ -13,6 +13,7 @@ interface Restaurant {
     slug: string;
     theme_color: string;
     currency: string;
+    status: string;
     logo_url?: string;
     description?: string;
     hero_image_url?: string;
@@ -146,6 +147,48 @@ export default function PublicMenuPage() {
             <div style={{ padding: '40px', textAlign: 'center' }}>
                 <h1 style={{ fontSize: '1.5rem', marginBottom: '16px' }}>Restoran Bulunamadı</h1>
                 <p>Aradığınız menüye ulaşılamıyor. Linki kontrol ediniz.</p>
+            </div>
+        );
+    }
+
+    // Check if restaurant is active
+    if (restaurant.status !== 'active') {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+                textAlign: 'center',
+                background: '#F9FAFB'
+            }}>
+                <div style={{
+                    width: '80px',
+                    height: '80px',
+                    background: '#FEE2E2',
+                    color: '#EF4444',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    marginBottom: '24px'
+                }}>
+                    <i className="fa-solid fa-store-slash"></i>
+                </div>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '12px' }}>
+                    Hizmet Dışı
+                </h1>
+                <p style={{ color: '#6B7280', maxWidth: '400px', lineHeight: '1.5' }}>
+                    <strong>{restaurant.name}</strong> şu anda hizmet vermemektedir.
+                </p>
+                <div style={{ marginTop: '32px' }}>
+                    <Link href="/" style={{ color: '#2563EB', fontWeight: 500, textDecoration: 'none' }}>
+                        &larr; OneQR Anasayfa
+                    </Link>
+                </div>
             </div>
         );
     }

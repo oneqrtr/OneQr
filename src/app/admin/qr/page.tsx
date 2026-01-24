@@ -93,7 +93,7 @@ export default function QrPage() {
     if (!slug) return <div>Yükleniyor...</div>;
 
     // Always use the production domain for QR codes
-    const baseUrl = 'https://oneqr.site';
+    const baseUrl = 'https://oneqr.tr';
 
     return (
         <>
@@ -106,7 +106,7 @@ export default function QrPage() {
                         <div ref={qrRef} style={{ background: 'white', padding: '30px', textAlign: 'center', minWidth: '300px' }}>
                             <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '24px', color: '#111827' }}>{businessName}</div>
                             <QRCodeSVG
-                                value={`${baseUrl}/m/${slug}`}
+                                value={`${baseUrl}/menu/${slug}`}
                                 size={200}
                                 level="H"
                                 imageSettings={{

@@ -51,7 +51,7 @@ export default async function ArticlePage({ params }: PageProps) {
             name: 'OneQR',
             logo: {
                 '@type': 'ImageObject',
-                url: 'https://oneqr.com/logo.png' // Generic placeholder or actual
+                url: 'https://oneqr.tr/logo.png' // Generic placeholder or actual
             }
         }
     };
