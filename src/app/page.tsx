@@ -386,7 +386,7 @@ export default function Home() {
       </section >
 
       {/* Footer */}
-      < footer className="footer" >
+      <footer className="footer">
         <div className="container footer-container">
           <div className="footer-left">
             <span className="logo footer-logo">OneQR</span>
@@ -396,9 +396,9 @@ export default function Home() {
             <h4>Kurumsal</h4>
             <ul>
               <li><Link href="/">Ana Sayfa</Link></li>
+              <li><Link href="/hakkimizda">Hakkımızda</Link></li>
               <li><Link href="/bilgi">Bilgi Bankası</Link></li>
               <li><Link href="/sss">Sıkça Sorulan Sorular</Link></li>
-              <li><a href="#ozellikler">Özellikler</a></li>
               <li><Link href="/login">Giriş Yap</Link></li>
               <li><Link href="/register">Kayıt Ol</Link></li>
             </ul>
@@ -420,14 +420,14 @@ export default function Home() {
         <div className="container footer-bottom">
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
             <p>&copy; 2024 OneQR. Tüm hakları saklıdır.</p>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              <Link href="/karsilastirma/oneqr-vs-pdf-qr-menu">OneQR vs PDF</Link>
-              <a href="#">Kullanıcı Sözleşmesi</a>
-              <a href="#">Gizlilik Politikası</a>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <Link href="/sozlesme/mesafeli-satis" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Mesafeli Satış</Link>
+              <Link href="/sozlesme/iptal-iade" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>İptal ve İade</Link>
+              <Link href="/sozlesme/gizlilik" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Gizlilik ve KVKK</Link>
             </div>
           </div>
         </div>
-      </footer >
+      </footer>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

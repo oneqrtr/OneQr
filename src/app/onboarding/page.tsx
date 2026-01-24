@@ -220,8 +220,57 @@ export default function OnboardingPage() {
         }
     };
 
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+    const handleGoToAdmin = () => {
+        setShowTermsModal(true);
+    };
+
+    const handleTermsSubmit = () => {
+        if (acceptedTerms) {
+            router.push('/admin');
+        }
+    };
+
     return (
         <div className="auth-body" style={{ alignItems: 'flex-start', paddingTop: '60px' }}>
+            {/* Terms Modal */}
+            {showTermsModal && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+                    <div onClick={() => setShowTermsModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}></div>
+                    <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '500px', position: 'relative', zIndex: 101, padding: '32px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', color: '#111827' }}>Son Bir Adım 📝</h3>
+                        <p style={{ color: '#4B5563', marginBottom: '24px', lineHeight: '1.6' }}>
+                            Yönetim paneline geçmeden önce, yasal uyumluluk gereği aşağıdaki sözleşmeleri okuyup onaylamanız gerekmektedir.
+                        </p>
+
+                        <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={acceptedTerms}
+                                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                    style={{ marginTop: '4px', width: '18px', height: '18px' }}
+                                />
+                                <span style={{ fontSize: '0.9rem', color: '#374151' }}>
+                                    <a href="/sozlesme/gizlilik" target="_blank" style={{ color: '#2563EB', textDecoration: 'underline' }}>Gizlilik Politikası</a>, <a href="/sozlesme/mesafeli-satis" target="_blank" style={{ color: '#2563EB', textDecoration: 'underline' }}>Mesafeli Satış Sözleşmesi</a> ve <a href="/sozlesme/iptal-iade" target="_blank" style={{ color: '#2563EB', textDecoration: 'underline' }}>İptal/İade Koşulları</a>'nı okudum, anladım ve kabul ediyorum.
+                                </span>
+                            </label>
+                        </div>
+
+                        <button
+                            onClick={handleTermsSubmit}
+                            disabled={!acceptedTerms}
+                            className="btn btn-primary"
+                            style={{ width: '100%', opacity: acceptedTerms ? 1 : 0.5, cursor: acceptedTerms ? 'pointer' : 'not-allowed' }}
+                        >
+                            Onayla ve Panele Git
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="wizard-container">
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <Link href="/" className="logo">
@@ -414,13 +463,14 @@ export default function OnboardingPage() {
                                     </div>
                                 </div>
                                 <div className="wizard-actions" style={{ justifyContent: 'center' }}>
-                                    <Link
-                                        href="/admin"
+                                    <button
+                                        type="button"
+                                        onClick={handleGoToAdmin}
                                         className="btn btn-primary"
                                         style={{ width: '100%' }}
                                     >
                                         Yönetim Paneline Git
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                         )}
