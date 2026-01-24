@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   keywords: 'qr menü, dijital menü, restoran qr, cafe menü, karekod menü oluşturma, ücretsiz qr menü, online katalog',
   icons: {
     icon: [
-      { url: '/logoblack.png', media: '(prefers-color-scheme: light)' },
-      { url: '/logowhite.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/logoblack.png' }, // Default fallback
+      { url: '/favwhite.png', media: '(prefers-color-scheme: light)' },
+      { url: '/favblack.png', media: '(prefers-color-scheme: dark)' },
+      { url: '/favblack.png' }, // Default fallback
     ],
     apple: [
-      { url: '/logoblack.png' },
+      { url: '/favblack.png' },
     ]
   }
 }
