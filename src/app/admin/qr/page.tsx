@@ -92,8 +92,8 @@ export default function QrPage() {
 
     if (!slug) return <div>Yükleniyor...</div>;
 
-    // Determine base URL dynamically if on client
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://oneqr.tr';
+    // Always use the production domain for QR codes
+    const baseUrl = 'https://oneqr.site';
 
     return (
         <>
