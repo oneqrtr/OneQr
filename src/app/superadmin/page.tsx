@@ -24,6 +24,7 @@ export default function SuperAdminPage() {
     // Data State
     const [loading, setLoading] = useState(false);
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [paymentNotifications, setPaymentNotifications] = useState<any[]>([]);
 
     const router = useRouter();
     const supabase = createClient();
@@ -82,6 +83,45 @@ export default function SuperAdminPage() {
             setRestaurants(data || []);
         }
         setLoading(false);
+    };
+
+    const fetchPayments = async (passToUse?: string) => {
+        setLoading(true);
+        const p = passToUse || password;
+        const { data, error } = await supabase.rpc('superadmin_get_payments', {
+            pass: p
+        });
+        if (error) {
+            console.error('Payment fetch error:', error);
+        } else {
+            setPaymentNotifications(data || []);
+        }
+        setLoading(false);
+    };
+
+    // Effect to fetch data when tab changes 
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        if (activeTab === 'restaurants') fetchRestaurants();
+        if (activeTab === 'payments') fetchPayments();
+    }, [activeTab, isAuthenticated]);
+
+    const handlePaymentAction = async (id: string, action: 'approve' | 'reject') => {
+        if (!confirm(`Bu ödemeyi ${action === 'approve' ? 'ONAYLAMAK' : 'REDDETMEK'} istediğinize emin misiniz?`)) return;
+
+        const rpcName = action === 'approve' ? 'superadmin_approve_payment' : 'superadmin_reject_payment';
+
+        const { error } = await supabase.rpc(rpcName, {
+            pass: password,
+            notification_id: id
+        });
+
+        if (error) {
+            alert('İşlem başarısız: ' + error.message);
+        } else {
+            alert(`Ödeme ${action === 'approve' ? 'onaylandı' : 'reddedildi'}.`);
+            fetchPayments();
+        }
     };
 
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
@@ -412,10 +452,62 @@ export default function SuperAdminPage() {
                         </>
                     )}
                     {activeTab === 'payments' && (
-                        <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '12px' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>💳</div>
-                            <h3>Ödemeler Yakında</h3>
-                        </div>
+                        <>
+                            {paymentNotifications.length === 0 ? (
+                                <p style={{ textAlign: 'center', padding: '32px', color: '#6B7280' }}>Bekleyen ödeme bildirimi yok.</p>
+                            ) : (
+                                <div className="desktop-view" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                        <thead style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                                            <tr>
+                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>RESTORAN</th>
+                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>GONDEREN</th>
+                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>PAKET</th>
+                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>TUTAR</th>
+                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>TARIH</th>
+                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280', textAlign: 'right' }}>ISLEMLER</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {paymentNotifications.map(p => (
+                                                <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                                                    <td style={{ padding: '16px', fontWeight: 500 }}>{p.restaurant_name}</td>
+                                                    <td style={{ padding: '16px' }}>{p.sender_name}</td>
+                                                    <td style={{ padding: '16px' }}>
+                                                        <span style={{
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.85rem',
+                                                            fontWeight: 600,
+                                                            background: p.plan_type === 'yearly' ? '#FEF3C7' : '#EFF6FF',
+                                                            color: p.plan_type === 'yearly' ? '#92400E' : '#1E40AF'
+                                                        }}>
+                                                            {p.plan_type === 'monthly' ? 'Aylık' : 'Yıllık'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '16px', fontWeight: 600 }}>{p.amount} ₺</td>
+                                                    <td style={{ padding: '16px', color: '#6B7280', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                                                    <td style={{ padding: '16px', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                        <button
+                                                            onClick={() => handlePaymentAction(p.id, 'approve')}
+                                                            style={{ background: '#DEF7EC', color: '#03543F', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                                                        >
+                                                            Onayla
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handlePaymentAction(p.id, 'reject')}
+                                                            style={{ background: '#FDE8E8', color: '#9B1C1C', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                                                        >
+                                                            Reddet
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -490,6 +582,24 @@ export default function SuperAdminPage() {
                                     <select
                                         name="plan"
                                         defaultValue={selectedRestaurant.plan}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const dateInput = document.querySelector('input[name="plan_ends_at"]') as HTMLInputElement;
+                                            if (dateInput) {
+                                                const now = new Date();
+                                                if (val === 'monthly') {
+                                                    now.setMonth(now.getMonth() + 1);
+                                                } else if (val === 'yearly') {
+                                                    now.setFullYear(now.getFullYear() + 1);
+                                                } else if (val === 'trial') {
+                                                    now.setDate(now.getDate() + 14);
+                                                } else {
+                                                    // expired or others, maybe clear or keep current
+                                                    return;
+                                                }
+                                                dateInput.value = now.toISOString().split('T')[0];
+                                            }
+                                        }}
                                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
                                     >
                                         <option value="trial">Deneme</option>
