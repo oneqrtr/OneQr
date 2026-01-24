@@ -399,6 +399,7 @@ export default function Home() {
               <li><Link href="/hakkimizda">Hakkımızda</Link></li>
               <li><Link href="/bilgi">Bilgi Bankası</Link></li>
               <li><Link href="/sss">Sıkça Sorulan Sorular</Link></li>
+              <li><Link href="#">SSL Sertifikası</Link></li>
               <li><Link href="/login">Giriş Yap</Link></li>
               <li><Link href="/register">Kayıt Ol</Link></li>
             </ul>
@@ -418,12 +419,24 @@ export default function Home() {
           </div>
         </div>
         <div className="container footer-bottom">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '24px',
+            paddingBottom: '24px',
+            borderBottom: '1px solid #374151'
+          }}>
+            <div style={{ background: 'white', padding: '10px 20px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '20px' }}>
+              <img src="/images/payments/payment_1.png" alt="Ödeme Yöntemleri" style={{ height: '30px', objectFit: 'contain' }} />
+              <img src="/images/payments/payment_2.png" alt="iyzico Güvenli Ödeme" style={{ height: '30px', objectFit: 'contain' }} />
+            </div>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
             <p>&copy; 2024 OneQR. Tüm hakları saklıdır.</p>
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <Link href="/sozlesme/mesafeli-satis" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Mesafeli Satış</Link>
-              <Link href="/sozlesme/iptal-iade" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>İptal ve İade</Link>
-              <Link href="/sozlesme/gizlilik" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Gizlilik ve KVKK</Link>
+              <Link href="/sozlesme/mesafeli-satis" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Mesafeli Satış Sözleşmesi</Link>
+              <Link href="/sozlesme/iptal-iade" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Teslimat ve İade Şartları</Link>
+              <Link href="/sozlesme/gizlilik" style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Gizlilik Sözleşmesi</Link>
             </div>
           </div>
         </div>
