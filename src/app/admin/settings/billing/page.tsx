@@ -46,7 +46,7 @@ export default function BillingPage() {
         if (!restaurantId) return;
 
         setNotifLoading(true);
-        const amount = selectedPlan === 'monthly' ? 149 : 1199;
+        const amount = selectedPlan === 'monthly' ? 179 : 1199;
 
         try {
             const { error } = await supabase
@@ -138,15 +138,23 @@ export default function BillingPage() {
                         }}
                     >
                         <div style={{ position: 'absolute', top: '-12px', right: '20px', background: '#F59E0B', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>EN POPÜLER</div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Yıllık</h3>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563EB' }}>1199 TL</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Yıllık Pro</h3>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563EB' }}>999 TL</div>
+                                <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>/yıl + KDV</div>
+                            </div>
                         </div>
-                        <p style={{ fontSize: '0.85rem', color: '#16A34A', marginBottom: '12px', fontWeight: 500 }}>2 ay bedavaya gelir!</p>
+                        <div style={{ fontSize: '0.9rem', color: '#16A34A', fontWeight: 600, marginBottom: '8px' }}>
+                            Aylık sadece 83 ₺'ye geliyor!
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>
+                            İşletmeniz için en mantıklı seçim. Neredeyse yarı fiyatına!
+                        </p>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#4B5563', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                            <li>✅ Tüm Pro Özellikler</li>
-                            <li>✅ Öncelikli Destek</li>
-                            <li>✅ Fiyat Garantisi</li>
+                            <li>✅ Net %45 İndirim</li>
+                            <li>✅ 789 ₺ Cebinizde Kalsın</li>
+                            <li>✅ Kurulum & Menü Giriş Desteği</li>
                         </ul>
                     </div>
                 </div>
@@ -181,7 +189,7 @@ export default function BillingPage() {
                         <div className="form-group">
                             <label className="form-label">Seçilen Paket</label>
                             <div style={{ padding: '10px', background: '#F3F4F6', borderRadius: '8px', fontWeight: 500 }}>
-                                {selectedPlan === 'monthly' ? 'Aylık Paket (149 TL)' : 'Yıllık Paket (1199 TL)'}
+                                {selectedPlan === 'monthly' ? 'Aylık Paket (179 TL - KDV Dahil)' : 'Yıllık Paket (1199 TL - KDV Dahil)'}
                             </div>
                         </div>
 
