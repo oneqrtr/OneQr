@@ -15,47 +15,58 @@ export default function AuthCallbackPage() {
             // Supabase client automatically handles checking the URL for us in many cases,
             // but we can explicitly call getSession to finalize
 
+            // Helper to decide where to go
+            const checkAndRedirect = async (userId: string) => {
+                const { data } = await supabase
+                    .from('restaurants')
+                    .select('id')
+                    .eq('owner_id', userId)
+                    .maybeSingle();
+
+                if (data) {
+                    router.push('/admin');
+                } else {
+                    router.push('/onboarding');
+                }
+            };
+
             // 1. Check for existing session
             const { data: { session }, error } = await supabase.auth.getSession();
 
             if (error) {
                 console.error('Auth callback error:', error);
-                // router.push('/auth/auth-code-error'); // disable for now to see logs
                 return;
             }
 
             if (session) {
-                router.push('/admin');
+                await checkAndRedirect(session.user.id);
                 return;
             }
 
             // 2. Handle Implicit Flow (Hash Fragment)
-            // Sometimes getSession() misses the hash update on redirect.
-            // Google Login specifically returns tokens in the hash #access_token=...
             const hash = window.location.hash;
             if (hash && hash.includes('access_token')) {
-                const params = new URLSearchParams(hash.substring(1)); // remove #
+                const params = new URLSearchParams(hash.substring(1));
                 const accessToken = params.get('access_token');
                 const refreshToken = params.get('refresh_token');
 
                 if (accessToken && refreshToken) {
-                    const { error: setSessionError } = await supabase.auth.setSession({
+                    const { data: { user }, error: setSessionError } = await supabase.auth.setSession({
                         access_token: accessToken,
                         refresh_token: refreshToken,
                     });
 
-                    if (!setSessionError) {
-                        router.push('/admin');
+                    if (!setSessionError && user) {
+                        await checkAndRedirect(user.id);
                         return;
                     }
                 }
             }
 
             // 3. Fallback: Listen for Auth State Change
-            // This catches cases where the client library automatically processes the hash but hasn't fired yet
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
                 if (event === 'SIGNED_IN' && session) {
-                    router.push('/admin');
+                    await checkAndRedirect(session.user.id);
                 }
             });
 
