@@ -75,7 +75,11 @@ export default function Sidebar() {
                         <span className="nav-icon"><i className="fa-solid fa-palette"></i></span>
                         <span>Tema</span>
                     </Link>
-                    <Link href="/admin/settings" className={`nav-item ${isActive('/admin/settings') ? 'active' : ''}`}>
+                    <Link href="/admin/settings/billing" className={`nav-item ${isActive('/admin/settings/billing') ? 'active' : ''}`}>
+                        <span className="nav-icon"><i className="fa-solid fa-credit-card"></i></span>
+                        <span>Abonelik</span>
+                    </Link>
+                    <Link href="/admin/settings" className={`nav-item ${isActive('/admin/settings') && !isActive('/admin/settings/billing') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-gear"></i></span>
                         <span>Ayarlar</span>
                     </Link>
@@ -176,9 +180,9 @@ export default function Sidebar() {
                                                     Aktif Plan
                                                 </button>
                                             ) : (
-                                                <button style={{ width: '100%', padding: '12px', borderRadius: '8px', background: '#2563EB', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer' }}>
+                                                <Link href="/admin/settings/billing" onClick={() => setIsModalOpen(false)} style={{ display: 'block', textAlign: 'center', width: '100%', padding: '12px', borderRadius: '8px', background: '#2563EB', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}>
                                                     Yıllık Plana Geç
-                                                </button>
+                                                </Link>
                                             )}
                                         </div>
 
@@ -206,9 +210,9 @@ export default function Sidebar() {
                                                     Aktif Plan
                                                 </button>
                                             ) : (
-                                                <button style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'white', border: '1px solid #2563EB', color: '#2563EB', fontWeight: 600, cursor: 'pointer' }}>
+                                                <Link href="/admin/settings/billing" onClick={() => setIsModalOpen(false)} style={{ display: 'block', textAlign: 'center', width: '100%', padding: '12px', borderRadius: '8px', background: 'white', border: '1px solid #2563EB', color: '#2563EB', fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}>
                                                     Aylık Plana Geç
-                                                </button>
+                                                </Link>
                                             )}
                                         </div>
 
