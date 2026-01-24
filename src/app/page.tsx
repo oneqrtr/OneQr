@@ -157,10 +157,10 @@ export default function Home() {
               <div style={{ flex: 1, minWidth: '280px', display: 'flex', justifyContent: 'center' }}>
                 {/* Mockup Frame */}
                 <div style={{
-                  width: '280px',
-                  height: '550px',
+                  width: '350px',
+                  height: '700px',
                   background: '#111827',
-                  borderRadius: '40px',
+                  borderRadius: '45px',
                   padding: '12px',
                   position: 'relative',
                   boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
