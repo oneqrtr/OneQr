@@ -5,37 +5,10 @@ export function middleware(request: NextRequest) {
     const hostname = request.headers.get('host') || '';
     const { pathname } = request.nextUrl;
 
-    // Development/Localhost handling
-    const isDev = hostname.includes('localhost');
-    const isAppDomain = hostname.startsWith('app.') || (isDev && pathname.startsWith('/_app_debug')); // simple debug hook if needed
+    // Simplified Middleware for Single Domain Strategy (oneqr.site)
+    // We are now serving everything (Landing, Admin, Menus) from the same root domain.
 
-    // Case 1: App Domain (app.oneqr.tr)
-    if (isAppDomain) {
-        // If visiting root of app domain, redirect to login
-        if (pathname === '/') {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
-
-        // Allow all other routes on app domain to proceed naturally
-        return NextResponse.next();
-    }
-
-    // Case 2: Marketing Domain (oneqr.tr)
-    // If accessing App routes on Marketing domain -> Redirect to App domain
-    const appRoutes = ['/admin', '/superadmin', '/login', '/register', '/onboarding'];
-    if (appRoutes.some(route => pathname.startsWith(route))) {
-        // In dev, we can't easily redirect to subdomains without hosts file, 
-        // but in prod this is critical.
-        if (!isDev) {
-            const newUrl = new URL(request.url);
-            newUrl.hostname = 'app.oneqr.tr';
-            return NextResponse.redirect(newUrl);
-        }
-    }
-
-    // Public Menu Handling:
-    // Menus should probably be accessible on both, or specifically one.
-    // Usually oneqr.tr/m/slug is nice and short. We keep it allowed on main domain.
+    // In the future, if we go back to app.subdomain, we can uncomment logic here.
 
     return NextResponse.next();
 }

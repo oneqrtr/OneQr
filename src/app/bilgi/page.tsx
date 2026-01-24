@@ -31,10 +31,7 @@ export default function KnowledgeIndexPage() {
                             border: '1px solid #E5E7EB',
                             transition: 'all 0.2s',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                        }}
-                            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#2563EB'}
-                            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
-                        >
+                        }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>{article.title}</h2>
                             <p style={{ color: '#6B7280', lineHeight: '1.5' }}>{article.description}</p>
                             <span style={{ display: 'inline-block', marginTop: '16px', color: '#2563EB', fontWeight: 600 }}>Okumaya Devam Et →</span>
