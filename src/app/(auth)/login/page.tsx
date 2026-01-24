@@ -39,13 +39,19 @@ export default function LoginPage() {
     };
 
     const handleGoogleLogin = async () => {
-        const supabase = createClient();
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        });
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `https://oneqr.site/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            console.error('Google Login Error:', error);
+            alert('Google girişi başlatılamadı: ' + error.message);
+        }
     };
 
     return (
