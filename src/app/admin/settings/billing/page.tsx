@@ -165,6 +165,9 @@ export default function BillingPage() {
                             </div>
                             <p><strong>Alıcı:</strong> OneQR Teknoloji A.Ş.</p>
                             <p><strong>Açıklama:</strong> {selectedPlan === 'monthly' ? 'Aylık' : 'Yıllık'} Paket Ödemesi</p>
+                            <p style={{ marginTop: '12px', fontSize: '0.8rem', color: '#6B7280', fontStyle: 'italic' }}>
+                                Not: Faturanız, ödeme onaylandıktan sonra kayıtlı e-posta adresinize gönderilecektir.
+                            </p>
                         </div>
                     </div>
 
