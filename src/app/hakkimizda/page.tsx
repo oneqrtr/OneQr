@@ -15,7 +15,7 @@ export default function Hakkimizda() {
                 </div>
             </nav>
 
-            <div className="container" style={{ padding: '60px 20px', maxWidth: '800px' }}>
+            <div className="container" style={{ padding: '140px 20px', maxWidth: '800px' }}>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827', marginBottom: '32px' }}>Hakkımızda</h1>
 
                 <div style={{ background: 'white', padding: '40px', borderRadius: '16px', border: '1px solid #E5E7EB', lineHeight: '1.8', color: '#374151' }}>

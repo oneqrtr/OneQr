@@ -426,9 +426,8 @@ export default function Home() {
             paddingBottom: '24px',
             borderBottom: '1px solid #374151'
           }}>
-            <div style={{ background: 'white', padding: '10px 20px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '20px' }}>
-              <img src="/images/payments/payment_1.png" alt="Ödeme Yöntemleri" style={{ height: '30px', objectFit: 'contain' }} />
-              <img src="/images/payments/payment_2.png" alt="iyzico Güvenli Ödeme" style={{ height: '30px', objectFit: 'contain' }} />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '20px' }}>
+              <img src="/images/payments/payment_2.png" alt="iyzico Güvenli Ödeme" style={{ height: '40px', objectFit: 'contain' }} />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
