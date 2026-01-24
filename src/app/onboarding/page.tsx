@@ -190,6 +190,19 @@ export default function OnboardingPage() {
             setCreatedSlug(finalSlug);
             // Save local fallback just in case
             localStorage.setItem('oneqr_business_name', businessName);
+
+            // Send Welcome Email (Non-blocking)
+            if (user.email) {
+                fetch('/api/send-welcome', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: user.email,
+                        businessName: businessName
+                    })
+                }).catch(err => console.error('Email send warning:', err));
+            }
+
             setStep(3);
 
         } catch (err: any) {
