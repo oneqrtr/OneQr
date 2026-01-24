@@ -27,8 +27,8 @@ export async function POST(request: Request) {
         });
 
         if (error) {
-            console.error('Resend API Error:', error);
-            return NextResponse.json({ error }, { status: 500 });
+            console.error('Resend API Error:', JSON.stringify(error, null, 2));
+            return NextResponse.json({ error: error, message: error.message, name: error.name }, { status: 500 });
         }
 
         console.log('Email sent successfully:', data);
