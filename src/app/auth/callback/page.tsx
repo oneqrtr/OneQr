@@ -11,56 +11,57 @@ export default function AuthCallbackPage() {
         const handleAuthCallback = async () => {
             const supabase = createClient();
 
-            // Check for hash parameters (Implicit flow / Magic Link)
-            // Supabase client automatically handles checking the URL for us in many cases,
-            // but we can explicitly call getSession to finalize
-
             // Helper to decide where to go
             const checkAndRedirect = async (userId: string) => {
-                const { data } = await supabase
-                    .from('restaurants')
-                    .select('id')
-                    .eq('owner_id', userId)
-                    .maybeSingle();
+                try {
+                    const { data } = await supabase
+                        .from('restaurants')
+                        .select('id')
+                        .eq('owner_id', userId)
+                        .maybeSingle();
 
-                if (data) {
-                    router.push('/admin');
-                } else {
-                    router.push('/onboarding');
+                    if (data) {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = '/onboarding';
+                    }
+                } catch (e) {
+                    console.error('Redirect Logic Error:', e);
+                    // Fallback
+                    window.location.href = '/admin';
                 }
             };
 
-            // 1. Check for existing session
-            const { data: { session }, error } = await supabase.auth.getSession();
-
-            if (error) {
-                console.error('Auth callback error:', error);
-                return;
-            }
-
-            if (session) {
-                await checkAndRedirect(session.user.id);
-                return;
-            }
-
-            // 2. Handle Implicit Flow (Hash Fragment)
+            // 1. PRIORITY: Handle Implicit Flow (Hash Fragment) from Google
             const hash = window.location.hash;
             if (hash && hash.includes('access_token')) {
-                const params = new URLSearchParams(hash.substring(1));
-                const accessToken = params.get('access_token');
-                const refreshToken = params.get('refresh_token');
+                try {
+                    const params = new URLSearchParams(hash.substring(1));
+                    const accessToken = params.get('access_token');
+                    const refreshToken = params.get('refresh_token');
 
-                if (accessToken && refreshToken) {
-                    const { data: { user }, error: setSessionError } = await supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken,
-                    });
+                    if (accessToken && refreshToken) {
+                        const { data, error } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                        });
 
-                    if (!setSessionError && user) {
-                        await checkAndRedirect(user.id);
-                        return;
+                        if (!error && data.session) {
+                            await checkAndRedirect(data.session.user.id);
+                            return;
+                        }
                     }
+                } catch (hashError) {
+                    console.error('Hash Parsing Error:', hashError);
                 }
+            }
+
+            // 2. Check for existing session (if implicit flow didn't happen or failed)
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (!error && session) {
+                await checkAndRedirect(session.user.id);
+                return;
             }
 
             // 3. Fallback: Listen for Auth State Change
