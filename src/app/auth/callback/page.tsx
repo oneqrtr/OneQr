@@ -15,36 +15,53 @@ export default function AuthCallbackPage() {
             // Supabase client automatically handles checking the URL for us in many cases,
             // but we can explicitly call getSession to finalize
 
+            // 1. Check for existing session
             const { data: { session }, error } = await supabase.auth.getSession();
 
             if (error) {
                 console.error('Auth callback error:', error);
-                router.push('/auth/auth-code-error');
+                // router.push('/auth/auth-code-error'); // disable for now to see logs
                 return;
             }
 
             if (session) {
-                // Successful login
-                // Check if restaurant exists to decide where to go
-                // For now, default to admin, let admin layout redirect if needed
                 router.push('/admin');
-            } else {
-                // Try parsing hash manually if getSession didn't pick it up immediately 
-                // (though supabase-js usually does on init if autoRefreshToken is on)
-
-                // If no session found and no error, maybe it's just a direct visit?
-                // But typically after redirect, getSession should have it.
-                // Listen for auth state change
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-                    if (event === 'SIGNED_IN' && session) {
-                        router.push('/admin');
-                    }
-                });
-
-                return () => {
-                    subscription.unsubscribe();
-                };
+                return;
             }
+
+            // 2. Handle Implicit Flow (Hash Fragment)
+            // Sometimes getSession() misses the hash update on redirect.
+            // Google Login specifically returns tokens in the hash #access_token=...
+            const hash = window.location.hash;
+            if (hash && hash.includes('access_token')) {
+                const params = new URLSearchParams(hash.substring(1)); // remove #
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+
+                if (accessToken && refreshToken) {
+                    const { error: setSessionError } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
+
+                    if (!setSessionError) {
+                        router.push('/admin');
+                        return;
+                    }
+                }
+            }
+
+            // 3. Fallback: Listen for Auth State Change
+            // This catches cases where the client library automatically processes the hash but hasn't fired yet
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    router.push('/admin');
+                }
+            });
+
+            return () => {
+                subscription.unsubscribe();
+            };
         };
 
         handleAuthCallback();

@@ -12,6 +12,10 @@ export const metadata: Metadata = {
     icon: [
       { url: '/logoblack.png', media: '(prefers-color-scheme: light)' },
       { url: '/logowhite.png', media: '(prefers-color-scheme: dark)' },
+      { url: '/logoblack.png' }, // Default fallback
+    ],
+    apple: [
+      { url: '/logoblack.png' },
     ]
   }
 }
