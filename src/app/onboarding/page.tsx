@@ -256,9 +256,9 @@ export default function OnboardingPage() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label htmlFor="businessSlug" className="form-label">İşletme Linki (oneqr.tr/m/...)</label>
+                                        <label htmlFor="businessSlug" className="form-label">İşletme Linki (oneqr.site/m/...)</label>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                                            <span style={{ background: '#F3F4F6', padding: '10px 12px', border: '1px solid var(--border-color)', borderRight: 'none', borderRadius: '8px 0 0 8px', color: '#6B7280', fontSize: '0.9rem' }}>oneqr.tr/m/</span>
+                                            <span style={{ background: '#F3F4F6', padding: '10px 12px', border: '1px solid var(--border-color)', borderRight: 'none', borderRadius: '8px 0 0 8px', color: '#6B7280', fontSize: '0.9rem' }}>oneqr.site/m/</span>
                                             <input
                                                 type="text"
                                                 id="businessSlug"
@@ -380,7 +380,7 @@ export default function OnboardingPage() {
                                         <div className="qr-placeholder" style={{ padding: '0', border: 'none', background: 'transparent' }}>
                                             {createdSlug && (
                                                 <QRCodeSVG
-                                                    value={`https://oneqr.tr/m/${createdSlug}`}
+                                                    value={`https://oneqr.site/m/${createdSlug}`}
                                                     size={150}
                                                     bgColor={"#ffffff"}
                                                     fgColor={"#000000"}
@@ -390,7 +390,7 @@ export default function OnboardingPage() {
                                             )}
                                         </div>
                                         <p style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '16px', color: '#111827' }}>{businessName}</p>
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>oneqr.tr/m/{createdSlug}</p>
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>oneqr.site/m/{createdSlug}</p>
                                     </div>
                                 </div>
                                 <div className="wizard-actions" style={{ justifyContent: 'center' }}>
