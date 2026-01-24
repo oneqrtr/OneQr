@@ -10,10 +10,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: Request) {
     try {
         const { email, businessName } = await request.json();
+        console.log('Attempting to send welcome email to:', email);
 
         if (!process.env.RESEND_API_KEY) {
-            console.warn('RESEND_API_KEY is not set. Email skipping.');
-            return NextResponse.json({ success: false, message: 'API Key missing' }, { status: 200 });
+            console.error('RESEND_API_KEY is missing in environment variables!');
+            return NextResponse.json({ success: false, message: 'API Key missing' }, { status: 500 }); // Return 500 to signal error
         }
 
         // Send Email
@@ -26,12 +27,14 @@ export async function POST(request: Request) {
         });
 
         if (error) {
-            console.error('Email Send Error:', error);
-            return NextResponse.json({ error });
+            console.error('Resend API Error:', error);
+            return NextResponse.json({ error }, { status: 500 });
         }
 
+        console.log('Email sent successfully:', data);
         return NextResponse.json({ data });
     } catch (error) {
-        return NextResponse.json({ error });
+        console.error('Unexpected API Error:', error);
+        return NextResponse.json({ error }, { status: 500 });
     }
 }

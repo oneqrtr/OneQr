@@ -193,6 +193,7 @@ export default function OnboardingPage() {
 
             // Send Welcome Email (Non-blocking)
             if (user.email) {
+                console.log('Triggering welcome email for:', user.email);
                 fetch('/api/send-welcome', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -200,7 +201,13 @@ export default function OnboardingPage() {
                         email: user.email,
                         businessName: businessName
                     })
-                }).catch(err => console.error('Email send warning:', err));
+                })
+                    .then(async (res) => {
+                        const data = await res.json();
+                        console.log('Email API Response:', data);
+                        if (!res.ok) console.error('Email API Failed:', data);
+                    })
+                    .catch(err => console.error('Email fetch error:', err));
             }
 
             setStep(3);
