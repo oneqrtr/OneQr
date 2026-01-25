@@ -426,8 +426,12 @@ export default function Home() {
             paddingBottom: '24px',
             borderBottom: '1px solid #374151'
           }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '20px' }}>
-              <img src="/images/payments/iyzico.svg" alt="iyzico Güvenli Ödeme" style={{ height: '40px', objectFit: 'contain' }} />
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              <img
+                src="/images/payments/iyzico_footer.png"
+                alt="iyzico Güvenli Ödeme"
+                style={{ height: 'auto', maxHeight: '50px', maxWidth: '100%', objectFit: 'contain' }}
+              />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
