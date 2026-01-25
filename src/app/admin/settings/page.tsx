@@ -313,10 +313,12 @@ export default function SettingsPage() {
                                         onClick={() => setHeroTab('gallery')}
                                         style={{
                                             padding: '8px 16px',
-                                            borderBottom: heroTab === 'gallery' ? `2px solid ${primaryColor}` : '2px solid transparent',
                                             color: heroTab === 'gallery' ? primaryColor : '#6B7280',
                                             fontWeight: 500,
-                                            background: 'none', border: 'none', borderBottom: heroTab === 'gallery' ? `2px solid ${primaryColor}` : 'none', cursor: 'pointer'
+                                            background: 'none',
+                                            border: 'none',
+                                            borderBottom: heroTab === 'gallery' ? `2px solid ${primaryColor}` : '2px solid transparent',
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         Hazır Şablonlar
@@ -326,10 +328,12 @@ export default function SettingsPage() {
                                         onClick={() => setHeroTab('upload')}
                                         style={{
                                             padding: '8px 16px',
-                                            borderBottom: heroTab === 'upload' ? `2px solid ${primaryColor}` : '2px solid transparent',
                                             color: heroTab === 'upload' ? primaryColor : '#6B7280',
                                             fontWeight: 500,
-                                            background: 'none', border: 'none', borderBottom: heroTab === 'upload' ? `2px solid ${primaryColor}` : 'none', cursor: 'pointer'
+                                            background: 'none',
+                                            border: 'none',
+                                            borderBottom: heroTab === 'upload' ? `2px solid ${primaryColor}` : '2px solid transparent',
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         Kendi Görselim
