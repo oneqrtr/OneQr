@@ -399,7 +399,7 @@ export default function Home() {
               <li><Link href="/hakkimizda">Hakkımızda</Link></li>
               <li><Link href="/bilgi">Bilgi Bankası</Link></li>
               <li><Link href="/sss">Sıkça Sorulan Sorular</Link></li>
-              <li><Link href="#">SSL Sertifikası</Link></li>
+              <li><Link href="/ssl-sertifikasi">SSL Sertifikası</Link></li>
               <li><Link href="/login">Giriş Yap</Link></li>
               <li><Link href="/register">Kayıt Ol</Link></li>
             </ul>
