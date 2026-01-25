@@ -427,7 +427,7 @@ export default function Home() {
             borderBottom: '1px solid #374151'
           }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '20px' }}>
-              <img src="/images/payments/payment_2.png" alt="iyzico Güvenli Ödeme" style={{ height: '40px', objectFit: 'contain' }} />
+              <img src="/images/payments/iyzico.svg" alt="iyzico Güvenli Ödeme" style={{ height: '40px', objectFit: 'contain' }} />
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
