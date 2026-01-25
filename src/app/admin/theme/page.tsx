@@ -31,11 +31,6 @@ export default function ThemePage() {
     const [heroUrl, setHeroUrl] = useState('');
     const [primaryColor, setPrimaryColor] = useState('#2563EB');
     const [heroTab, setHeroTab] = useState<'upload' | 'gallery'>('gallery');
-
-    // Contact Info States (For Preview Only)
-    const [isCallEnabled, setIsCallEnabled] = useState(false);
-    const [isWhatsappEnabled, setIsWhatsappEnabled] = useState(false);
-    const [isLocationEnabled, setIsLocationEnabled] = useState(false);
     const [description, setDescription] = useState('');
 
     const [uploading, setUploading] = useState(false);
@@ -51,7 +46,7 @@ export default function ThemePage() {
 
             const { data: rest } = await supabase
                 .from('restaurants')
-                .select('*')
+                .select('id, name, description, logo_url, hero_image_url, primary_color')
                 .eq('owner_id', user.id)
                 .single();
 
@@ -61,11 +56,6 @@ export default function ThemePage() {
                 setDescription(rest.description || '');
                 setHeroUrl(rest.hero_image_url || '');
                 setPrimaryColor(rest.primary_color || '#2563EB');
-
-                setIsCallEnabled(rest.is_call_enabled || false);
-                setIsWhatsappEnabled(rest.is_whatsapp_enabled || false);
-                setIsLocationEnabled(rest.is_location_enabled || false);
-
                 setRestaurantId(rest.id);
             }
         };
@@ -139,7 +129,7 @@ export default function ThemePage() {
                     <style jsx>{`
                         @media (min-width: 1024px) {
                             div.content-wrapper > div {
-                                grid-template-columns: 1fr 400px !important;
+                                grid-template-columns: 1fr 340px !important;
                             }
                         }
                     `}</style>
@@ -148,45 +138,8 @@ export default function ThemePage() {
                     <div style={{ background: 'white', padding: '32px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                         <form onSubmit={handleSave}>
 
-                            {/* Logo */}
+                            {/* 1. Theme Color */}
                             <div className="form-group">
-                                <label className="form-label">Logo</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '8px' }}>
-                                    <div style={{
-                                        width: '80px',
-                                        height: '80px',
-                                        borderRadius: '50%',
-                                        background: '#F3F4F6',
-                                        overflow: 'hidden',
-                                        border: '1px solid var(--border-color)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: 0
-                                    }}>
-                                        {logoUrl ? (
-                                            <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <span style={{ fontSize: '2rem', color: '#9CA3AF' }}>📷</span>
-                                        )}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => handleImageUpload(e, 'logos', setLogoUrl)}
-                                            disabled={uploading}
-                                            style={{ marginBottom: '8px', width: '100%' }}
-                                        />
-                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>
-                                            Önerilen: 500x500px kare görsel
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Theme Color */}
-                            <div className="form-group" style={{ marginTop: '32px' }}>
                                 <label className="form-label" style={{ marginBottom: '12px' }}>Tema Rengi</label>
                                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                                     {THEME_COLORS.map(color => (
@@ -228,7 +181,44 @@ export default function ThemePage() {
                                 </div>
                             </div>
 
-                            {/* Hero Image */}
+                            {/* 2. Logo */}
+                            <div className="form-group" style={{ marginTop: '32px' }}>
+                                <label className="form-label">Logo</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '8px' }}>
+                                    <div style={{
+                                        width: '80px',
+                                        height: '80px',
+                                        borderRadius: '50%',
+                                        background: '#F3F4F6',
+                                        overflow: 'hidden',
+                                        border: '1px solid var(--border-color)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        {logoUrl ? (
+                                            <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <span style={{ fontSize: '2rem', color: '#9CA3AF' }}>📷</span>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => handleImageUpload(e, 'logos', setLogoUrl)}
+                                            disabled={uploading}
+                                            style={{ marginBottom: '8px', width: '100%' }}
+                                        />
+                                        <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>
+                                            Önerilen: 500x500px kare görsel
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Hero Image */}
                             <div className="form-group" style={{ marginTop: '32px' }}>
                                 <label className="form-label">Kapak Görseli (Hero)</label>
 
@@ -266,14 +256,14 @@ export default function ThemePage() {
                                 </div>
 
                                 {heroTab === 'gallery' ? (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '12px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
                                         {DEFAULT_COVERS.map((cover) => (
                                             <div
                                                 key={cover.id}
                                                 onClick={() => setHeroUrl(cover.src)}
                                                 style={{
                                                     aspectRatio: '16/9',
-                                                    borderRadius: '8px',
+                                                    borderRadius: '6px',
                                                     overflow: 'hidden',
                                                     cursor: 'pointer',
                                                     border: heroUrl === cover.src ? `3px solid ${primaryColor}` : '1px solid transparent',
@@ -282,8 +272,8 @@ export default function ThemePage() {
                                             >
                                                 <img src={cover.src} alt={cover.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 {heroUrl === cover.src && (
-                                                    <div style={{ position: 'absolute', top: 4, right: 4, background: primaryColor, borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <i className="fa-solid fa-check" style={{ color: 'white', fontSize: '10px' }}></i>
+                                                    <div style={{ position: 'absolute', top: 2, right: 2, background: primaryColor, borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <i className="fa-solid fa-check" style={{ color: 'white', fontSize: '8px' }}></i>
                                                     </div>
                                                 )}
                                             </div>
@@ -317,12 +307,12 @@ export default function ThemePage() {
                     <div className="preview-column">
                         <div style={{
                             position: 'sticky',
-                            top: '100px',
+                            top: '40px',
                             background: '#111827',
                             border: '12px solid #111827',
                             borderRadius: '40px',
-                            width: '320px',
-                            height: '650px',
+                            width: '300px',
+                            height: '600px',
                             margin: '0 auto',
                             overflow: 'hidden',
                             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
@@ -370,29 +360,10 @@ export default function ThemePage() {
                                     <p style={{ fontSize: '0.9rem', color: '#6B7280', marginTop: '4px' }}>{description || 'İşletme açıklaması burada görünecek.'}</p>
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '20px' }}>
-                                    {isCallEnabled && (
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: primaryColor, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                                            <i className="fa-solid fa-phone"></i>
-                                        </div>
-                                    )}
-                                    {isWhatsappEnabled && (
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#25D366', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                                            <i className="fa-brands fa-whatsapp"></i>
-                                        </div>
-                                    )}
-                                    {isLocationEnabled && (
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#EA4335', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                                            <i className="fa-solid fa-location-dot"></i>
-                                        </div>
-                                    )}
-                                </div>
-
                                 {/* Placeholder Categories */}
                                 <div style={{ padding: '20px' }}>
                                     <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
-                                        {['Popüler', 'Ana Yemek', 'İçecekler', 'Tatlılar'].map((cat, i) => (
+                                        {['Popüler', 'Ana Yemek', 'İçecekler'].map((cat, i) => (
                                             <div key={i} style={{
                                                 padding: '6px 16px',
                                                 background: i === 0 ? primaryColor : 'white',
