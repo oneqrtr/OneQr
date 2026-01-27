@@ -40,8 +40,7 @@ export default function MenuManagementPage() {
 
     const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
     const [productImage, setProductImage] = useState<File | null>(null);
-    const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
-    const [productImage, setProductImage] = useState<File | null>(null);
+
     const [isEditModeProduct, setIsEditModeProduct] = useState(false); // Track if editing product
 
     // Bulk Edit States
