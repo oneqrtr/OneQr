@@ -55,7 +55,7 @@ export default function MenuManagementPage() {
     const [variantName, setVariantName] = useState('');
     const [variantPrice, setVariantPrice] = useState<number | string>(0);
     const [variantDesc, setVariantDesc] = useState('');
-    const [variantDesc, setVariantDesc] = useState('');
+
     const [isSavingVariant, setIsSavingVariant] = useState(false);
     const [isVariantSectionOpen, setIsVariantSectionOpen] = useState(false);
 
