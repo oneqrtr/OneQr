@@ -24,7 +24,9 @@ export default function SuperAdminPage() {
     // Data State
     const [loading, setLoading] = useState(false);
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+
     const [paymentNotifications, setPaymentNotifications] = useState<any[]>([]);
+    const [notificationCount, setNotificationCount] = useState(0);
 
     const router = useRouter();
     const supabase = createClient();
@@ -38,6 +40,7 @@ export default function SuperAdminPage() {
             if (storedPass) {
                 setPassword(storedPass);
                 fetchRestaurants(storedPass);
+                fetchPayments(storedPass); // Fetch payments to check for notifications initially
             } else {
                 setIsAuthenticated(false);
             }
@@ -65,6 +68,7 @@ export default function SuperAdminPage() {
                 setIsAuthenticated(true);
                 sessionStorage.setItem('superadmin_auth', 'true');
                 sessionStorage.setItem('superadmin_pass', password);
+                fetchPayments(password); // Fetch notifications on login
                 setLoading(false);
             }
         } catch (err: any) {
@@ -94,16 +98,39 @@ export default function SuperAdminPage() {
         if (error) {
             console.error('Payment fetch error:', error);
         } else {
-            setPaymentNotifications(data || []);
+            const payments = data || [];
+            setPaymentNotifications(payments);
+            // Count unseen
+            const unseen = payments.filter((p: any) => p.is_seen === false).length;
+            setNotificationCount(unseen);
         }
         setLoading(false);
+    };
+
+    const markPaymentsSeen = async () => {
+        const { error } = await supabase.rpc('superadmin_mark_payments_seen', {
+            pass: password
+        });
+        if (!error) {
+            setNotificationCount(0);
+            // Optionally update local state's matches to is_seen=true to avoid refetch
+            setPaymentNotifications(prev => prev.map(p => ({ ...p, is_seen: true })));
+        }
     };
 
     // Effect to fetch data when tab changes 
     useEffect(() => {
         if (!isAuthenticated) return;
-        if (activeTab === 'restaurants') fetchRestaurants();
-        if (activeTab === 'payments') fetchPayments();
+
+        if (activeTab === 'restaurants') {
+            fetchRestaurants();
+            fetchPayments(); // Check for notifications in background
+        } else if (activeTab === 'payments') {
+            fetchPayments().then(() => {
+                // Mark as seen after fetching
+                markPaymentsSeen();
+            });
+        }
     }, [activeTab, isAuthenticated]);
 
     const handlePaymentAction = async (id: string, action: 'approve' | 'reject') => {
@@ -289,8 +316,15 @@ export default function SuperAdminPage() {
                     <div onClick={() => { setActiveTab('restaurants'); setMobileMenuOpen(false); }} style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', background: activeTab === 'restaurants' ? '#374151' : 'transparent', color: activeTab === 'restaurants' ? 'white' : '#9CA3AF' }}>
                         <i className="fa-solid fa-utensils"></i> Restoranlar
                     </div>
-                    <div onClick={() => { setActiveTab('payments'); setMobileMenuOpen(false); }} style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', background: activeTab === 'payments' ? '#374151' : 'transparent', color: activeTab === 'payments' ? 'white' : '#9CA3AF' }}>
-                        <i className="fa-solid fa-credit-card"></i> Ödemeler
+                    <div onClick={() => { setActiveTab('payments'); setMobileMenuOpen(false); }} style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', background: activeTab === 'payments' ? '#374151' : 'transparent', color: activeTab === 'payments' ? 'white' : '#9CA3AF', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <i className="fa-solid fa-credit-card"></i> Ödemeler
+                        </div>
+                        {notificationCount > 0 && (
+                            <span style={{ background: '#EF4444', color: 'white', fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '12px' }}>
+                                {notificationCount}
+                            </span>
+                        )}
                     </div>
                 </nav>
 

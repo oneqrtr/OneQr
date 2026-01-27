@@ -468,11 +468,19 @@ export default function OnboardingPage() {
                                             {createdSlug && (
                                                 <QRCodeSVG
                                                     value={`https://oneqr.tr/menu/${createdSlug}`}
-                                                    size={150}
+                                                    size={180}
                                                     bgColor={"#ffffff"}
                                                     fgColor={"#000000"}
-                                                    level={"L"}
+                                                    level={"H"}
                                                     includeMargin={false}
+                                                    imageSettings={{
+                                                        src: "/logo-qr.png",
+                                                        x: undefined,
+                                                        y: undefined,
+                                                        height: 40,
+                                                        width: 40,
+                                                        excavate: true,
+                                                    }}
                                                 />
                                             )}
                                         </div>
