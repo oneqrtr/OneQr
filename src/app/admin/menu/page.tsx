@@ -40,7 +40,13 @@ export default function MenuManagementPage() {
 
     const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
     const [productImage, setProductImage] = useState<File | null>(null);
+    const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
+    const [productImage, setProductImage] = useState<File | null>(null);
     const [isEditModeProduct, setIsEditModeProduct] = useState(false); // Track if editing product
+
+    // Bulk Edit States
+    const [isBulkMode, setIsBulkMode] = useState(false);
+    const [bulkPrices, setBulkPrices] = useState<{ [key: string]: number }>({});
 
     const supabase = createClient();
 
@@ -299,23 +305,134 @@ export default function MenuManagementPage() {
         }
     };
 
+    // --- BULK ACTIONS ---
+
+    const toggleBulkMode = () => {
+        if (!isBulkMode) {
+            // Enter bulk mode: populate dictionary
+            const initialPrices: { [key: string]: number } = {};
+            products.forEach(p => {
+                initialPrices[p.id] = p.price;
+            });
+            setBulkPrices(initialPrices);
+        }
+        setIsBulkMode(!isBulkMode);
+    };
+
+    const handleBulkPriceChange = (id: string, newPrice: string) => {
+        setBulkPrices(prev => ({
+            ...prev,
+            [id]: parseFloat(newPrice) || 0
+        }));
+    };
+
+    const handleSaveBulkPrices = async () => {
+        setIsSaving(true);
+        // Optimize: find only changed items
+        const updates = [];
+        for (const product of products) {
+            const newPrice = bulkPrices[product.id];
+            if (newPrice !== undefined && newPrice !== product.price) {
+                updates.push(
+                    supabase.from('products').update({ price: newPrice }).eq('id', product.id)
+                );
+            }
+        }
+
+        if (updates.length === 0) {
+            setIsSaving(false);
+            setIsBulkMode(false);
+            return;
+        }
+
+        try {
+            await Promise.all(updates);
+            await fetchData();
+            setIsBulkMode(false);
+        } catch (error: any) {
+            console.error('Bulk update error', error);
+            alert('Toplu güncelleme sırasında hata oluştu.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <>
             <Topbar title="Menü Yönetimi" />
             <div className="content-wrapper">
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '24px' }}>
-                    <button onClick={() => openCategoryModal()} className="btn btn-outline btn-sm">
-                        <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i> Kategori Ekle
-                    </button>
-                    <button onClick={() => openProductModal()} className="btn btn-primary btn-sm">
-                        <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i> Ürün Ekle
-                    </button>
+                    {!isBulkMode ? (
+                        <>
+                            <button onClick={toggleBulkMode} className="btn btn-outline btn-sm">
+                                <i className="fa-solid fa-tags" style={{ marginRight: '6px' }}></i> Toplu Fiyat Değişikliği
+                            </button>
+                            <button onClick={() => openCategoryModal()} className="btn btn-outline btn-sm">
+                                <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i> Kategori Ekle
+                            </button>
+                            <button onClick={() => openProductModal()} className="btn btn-primary btn-sm">
+                                <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i> Ürün Ekle
+                            </button>
+                        </>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Toplu Fiyat Düzenleme</h3>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button onClick={toggleBulkMode} disabled={isSaving} className="btn btn-outline btn-sm">
+                                    İptal
+                                </button>
+                                <button onClick={handleSaveBulkPrices} disabled={isSaving} className="btn btn-primary btn-sm">
+                                    {isSaving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (
                     <div>Yükleniyor...</div>
+                ) : isBulkMode ? (
+                    // BULK MODE VIEW
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'white', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        {products.length === 0 && <p className="text-gray-500">Düzenlenecek ürün bulunamadı.</p>}
+                        {products.map(product => (
+                            <div key={product.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid #f3f4f6' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                                    <div style={{ width: '50px', height: '50px', background: '#f3f4f6', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                                        {product.image_url ? (
+                                            <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                                                <i className="fa-solid fa-image"></i>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ fontWeight: 600, fontSize: '1rem' }}>{product.name}</div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="number"
+                                            value={bulkPrices[product.id] ?? product.price}
+                                            onChange={(e) => handleBulkPriceChange(product.id, e.target.value)}
+                                            style={{
+                                                width: '120px',
+                                                padding: '8px 12px',
+                                                border: '1px solid #d1d5db',
+                                                borderRadius: '6px',
+                                                fontSize: '1rem',
+                                                textAlign: 'right'
+                                            }}
+                                        />
+                                        <span style={{ position: 'absolute', right: '30px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none', fontSize: '0.9rem' }}>₺</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : (
+                    // NORMAL VIEW
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                         {categories.map(cat => (
                             <div key={cat.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px' }}>
