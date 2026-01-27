@@ -17,8 +17,8 @@ interface Restaurant {
 export default function SuperAdminPage() {
     // Auth State
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [password, setPassword] = useState('');
-    const [activeTab, setActiveTab] = useState('restaurants'); // 'restaurants', 'payments'
+    const [verifying, setVerifying] = useState(true);
+    const [activeTab, setActiveTab] = useState('restaurants');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Data State
@@ -31,70 +31,47 @@ export default function SuperAdminPage() {
     const router = useRouter();
     const supabase = createClient();
 
-    // Check session storage on mount
+    // Check Auth and Superadmin Status
     useEffect(() => {
-        const storedAuth = sessionStorage.getItem('superadmin_auth');
-        if (storedAuth === 'true') {
-            setIsAuthenticated(true);
-            const storedPass = sessionStorage.getItem('superadmin_pass');
-            if (storedPass) {
-                setPassword(storedPass);
-                fetchRestaurants(storedPass);
-                fetchPayments(storedPass); // Fetch payments to check for notifications initially
-            } else {
-                setIsAuthenticated(false);
+        const checkAccess = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                // Not logged in
+                router.push('/login?next=/superadmin');
+                return;
             }
-        }
-    }, []);
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const { data, error } = await supabase.rpc('superadmin_get_restaurants', {
-                pass: password
-            });
+            // Try to fetch restaurants to verify superadmin access
+            // We use 'superadmin_get_restaurants' which now checks 'is_super_admin()' implicitly
+            const { error } = await supabase.rpc('superadmin_get_restaurants');
 
             if (error) {
-                console.error(error);
-                if (error.message.includes('Could not find the function')) {
-                    alert('Sistem Hatası: SQL fonksiyonları eksik.');
-                } else {
-                    alert('Giriş başarısız: ' + error.message);
-                }
-                setLoading(false);
+                console.error('Access Denied', error);
+                alert('Erişim Reddedildi: Bu sayfayı görüntüleme yetkiniz yok.');
+                router.push('/'); // Redirect to home or admin dashboard
             } else {
-                setRestaurants(data || []);
                 setIsAuthenticated(true);
-                sessionStorage.setItem('superadmin_auth', 'true');
-                sessionStorage.setItem('superadmin_pass', password);
-                fetchPayments(password); // Fetch notifications on login
-                setLoading(false);
+                fetchRestaurants();
+                fetchPayments();
             }
-        } catch (err: any) {
-            alert('Hata: ' + err.message);
-            setLoading(false);
-        }
-    };
+            setVerifying(false);
+        };
 
-    const fetchRestaurants = async (passToUse?: string) => {
+        checkAccess();
+    }, []);
+
+    const fetchRestaurants = async () => {
         setLoading(true);
-        const p = passToUse || password;
-        const { data, error } = await supabase.rpc('superadmin_get_restaurants', {
-            pass: p
-        });
+        const { data, error } = await supabase.rpc('superadmin_get_restaurants');
         if (!error) {
             setRestaurants(data || []);
         }
         setLoading(false);
     };
 
-    const fetchPayments = async (passToUse?: string) => {
+    const fetchPayments = async () => {
         setLoading(true);
-        const p = passToUse || password;
-        const { data, error } = await supabase.rpc('superadmin_get_payments', {
-            pass: p
-        });
+        const { data, error } = await supabase.rpc('superadmin_get_payments');
         if (error) {
             console.error('Payment fetch error:', error);
         } else {
@@ -108,9 +85,7 @@ export default function SuperAdminPage() {
     };
 
     const markPaymentsSeen = async () => {
-        const { error } = await supabase.rpc('superadmin_mark_payments_seen', {
-            pass: password
-        });
+        const { error } = await supabase.rpc('superadmin_mark_payments_seen');
         if (!error) {
             setNotificationCount(0);
             // Optionally update local state's matches to is_seen=true to avoid refetch
@@ -139,7 +114,6 @@ export default function SuperAdminPage() {
         const rpcName = action === 'approve' ? 'superadmin_approve_payment' : 'superadmin_reject_payment';
 
         const { error } = await supabase.rpc(rpcName, {
-            pass: password,
             notification_id: id
         });
 
@@ -189,7 +163,6 @@ export default function SuperAdminPage() {
 
         // Unified RPC Call
         const { error } = await supabase.rpc('superadmin_update_restaurant_details', {
-            pass: password,
             target_id: id,
             new_name: newName,
             new_slug: newSlug,
@@ -239,7 +212,6 @@ export default function SuperAdminPage() {
         if (!confirm(`${name} restoranını silmek istediğinize emin misiniz?`)) return;
 
         const { error } = await supabase.rpc('superadmin_delete_restaurant', {
-            pass: password,
             target_id: id
         });
 
@@ -251,31 +223,17 @@ export default function SuperAdminPage() {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         setIsAuthenticated(false);
-        setPassword('');
-        sessionStorage.removeItem('superadmin_auth');
-        sessionStorage.removeItem('superadmin_pass');
+        router.push('/login');
     };
 
-    if (!isAuthenticated) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F3F4F6' }}>
-                <div style={{ background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '24px', textAlign: 'center' }}>Superadmin Girişi</h1>
-                    <form onSubmit={handleLogin}>
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Yönetici Şifresi</label>
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB' }} required />
-                        </div>
-                        <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px', background: '#111827', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
-                            {loading ? 'Kontrol...' : 'Giriş Yap'}
-                        </button>
-                    </form>
-                </div>
-            </div>
-        );
+    if (verifying) {
+        return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Yetki kontrolü yapılıyor...</div>;
     }
+
+    if (!isAuthenticated) return null; // Will redirect in useEffect
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
