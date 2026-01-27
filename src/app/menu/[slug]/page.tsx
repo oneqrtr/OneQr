@@ -45,6 +45,15 @@ interface Product {
     is_available: boolean;
 }
 
+interface Variant {
+    id: string;
+    product_id: string;
+    name: string;
+    description?: string;
+    price: number;
+    is_available: boolean;
+}
+
 export default function PublicMenuPage() {
     const params = useParams();
     const slug = params?.slug as string;
@@ -53,6 +62,7 @@ export default function PublicMenuPage() {
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [variants, setVariants] = useState<Variant[]>([]);
     const [activeCategory, setActiveCategory] = useState<string>('');
     const [selectedImage, setSelectedImage] = useState<string>(''); // For Image Modal
 
@@ -99,7 +109,19 @@ export default function PublicMenuPage() {
                         .eq('is_visible', true)
                         .order('display_order', { ascending: true });
 
-                    if (prodData) setProducts(prodData);
+                    if (prodData) {
+                        setProducts(prodData);
+
+                        // 4. Fetch Variants
+                        const prodIds = prodData.map(p => p.id);
+                        const { data: varData } = await supabase
+                            .from('product_variants')
+                            .select('*')
+                            .in('product_id', prodIds)
+                            .eq('is_available', true);
+
+                        if (varData) setVariants(varData);
+                    }
                 }
 
             } catch (error) {
@@ -328,6 +350,28 @@ export default function PublicMenuPage() {
                                             {product.description && (
                                                 <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '8px', lineHeight: '1.4' }}>{product.description}</p>
                                             )}
+
+                                            {/* Variants Display */}
+                                            {variants.filter(v => v.product_id === product.id).length > 0 && (
+                                                <div style={{ marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                    {variants.filter(v => v.product_id === product.id).map(variant => (
+                                                        <span key={variant.id} style={{
+                                                            fontSize: '0.75rem',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '12px',
+                                                            background: '#F3F4F6',
+                                                            color: '#4B5563',
+                                                            border: '1px solid #E5E7EB',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <strong style={{ fontWeight: 600, marginRight: '4px' }}>{variant.name}</strong>
+                                                            {variant.price > 0 ? `+${variant.price} ${restaurant.currency}` : ''}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
                                             <div style={{ fontSize: '1rem', fontWeight: 700, color: restaurant.theme_color }}>
                                                 {product.price} {restaurant.currency}
                                             </div>
