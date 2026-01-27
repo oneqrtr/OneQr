@@ -55,7 +55,9 @@ export default function MenuManagementPage() {
     const [variantName, setVariantName] = useState('');
     const [variantPrice, setVariantPrice] = useState<number | string>(0);
     const [variantDesc, setVariantDesc] = useState('');
+    const [variantDesc, setVariantDesc] = useState('');
     const [isSavingVariant, setIsSavingVariant] = useState(false);
+    const [isVariantSectionOpen, setIsVariantSectionOpen] = useState(false);
 
     const [isEditModeProduct, setIsEditModeProduct] = useState(false); // Track if editing product
 
@@ -653,77 +655,101 @@ export default function MenuManagementPage() {
                                 />
                             </div>
 
-                            {/* Variants Section */}
+                            {/* Variants Section - Accordion */}
                             {isEditModeProduct && editingProduct.id && (
-                                <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', marginBottom: '20px', background: '#F9FAFB' }}>
-                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
-                                        <i className="fa-solid fa-layer-group" style={{ marginRight: '8px', color: '#4B5563' }}></i>
-                                        Varyasyonlar / Seçenekler
-                                    </h4>
-
-                                    {/* Variant List */}
-                                    <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        {allVariants.filter(v => v.product_id === editingProduct.id).map(variant => (
-                                            <div key={variant.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{variant.name}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>
-                                                        {variant.description ? `${variant.description} • ` : ''}
-                                                        {variant.price > 0 ? `+${variant.price}₺` : 'Fiyat Farkı Yok'}
-                                                    </div>
-                                                </div>
-                                                <button type="button" onClick={() => handleDeleteVariant(variant.id)} className="btn btn-ghost btn-xs" style={{ color: '#EF4444' }}>
-                                                    <i className="fa-solid fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {allVariants.filter(v => v.product_id === editingProduct.id).length === 0 && (
-                                            <div style={{ fontSize: '0.85rem', color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '8px' }}>Henüz varyasyon eklenmemiş.</div>
-                                        )}
-                                    </div>
-
-                                    {/* Add Variant Form - Mini */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        <input
-                                            placeholder="Varyasyon Adı (Örn: Büyük Boy)"
-                                            className="form-input"
-                                            style={{ padding: '6px 10px', fontSize: '0.85rem' }}
-                                            value={variantName}
-                                            onChange={e => setVariantName(e.target.value)}
-                                        />
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <div style={{ flex: 1, position: 'relative' }}>
-                                                <input
-                                                    type="number"
-                                                    placeholder="Ek Ücret (0 olabilir)"
-                                                    className="form-input"
-                                                    style={{ padding: '6px 10px 6px 8px', fontSize: '0.85rem' }}
-                                                    value={variantPrice}
-                                                    onChange={e => setVariantPrice(e.target.value)}
-                                                />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleAddVariant}
-                                                disabled={isSavingVariant || !variantName}
-                                                className="btn btn-primary btn-xs"
-                                                style={{ whiteSpace: 'nowrap' }}
-                                            >
-                                                Ekle
-                                            </button>
+                                <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '20px', background: '#F9FAFB', overflow: 'hidden' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsVariantSectionOpen(!isVariantSectionOpen)}
+                                        style={{
+                                            width: '100%',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '12px 16px',
+                                            background: '#F3F4F6',
+                                            border: 'none',
+                                            borderBottom: isVariantSectionOpen ? '1px solid #E5E7EB' : 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '0.95rem',
+                                            fontWeight: 600,
+                                            color: '#374151'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <i className="fa-solid fa-layer-group" style={{ marginRight: '8px', color: '#4B5563' }}></i>
+                                            Varyasyonlar / Seçenekler
                                         </div>
-                                        <textarea
-                                            placeholder="Açıklama (İsteğe bağlı)"
-                                            className="form-input"
-                                            rows={1}
-                                            style={{ padding: '6px 10px', fontSize: '0.85rem', minHeight: '34px' }}
-                                            value={variantDesc}
-                                            onChange={e => setVariantDesc(e.target.value)}
-                                        />
-                                        <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
-                                            * Fiyat farkı ana fiyata eklenir. 0 girerseniz fiyat değişmez.
-                                        </p>
-                                    </div>
+                                        <i className={`fa-solid ${isVariantSectionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ fontSize: '0.8rem' }}></i>
+                                    </button>
+
+                                    {isVariantSectionOpen && (
+                                        <div style={{ padding: '16px' }}>
+                                            {/* Variant List */}
+                                            <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {allVariants.filter(v => v.product_id === editingProduct.id).map(variant => (
+                                                    <div key={variant.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{variant.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                                                                {variant.description ? `${variant.description} • ` : ''}
+                                                                {variant.price > 0 ? `+${variant.price}₺` : 'Fiyat Farkı Yok'}
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" onClick={() => handleDeleteVariant(variant.id)} className="btn btn-ghost btn-xs" style={{ color: '#EF4444' }}>
+                                                            <i className="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {allVariants.filter(v => v.product_id === editingProduct.id).length === 0 && (
+                                                    <div style={{ fontSize: '0.85rem', color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '8px' }}>Henüz varyasyon eklenmemiş.</div>
+                                                )}
+                                            </div>
+
+                                            {/* Add Variant Form - Mini */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <input
+                                                    placeholder="Varyasyon Adı (Örn: Büyük Boy)"
+                                                    className="form-input"
+                                                    style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                                                    value={variantName}
+                                                    onChange={e => setVariantName(e.target.value)}
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <div style={{ flex: 1, position: 'relative' }}>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Ek Ücret (0 olabilir)"
+                                                            className="form-input"
+                                                            style={{ padding: '6px 10px 6px 8px', fontSize: '0.85rem' }}
+                                                            value={variantPrice}
+                                                            onChange={e => setVariantPrice(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddVariant}
+                                                        disabled={isSavingVariant || !variantName}
+                                                        className="btn btn-primary btn-xs"
+                                                        style={{ whiteSpace: 'nowrap' }}
+                                                    >
+                                                        Ekle
+                                                    </button>
+                                                </div>
+                                                <textarea
+                                                    placeholder="Açıklama (İsteğe bağlı)"
+                                                    className="form-input"
+                                                    rows={1}
+                                                    style={{ padding: '6px 10px', fontSize: '0.85rem', minHeight: '34px' }}
+                                                    value={variantDesc}
+                                                    onChange={e => setVariantDesc(e.target.value)}
+                                                />
+                                                <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '2px' }}>
+                                                    * Fiyat farkı ana fiyata eklenir. 0 girerseniz fiyat değişmez.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -780,5 +806,8 @@ const modalStyle = {
     padding: '24px',
     borderRadius: '12px',
     width: '100%',
-    maxWidth: '400px'
+    maxWidth: '400px',
+    maxHeight: '90vh', // Ensure it fits in viewport
+    overflowY: 'auto' as const, // Scrollable content
+    position: 'relative' as const // For absolute positioning inside if needed
 };
