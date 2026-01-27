@@ -8,6 +8,7 @@ interface Category {
     name: string;
     description?: string;
     display_order: number;
+    is_visible?: boolean;
 }
 
 interface Product {
@@ -19,6 +20,7 @@ interface Product {
     image_url?: string;
     is_available: boolean;
     display_order: number;
+    is_visible?: boolean;
 }
 
 export default function MenuManagementPage() {
@@ -173,6 +175,22 @@ export default function MenuManagementPage() {
         }
     };
 
+    const handleToggleCategoryVisibility = async (category: Category) => {
+        const newStatus = !category.is_visible;
+        // Optimistic update
+        setCategories(categories.map(c => c.id === category.id ? { ...c, is_visible: newStatus } : c));
+
+        const { error } = await supabase
+            .from('categories')
+            .update({ is_visible: newStatus })
+            .eq('id', category.id);
+
+        if (error) {
+            alert('Güncelleme başarısız: ' + error.message);
+            fetchData(); // Revert
+        }
+    };
+
     // --- PRODUCT ACTIONS ---
 
     const openProductModal = (product?: Product) => {
@@ -265,6 +283,22 @@ export default function MenuManagementPage() {
         if (!error) fetchData();
     };
 
+    const handleToggleProductVisibility = async (product: Product) => {
+        const newStatus = !product.is_visible;
+        // Optimistic update
+        setProducts(products.map(p => p.id === product.id ? { ...p, is_visible: newStatus } : p));
+
+        const { error } = await supabase
+            .from('products')
+            .update({ is_visible: newStatus })
+            .eq('id', product.id);
+
+        if (error) {
+            alert('Güncelleme başarısız: ' + error.message);
+            fetchData(); // Revert
+        }
+    };
+
     return (
         <>
             <Topbar title="Menü Yönetimi" />
@@ -288,6 +322,14 @@ export default function MenuManagementPage() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F3F4F6', paddingBottom: '12px' }}>
                                     <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{cat.name}</h3>
                                     <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={() => handleToggleCategoryVisibility(cat)}
+                                            className={`btn btn-xs ${cat.is_visible === false ? 'btn-outline' : 'btn-ghost'}`}
+                                            style={{ padding: '4px 8px', fontSize: '0.8rem', color: cat.is_visible === false ? '#9CA3AF' : '#4B5563' }}
+                                            title={cat.is_visible === false ? 'Göster' : 'Gizle'}
+                                        >
+                                            <i className={`fa-solid ${cat.is_visible === false ? 'fa-eye-slash' : 'fa-eye'}`}></i> {cat.is_visible === false ? 'Göster' : 'Gizle'}
+                                        </button>
                                         <button onClick={() => openCategoryModal(cat)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem' }}>
                                             <i className="fa-solid fa-pencil"></i> Düzenle
                                         </button>
@@ -320,6 +362,14 @@ export default function MenuManagementPage() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <button onClick={() => openProductModal(product)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
                                                     Düzenle
+                                                </button>
+                                                <button
+                                                    onClick={() => handleToggleProductVisibility(product)}
+                                                    className={`btn btn-xs ${product.is_visible === false ? 'btn-outline' : 'btn-ghost'}`}
+                                                    style={{ padding: '4px 8px', fontSize: '0.75rem', color: product.is_visible === false ? '#9CA3AF' : '#4B5563' }}
+                                                    title={product.is_visible === false ? 'Göster' : 'Gizle'}
+                                                >
+                                                    <i className={`fa-solid ${product.is_visible === false ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                                                 </button>
                                                 <button onClick={() => handleDeleteProduct(product.id)} className="btn btn-xs btn-outline" style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#EF4444', borderColor: '#EF4444' }}>
                                                     Kaldır

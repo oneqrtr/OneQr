@@ -80,6 +80,7 @@ export default function PublicMenuPage() {
                     .from('categories')
                     .select('*')
                     .eq('restaurant_id', restData.id)
+                    .eq('is_visible', true)
                     .order('display_order', { ascending: true });
 
                 if (catData) {
@@ -95,6 +96,7 @@ export default function PublicMenuPage() {
                         .select('*')
                         .in('category_id', catIds)
                         .eq('is_available', true)
+                        .eq('is_visible', true)
                         .order('display_order', { ascending: true });
 
                     if (prodData) setProducts(prodData);
