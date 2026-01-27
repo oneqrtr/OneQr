@@ -110,11 +110,11 @@ export default function QrPage() {
                                 size={200}
                                 level="H"
                                 imageSettings={{
-                                    src: "/logo-standard.png",
+                                    src: "/logo-qr.png",
                                     x: undefined,
                                     y: undefined,
-                                    height: 24,
-                                    width: 24,
+                                    height: 45,
+                                    width: 45,
                                     excavate: true,
                                 }}
                             />
