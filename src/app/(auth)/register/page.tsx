@@ -23,7 +23,7 @@ export default function RegisterPage() {
         const supabase = createClient();
 
         // 1. Sign up user
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
         });
@@ -34,8 +34,24 @@ export default function RegisterPage() {
             return;
         }
 
-        // 2. Redirect to onboarding
-        router.push('/onboarding');
+        // Check if session exists (Auto-login successful)
+        if (data.session) {
+            router.push('/onboarding');
+        } else if (data.user) {
+            // User created but no session => Email confirmation required
+            // However, sometimes we might want to try signing in immediately if config allows, 
+            // but usually this means 'Confirm your email'.
+            // For smoother UX if email confirm is NOT required but session wasn't returned for some reason:
+            // Attempt explicit sign in (optional, but 'signUp' usually handles this if allowed).
+
+            // If the user created an account successfully but isn't logged in, it's 99% email verification.
+            setError('Kayıt başarılı! Lütfen e-posta adresinize gönderilen doğrulama linkine tıklayın. Ardından giriş yapabilirsiniz.');
+            setLoading(false);
+        } else {
+            // Should not happen with no error
+            setError('Bir hata oluştu.');
+            setLoading(false);
+        }
     };
 
     const handleGoogleLogin = async () => {
