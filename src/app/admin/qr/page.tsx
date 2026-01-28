@@ -15,6 +15,8 @@ export default function QrPage() {
     const [qrColor, setQrColor] = useState('#000000');
     const [useLogo, setUseLogo] = useState(true);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [qrType, setQrType] = useState<'menu' | 'card'>('menu');
+    const [plan, setPlan] = useState('freemium');
 
     const supabase = createClient();
 
@@ -29,7 +31,7 @@ export default function QrPage() {
             for (let i = 0; i < 3; i++) {
                 const { data } = await supabase
                     .from('restaurants')
-                    .select('slug, name, logo_url')  // Changed to include logo_url
+                    .select('slug, name, logo_url, plan')
                     .eq('owner_id', user.id)
                     .maybeSingle();
 
@@ -44,10 +46,13 @@ export default function QrPage() {
                 setSlug(rest.slug);
                 setBusinessName(rest.name);
                 setLogoUrl(rest.logo_url);
+                setPlan(rest.plan || 'freemium');
             }
         };
         fetchInfo();
     }, []);
+
+    const isEligibleForCard = plan === 'plusimum' || plan === 'trial';
 
     const handleDownload = async () => {
         if (!qrRef.current) return;
