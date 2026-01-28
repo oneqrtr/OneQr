@@ -96,7 +96,7 @@ export default function Sidebar() {
                         <div style={{ flex: 1, overflow: 'hidden' }}>
                             <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#111827' }}>{businessName}</div>
                             <div style={{ color: '#2563EB', fontSize: '0.75rem', fontWeight: 500 }}>
-                                {plan === 'pro' ? 'Pro Plan' : plan === 'monthly' ? 'Aylık Plan' : plan === 'yearly' ? 'Yıllık Plan' : 'Deneme Sürümü'}
+                                {plan === 'plusimum' ? 'Plusimum Plan' : plan === 'premium' ? 'Premium Plan' : plan === 'freemium' ? 'Freemium' : plan === 'trial' ? 'Deneme Sürümü' : 'Paket Seçilmedi'}
                             </div>
                         </div>
                         <i className="fa-solid fa-chevron-up" style={{ fontSize: '0.8rem', color: '#9CA3AF' }}></i>
@@ -129,7 +129,7 @@ export default function Sidebar() {
                                     <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', marginBottom: 'auto' }}>
                                         <div style={{ fontSize: '0.8rem', color: '#6B7280', marginBottom: '4px' }}>Mevcut Plan</div>
                                         <div style={{ fontSize: '1.1rem', fontWeight: 600, color: plan === 'trial' ? '#D97706' : '#059669' }}>
-                                            {plan === 'pro' || plan === 'yearly' ? 'Yıllık Pro' : plan === 'monthly' ? 'Aylık Pro' : 'Deneme Sürümü'}
+                                            {plan === 'plusimum' ? 'Plusimum' : plan === 'premium' ? 'Premium' : plan === 'freemium' ? 'Freemium' : 'Deneme Sürümü'}
                                         </div>
                                         {plan === 'trial' && <div style={{ fontSize: '0.8rem', color: '#D97706', marginTop: '4px' }}>Özelliklerin tadını çıkarın!</div>}
                                     </div>

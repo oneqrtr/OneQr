@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 
-import Link from 'next/link'; // Not strictly needed but good practice if link used later or just clean up
+import Link from 'next/link';
 import ContactFab from '@/components/ContactFab';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Restaurant {
     id: string;
@@ -410,7 +411,16 @@ export default function PublicMenuPage() {
                                             </div>
                                         </div>
                                         {product.image_url && (
-                                            <div style={{ width: '100px', height: '100px', flexShrink: 0, cursor: 'pointer' }} onClick={() => setSelectedImage(product.image_url || '')}>
+                                            <div style={{ width: '100px', height: '100px', flexShrink: 0, cursor: 'pointer' }} onClick={() => {
+                                                setSelectedImage(product.image_url || '');
+                                                // Log analytics
+                                                const supabase = createClient();
+                                                supabase.from('analytics').insert({
+                                                    restaurant_id: restaurant.id,
+                                                    event_type: 'view_product',
+                                                    metadata: { product_id: product.id }
+                                                }).then();
+                                            }}>
                                                 <img
                                                     src={product.image_url}
                                                     alt={product.name}
@@ -425,10 +435,6 @@ export default function PublicMenuPage() {
                     );
                 })}
             </main>
-
-            <footer style={{ textAlign: 'center', padding: '20px', color: '#9CA3AF', fontSize: '0.8rem' }}>
-                <p>Bu menü <Link href="/" style={{ color: '#374151', fontWeight: 'bold', textDecoration: 'none' }}>OneQR</Link> altyapısı ile oluşturulmuştur.</p>
-            </footer>
 
             {/* Image Modal */}
             {selectedImage && (
@@ -483,6 +489,43 @@ export default function PublicMenuPage() {
                     </div>
                 </div>
             )}
+
+
+            <footer style={{
+                background: '#111827',
+                color: 'white',
+                padding: '32px 20px',
+                textAlign: 'center',
+                marginTop: '40px'
+            }}>
+                <div style={{
+                    background: 'white',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    width: 'fit-content',
+                    margin: '0 auto 16px'
+                }}>
+                    <QRCodeSVG
+                        value="https://oneqr.tr"
+                        size={80}
+                        level="M"
+                        imageSettings={{
+                            src: "/logo-qr.png",
+                            x: undefined,
+                            y: undefined,
+                            height: 20,
+                            width: 20,
+                            excavate: true,
+                        }}
+                    />
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#9CA3AF', marginBottom: '8px' }}>
+                    Bu menü <Link href="/" style={{ color: 'white', fontWeight: 'bold', textDecoration: 'none' }}>OneQR</Link> ile oluşturuldu.
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                    Siz de kendi QR menünüzü hemen oluşturun.
+                </div>
+            </footer>
 
 
             <ContactFab

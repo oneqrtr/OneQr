@@ -595,7 +595,7 @@ export default function SuperAdminPage() {
                                         }}
                                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
                                     >
-                                        <option value="freemium">Freemium</option>
+                                        <option value="freemium">Freemium (Ücretsiz Tam Yetki)</option>
                                         <option value="premium">Premium</option>
                                         <option value="plusimum">Plusimum</option>
                                         <option value="trial">Deneme (14 Gün)</option>

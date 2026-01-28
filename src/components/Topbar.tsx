@@ -30,9 +30,14 @@ export default function Topbar({ title }: { title: string }) {
             <div className="page-title">{title}</div>
             <div className="topbar-actions">
                 {slug && (
-                    <Link href={`/menu/${slug}`} target="_blank" className="btn btn-sm btn-outline">
-                        <i className="fa-solid fa-external-link-alt" style={{ marginRight: '6px' }}></i> Menüyü Gör
-                    </Link>
+                    <>
+                        <Link href={`https://${slug}.oneqr.tr`} target="_blank" className="btn btn-sm" style={{ background: '#2563EB', color: 'white', marginRight: '8px' }}>
+                            <i className="fa-solid fa-globe" style={{ marginRight: '6px' }}></i> Siteye Git
+                        </Link>
+                        <Link href={`/menu/${slug}`} target="_blank" className="btn btn-sm btn-outline">
+                            <i className="fa-solid fa-external-link-alt" style={{ marginRight: '6px' }}></i> Menüyü Gör
+                        </Link>
+                    </>
                 )}
             </div>
         </header>

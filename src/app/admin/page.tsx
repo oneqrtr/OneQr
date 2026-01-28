@@ -8,7 +8,9 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState({
         totalViews: 0,
         activeProducts: 0,
-        categoryCount: 0
+        categoryCount: 0,
+        dailyVisitors: 0,
+        mostViewedProduct: null as { product_name: string; view_count: number } | null
     });
     const [subscription, setSubscription] = useState<{
         plan: string;
@@ -72,17 +74,27 @@ export default function AdminDashboard() {
                         realProductCount = count || 0;
                     }
 
-                    // 3. Get Analytics (Total Views)
+                    // 3. Get Analytics
+                    // A. Total Views (Existing logic)
                     const { count: viewCount } = await supabase
                         .from('analytics')
                         .select('*', { count: 'exact', head: true })
                         .eq('restaurant_id', restaurant.id)
                         .eq('event_type', 'view_menu');
 
+                    // B. Daily Visitors (RPC)
+                    const { data: dailyCount } = await supabase.rpc('get_daily_visitors', { target_restaurant_id: restaurant.id });
+
+                    // C. Most Viewed Product (RPC)
+                    const { data: topProductData } = await supabase.rpc('get_most_viewed_product', { target_restaurant_id: restaurant.id });
+                    const topProduct = topProductData && topProductData.length > 0 ? topProductData[0] : null;
+
                     setStats({
                         totalViews: viewCount || 0,
                         activeProducts: realProductCount,
-                        categoryCount: categoryIds.length
+                        categoryCount: categoryIds.length,
+                        dailyVisitors: dailyCount || 0,
+                        mostViewedProduct: topProduct
                     });
                 }
             } catch (error) {
@@ -140,16 +152,17 @@ export default function AdminDashboard() {
                             </div>
                             <div className="stat-card">
                                 <div className="stat-title">
-                                    {subscription?.plan === 'trial' ? 'Deneme Sürümü' :
-                                        subscription?.plan === 'monthly' ? 'Aylık Paket' :
-                                            subscription?.plan === 'yearly' ? 'Yıllık Paket' : 'Abonelik Durumu'}
+                                    {subscription?.plan === 'freemium' ? 'Freemium' :
+                                        subscription?.plan === 'premium' ? 'Premium' :
+                                            subscription?.plan === 'plusimum' ? 'Plusimum' :
+                                                subscription?.plan === 'trial' ? 'Deneme Sürümü' : 'Abonelik'}
                                 </div>
                                 <div className={`stat-value ${getRemainingDays() < 3 ? 'text-red-500' : 'highlight-orange'}`}>
                                     {subscription?.status === 'passive' ? 'Pasif' :
                                         getRemainingDays() > 0 ? `${getRemainingDays()} Gün Kaldı` : 'Süresi Doldu'}
                                 </div>
                                 <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#6B7280' }}>
-                                    {subscription?.plan === 'trial' ? (
+                                    {subscription?.plan === 'trial' || subscription?.plan === 'expired' ? (
                                         <Link href="/admin/settings/billing" style={{ color: 'var(--primary-color)', fontWeight: 500 }}>Paketi Yükselt →</Link>
                                     ) : (
                                         <span>Bitiş: {subscription?.ends_at ? new Date(subscription.ends_at).toLocaleDateString('tr-TR') : '-'}</span>
@@ -173,18 +186,29 @@ export default function AdminDashboard() {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                                 <div style={{ padding: '16px', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
                                     <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>Bugünkü Ziyaretçi</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>--</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Çok Yakında</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
+                                        {(stats as any).dailyVisitors ?? 0}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <i className="fa-solid fa-arrow-up"></i> Güncel
+                                    </div>
                                 </div>
                                 <div style={{ padding: '16px', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
                                     <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>En Çok Bakılan Ürün</div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>--</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Çok Yakında</div>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {(stats as any).mostViewedProduct?.product_name || '-'}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                                        {(stats as any).mostViewedProduct?.view_count ? `${(stats as any).mostViewedProduct.view_count} kez görüntülendi` : 'Veri yok'}
+                                    </div>
                                 </div>
                                 <div style={{ padding: '16px', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
                                     <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>QR Tarama Sayısı</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>--</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Çok Yakında</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
+                                        {/* Assuming QR scan is similar to view menu for now, or we can separate if we use specific query parameters for QR scans in future */}
+                                        {stats.totalViews}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Toplam Erişim</div>
                                 </div>
                             </div>
                         </div>
