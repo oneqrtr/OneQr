@@ -305,7 +305,7 @@ END:VCARD`;
 
             <div style={{ width: '100%', padding: '24px', textAlign: 'center', background: '#e5e7eb', borderTop: '1px solid #d1d5db', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: 'auto' }}>
                 <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                    Powered by <strong style={{ color: '#374151' }}>OneQR</strong>
+                    Powered by <a href="https://oneqr.tr" target="_blank" style={{ color: '#374151', fontWeight: 'bold', textDecoration: 'none' }}>OneQR</a>
                 </div>
             </div>
 

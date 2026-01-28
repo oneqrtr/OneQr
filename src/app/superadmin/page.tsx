@@ -332,8 +332,20 @@ export default function SuperAdminPage() {
                                         {restaurants.map(rest => (
                                             <tr key={rest.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                                                 <td style={{ padding: '16px' }}>
-                                                    <div style={{ fontWeight: 600 }}>{rest.name}</div>
-                                                    <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', fontSize: '0.85rem' }}>/menu/{rest.slug} ↗</a>
+                                                    <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '4px' }}>{rest.name}</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem' }}>
+                                                        <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <i className="fa-solid fa-utensils" style={{ fontSize: '0.75rem' }}></i> /menu/{rest.slug} ↗
+                                                        </a>
+                                                        <a href={`https://${rest.slug}.oneqr.tr`} target="_blank" style={{ color: '#059669', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <i className="fa-solid fa-globe" style={{ fontSize: '0.75rem' }}></i> {rest.slug}.oneqr.tr ↗
+                                                        </a>
+                                                        {(rest.plan === 'plusimum' || rest.plan === 'trial') && (
+                                                            <a href={`/k/${rest.slug}`} target="_blank" style={{ color: '#7C3AED', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <i className="fa-solid fa-address-card" style={{ fontSize: '0.75rem' }}></i> /k/{rest.slug} ↗
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td style={{ padding: '16px' }}>
                                                     <div
@@ -404,8 +416,20 @@ export default function SuperAdminPage() {
                                     <div key={rest.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                             <div>
-                                                <h3 style={{ fontWeight: 600, fontSize: '1.1rem' }}>{rest.name}</h3>
-                                                <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', fontSize: '0.9rem' }}>/menu/{rest.slug} ↗</a>
+                                                <h3 style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '8px' }}>{rest.name}</h3>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
+                                                    <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', textDecoration: 'none' }}>
+                                                        <i className="fa-solid fa-utensils"></i> Menu ↗
+                                                    </a>
+                                                    <a href={`https://${rest.slug}.oneqr.tr`} target="_blank" style={{ color: '#059669', textDecoration: 'none' }}>
+                                                        <i className="fa-solid fa-globe"></i> Domain ↗
+                                                    </a>
+                                                    {(rest.plan === 'plusimum' || rest.plan === 'trial') && (
+                                                        <a href={`/k/${rest.slug}`} target="_blank" style={{ color: '#7C3AED', textDecoration: 'none' }}>
+                                                            <i className="fa-solid fa-address-card"></i> Kartvizit ↗
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
                                             <button onClick={() => handleDelete(rest.id, rest.name)} style={{ background: '#FEE2E2', color: '#EF4444', border: 'none', padding: '8px', borderRadius: '4px' }}>
                                                 <i className="fa-solid fa-trash"></i>

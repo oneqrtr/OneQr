@@ -105,83 +105,104 @@ export default function Home() {
       `}</style>
 
       {/* Live Demo Section */}
-      <section id="demo" className="section bg-gray" style={{ paddingTop: '60px', paddingBottom: '60px' }}>
+      <section id="demo" className="section bg-gray" style={{ paddingTop: '80px', paddingBottom: '80px', background: 'linear-gradient(to bottom, #F9FAFB, #EFF6FF)' }}>
         <div className="container">
           <div className="section-header">
-            <span style={{ color: '#2563EB', fontWeight: 600, fontSize: '0.9rem', display: 'block', marginBottom: '8px' }}>CANLI ÖNİZLEME</span>
-            <h2>Sistemi Canlı Deneyimleyin</h2>
-            <p>Gerçek bir restoranın menüsünü inceleyerek sistemin nasıl çalıştığını ve hızını test edin.</p>
+            <span style={{ color: '#2563EB', fontWeight: 700, fontSize: '0.9rem', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>HEM MOBİL HEM MASAÜSTÜ</span>
+            <h2>Sadece QR Menü Değil,<br />Size Ait Profesyonel Web Sitesi</h2>
+            <p>OneQR sadece masada değil, internette de sizi temsil eder. Müşterileriniz ister cepten, ister bilgisayardan girsin; kusursuz bir deneyim yaşar.</p>
           </div>
 
           <div style={{
-            background: 'white',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)',
             display: 'flex',
-            flexDirection: 'column',
-            marginTop: '40px',
-            border: '1px solid #E5E7EB'
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '60px',
+            marginTop: '60px',
+            flexWrap: 'wrap'
           }}>
-            <div style={{
-              padding: '40px',
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '40px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ flex: 1, minWidth: '300px' }}>
-                <h3 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '16px' }}>Örnek Restoran Menüsü</h3>
-                <p style={{ color: '#4B5563', marginBottom: '24px' }}>
-                  OneQR altyapısı ile hazırlanmış örnek bir dijital menüyü inceleyin. Kategoriler arası geçişleri, ürün detaylarını ve hızlı arayüzü deneyimleyin.
-                </p>
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F3F4F6', padding: '8px 12px', borderRadius: '8px' }}>
-                    <i className="fa-solid fa-bolt" style={{ color: '#F59E0B' }}></i>
-                    <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>Anında Açılır</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F3F4F6', padding: '8px 12px', borderRadius: '8px' }}>
-                    <i className="fa-solid fa-mobile-screen" style={{ color: '#2563EB' }}></i>
-                    <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>%100 Mobil Uyumlu</span>
-                  </div>
+
+            {/* Left: Mobile Mockup */}
+            <div style={{ position: 'relative', width: '300px', flexShrink: 0 }}>
+              <div style={{
+                position: 'absolute', top: '20px', left: '-60px', background: 'white', padding: '12px 20px', borderRadius: '12px',
+                boxShadow: '0 10px 20px rgba(0,0,0,0.1)', zIndex: 10, display: 'flex', alignItems: 'center', gap: '12px', animation: 'float 4s ease-in-out infinite'
+              }}>
+                <div style={{ width: '40px', height: '40px', background: '#DEF7EC', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#03543F' }}>
+                  <i className="fa-solid fa-qrcode"></i>
                 </div>
-                <div style={{ marginTop: '32px' }}>
-                  <a href="/menu/yicem" target="_blank" className="btn btn-primary">
-                    <i className="fa-solid fa-up-right-from-square" style={{ marginRight: '8px' }}></i>
-                    Canlı Menüye Git
-                  </a>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9CA3AF' }}>Masada Okutunca</div>
+                  <div style={{ fontWeight: 700, color: '#111827' }}>Hızlı Menü</div>
                 </div>
               </div>
-              <div style={{ flex: 1, minWidth: '280px', display: 'flex', justifyContent: 'center' }}>
-                {/* Mockup Frame */}
-                <div style={{
-                  width: '350px',
-                  height: '700px',
-                  background: '#111827',
-                  borderRadius: '45px',
-                  padding: '12px',
-                  position: 'relative',
-                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
-                }}>
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    background: 'white',
-                    borderRadius: '30px',
-                    overflow: 'hidden',
-                    position: 'relative'
-                  }}>
-                    <iframe
-                      src="/menu/yicem"
-                      style={{ border: 'none', width: '100%', height: '100%' }}
-                      title="Demo Preview"
-                    />
-                  </div>
+
+              <div style={{
+                width: '300px',
+                height: '600px',
+                background: '#111827',
+                borderRadius: '40px',
+                padding: '12px',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
+                border: '4px solid #374151'
+              }}>
+                <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: '28px', overflow: 'hidden' }}>
+                  <iframe src="/menu/yicem" style={{ width: '100%', height: '100%', border: 'none' }} title="Mobile Demo" />
                 </div>
               </div>
             </div>
+
+            {/* Right: Desktop/Laptop Mockup */}
+            <div style={{ flex: 1, minWidth: '350px', maxWidth: '800px' }}>
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', background: '#F0F9FF', color: '#0369A1', padding: '6px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 600, border: '1px solid #BAE6FD', marginBottom: '16px' }}>
+                  <i className="fa-solid fa-globe" style={{ marginRight: '8px' }}></i> YENİ ÖZELLİK
+                </div>
+                <h3 style={{ fontSize: '2rem', fontWeight: 800, color: '#111827', marginBottom: '16px', lineHeight: '1.2' }}>
+                  <span style={{ color: '#2563EB' }}>adiniz.oneqr.tr</span><br />
+                  Adresinde Siteniz Hazır
+                </h3>
+                <p style={{ color: '#4B5563', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                  Müşterileriniz "yicem.oneqr.tr" gibi size özel isimlendirilmiş adresinize girdiğinde,
+                  karşılarında telefon uygulaması değil, <strong>gerçek bir yemek sipariş sitesi</strong> bulurlar.
+                  Google'da daha iyi sıralanır, marka değerinizi artırırsınız.
+                </p>
+
+                <div style={{ display: 'flex', gap: '16px', marginTop: '24px' }}>
+                  <a href="/menu/yicem" target="_blank" className="btn btn-primary btn-large">
+                    <i className="fa-solid fa-laptop" style={{ marginRight: '8px' }}></i>
+                    Canlı Web Sitesini Gör
+                  </a>
+                </div>
+              </div>
+
+              {/* Laptop Frame CSS Hack */}
+              <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  background: '#1F2937', borderRadius: '12px 12px 0 0', padding: '12px 12px 0',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: '8px 8px 0 0', overflow: 'hidden', position: 'relative' }}>
+                    {/* Overlay to encourage click */}
+                    <a href="/menu/yicem" target="_blank" style={{
+                      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.0)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      textDecoration: 'none', transition: 'background 0.3s'
+                    }} className="demo-overlay">
+                    </a>
+                    <iframe src="/menu/yicem" style={{ width: '100%', height: '200%', transform: 'scale(0.5)', transformOrigin: 'top left', border: 'none' }} title="Desktop Demo" />
+                  </div>
+                </div>
+                {/* Laptop Bottom Deck */}
+                <div style={{
+                  position: 'absolute', bottom: '-15px', left: '-10%', width: '120%', height: '20px',
+                  background: '#374151', borderRadius: '0 0 20px 20px', zIndex: -1
+                }}></div>
+              </div>
+
+            </div>
+
           </div>
         </div>
       </section >

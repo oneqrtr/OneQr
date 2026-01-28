@@ -254,48 +254,109 @@ export default function PublicMenuPage() {
     return (
         <div style={{ minHeight: '100vh', background: '#F9FAFB' }}>
 
-            {/* Header / Cover - Not Sticky */}
-            <header style={{ background: 'white', padding: '0', textAlign: 'center', borderBottom: '1px solid #E5E7EB' }}>
-                {/* Hero Image */}
-                {restaurant.hero_image_url && (
-                    <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
-                        <img src={restaurant.hero_image_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                )}
+            {/* Responsive Styles */}
+            <style jsx global>{`
+                /* Default Mobile View */
+                .mobile-only { display: block; }
+                .desktop-only { display: none; }
+                .main-layout { display: block; }
+                .content-area { padding: 20px; max-width: 600px; margin: 0 auto; }
 
-                <div style={{ padding: '24px', paddingTop: restaurant.hero_image_url ? '0' : '24px' }}>
-                    <div style={{
-                        width: '100px',
-                        height: '100px',
-                        background: restaurant.theme_color,
-                        borderRadius: '50%',
-                        margin: restaurant.hero_image_url ? '-50px auto 12px' : '0 auto 12px', // Pull up if hero exists
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '2rem',
-                        fontWeight: 'bold',
-                        border: '4px solid white', // Add border to separate from hero
-                        position: 'relative',
-                        zIndex: 11,
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}>
-                        {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
-                    </div>
+                /* Desktop View (min-width: 768px) */
+                @media (min-width: 768px) {
+                    .mobile-only { display: none !important; }
+                    .desktop-only { display: block !important; }
+                    
+                    .main-layout { 
+                        display: flex !important; 
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 40px 20px;
+                        gap: 40px;
+                        align-items: flex-start;
+                    }
+                    
+                    .desktop-sidebar {
+                        width: 280px;
+                        position: sticky;
+                        top: 20px;
+                        background: white;
+                        padding: 24px;
+                        border-radius: 16px;
+                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                        border: 1px solid #E5E7EB;
+                        flex-shrink: 0;
+                        max-height: calc(100vh - 40px);
+                        overflow-y: auto;
+                    }
 
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>{restaurant.name}</h1>
+                    .content-area {
+                        flex: 1;
+                        padding: 0 !important;
+                        max-width: none !important;
+                        margin: 0 !important;
+                    }
 
-                    {restaurant.description && (
-                        <p style={{ color: '#6B7280', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto 16px', lineHeight: '1.5' }}>
-                            {restaurant.description}
-                        </p>
+                    .cat-nav-btn {
+                        display: block;
+                        width: 100%;
+                        text-align: left;
+                        padding: 12px 16px !important;
+                        margin-bottom: 8px;
+                        border-radius: 8px !important;
+                        font-size: 1rem !important;
+                    }
+
+                    .cat-nav-btn:hover {
+                        background-color: #F3F4F6 !important;
+                    }
+                }
+            `}</style>
+
+            {/* Header / Cover (Mobile Only used for hero image logic, but re-used/hidden via CSS) */}
+            <div className="mobile-only">
+                <header style={{ background: 'white', padding: '0', textAlign: 'center', borderBottom: '1px solid #E5E7EB' }}>
+                    {/* Hero Image */}
+                    {restaurant.hero_image_url && (
+                        <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
+                            <img src={restaurant.hero_image_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
                     )}
-                </div>
-            </header>
 
-            {/* Sticky Category Bar */}
-            <div style={{
+                    <div style={{ padding: '24px', paddingTop: restaurant.hero_image_url ? '0' : '24px' }}>
+                        <div style={{
+                            width: '100px',
+                            height: '100px',
+                            background: restaurant.theme_color,
+                            borderRadius: '50%',
+                            margin: restaurant.hero_image_url ? '-50px auto 12px' : '0 auto 12px', // Pull up if hero exists
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '2rem',
+                            fontWeight: 'bold',
+                            border: '4px solid white', // Add border to separate from hero
+                            position: 'relative',
+                            zIndex: 11,
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}>
+                            {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
+                        </div>
+
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>{restaurant.name}</h1>
+
+                        {restaurant.description && (
+                            <p style={{ color: '#6B7280', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto 16px', lineHeight: '1.5' }}>
+                                {restaurant.description}
+                            </p>
+                        )}
+                    </div>
+                </header>
+            </div>
+
+            {/* Sticky Category Bar (Mobile Only) */}
+            <div className="mobile-only" style={{
                 position: 'sticky',
                 top: 0,
                 zIndex: 20,
@@ -311,7 +372,7 @@ export default function PublicMenuPage() {
                     padding: '0 20px',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
-                    justifyContent: 'flex-start' // Align left for better scrolling experience on mobile
+                    justifyContent: 'flex-start'
                 }}>
                     {categories.map(cat => (
                         <button
@@ -319,15 +380,10 @@ export default function PublicMenuPage() {
                             onClick={() => {
                                 const element = document.getElementById(`cat-${cat.id}`);
                                 if (element) {
-                                    // Adjust offset: height of sticky bar (approx 60px) + some buffer
                                     const headerOffset = 70;
                                     const elementPosition = element.getBoundingClientRect().top;
                                     const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-                                    window.scrollTo({
-                                        top: offsetPosition,
-                                        behavior: "smooth"
-                                    });
+                                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
                                 }
                                 setActiveCategory(cat.id);
                             }}
@@ -342,7 +398,7 @@ export default function PublicMenuPage() {
                                 fontWeight: 500,
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
-                                flexShrink: 0 // Prevent shrinking
+                                flexShrink: 0
                             }}
                         >
                             {cat.name}
@@ -351,90 +407,151 @@ export default function PublicMenuPage() {
                 </div>
             </div>
 
-            {/* Menu Content */}
-            <main style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-                {categories.map(cat => {
-                    const catProducts = products.filter(p => p.category_id === cat.id);
-                    if (catProducts.length === 0) return null;
+            {/* Main Layout Wrapper (Handles both desktop Sidebar and Main Content) */}
+            <div className="main-layout">
 
-                    return (
-                        <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom: '32px', scrollMarginTop: '180px' }}>
-                            <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${restaurant.theme_color}` }}>
-                                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>
-                                    {cat.name}
-                                </h2>
-                                {cat.description && (
-                                    <p style={{ fontSize: '0.9rem', color: '#6B7280', fontStyle: 'italic' }}>
-                                        {cat.description}
-                                    </p>
-                                )}
-                            </div>
-                            <div style={{ display: 'grid', gap: '16px' }}>
-                                {catProducts.map(product => (
-                                    <div key={product.id} style={{
-                                        background: 'white',
-                                        borderRadius: '12px',
-                                        padding: '16px',
-                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                        display: 'flex',
-                                        gap: '16px'
-                                    }}>
-                                        <div style={{ flex: 1 }}>
-                                            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '4px', color: '#111827' }}>{product.name}</h3>
-                                            {product.description && (
-                                                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '8px', lineHeight: '1.4' }}>{product.description}</p>
-                                            )}
+                {/* Desktop Sidebar */}
+                <aside className="desktop-sidebar desktop-only">
+                    <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                        <div style={{
+                            width: '80px', height: '80px', margin: '0 auto 12px', background: restaurant.theme_color, borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.5rem', fontWeight: 'bold', overflow: 'hidden'
+                        }}>
+                            {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
+                        </div>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>{restaurant.name}</h2>
+                        {restaurant.description && (
+                            <p style={{ color: '#6B7280', fontSize: '0.85rem', lineHeight: '1.4' }}>{restaurant.description}</p>
+                        )}
+                    </div>
 
-                                            {/* Variants Display */}
-                                            {variants.filter(v => v.product_id === product.id).length > 0 && (
-                                                <div style={{ marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                    {variants.filter(v => v.product_id === product.id).map(variant => (
-                                                        <span key={variant.id} style={{
-                                                            fontSize: '0.75rem',
-                                                            padding: '2px 8px',
-                                                            borderRadius: '12px',
-                                                            background: '#F3F4F6',
-                                                            color: '#4B5563',
-                                                            border: '1px solid #E5E7EB',
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center'
-                                                        }}>
-                                                            <strong style={{ fontWeight: 600, marginRight: '4px' }}>{variant.name}</strong>
-                                                            {variant.price > 0 ? `+${variant.price} ${restaurant.currency}` : ''}
-                                                        </span>
-                                                    ))}
+                    <nav>
+                        <h3 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>MENÜ</h3>
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                className="cat-nav-btn"
+                                onClick={() => {
+                                    const element = document.getElementById(`cat-${cat.id}`);
+                                    if (element) {
+                                        const headerOffset = 40;
+                                        const elementPosition = element.getBoundingClientRect().top;
+                                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                                        window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                                    }
+                                    setActiveCategory(cat.id);
+                                }}
+                                style={{
+                                    border: 'none',
+                                    background: activeCategory === cat.id ? '#EFF6FF' : 'transparent',
+                                    color: activeCategory === cat.id ? restaurant.theme_color : '#374151',
+                                    fontWeight: activeCategory === cat.id ? 600 : 500,
+                                    cursor: 'pointer',
+                                    borderLeft: activeCategory === cat.id ? `3px solid ${restaurant.theme_color}` : '3px solid transparent'
+                                }}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </nav>
+                </aside>
+
+                {/* Main Product Content */}
+                <main className="content-area">
+                    {/* Desktop Hero Image (if exists) */}
+                    {restaurant.hero_image_url && (
+                        <div className="desktop-only" style={{ width: '100%', height: '250px', borderRadius: '16px', overflow: 'hidden', marginBottom: '32px' }}>
+                            <img src={restaurant.hero_image_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    )}
+
+                    {categories.map(cat => {
+                        const catProducts = products.filter(p => p.category_id === cat.id);
+                        if (catProducts.length === 0) return null;
+
+                        return (
+                            <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom: '32px', scrollMarginTop: '20px' }}>
+                                <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${restaurant.theme_color}` }}>
+                                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>
+                                        {cat.name}
+                                    </h2>
+                                    {cat.description && (
+                                        <p style={{ fontSize: '0.9rem', color: '#6B7280', fontStyle: 'italic' }}>
+                                            {cat.description}
+                                        </p>
+                                    )}
+                                </div>
+                                <div style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+                                    {catProducts.map(product => (
+                                        <div key={product.id} style={{
+                                            background: 'white',
+                                            borderRadius: '12px',
+                                            padding: '16px',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                            display: 'flex',
+                                            flexDirection: 'column', // Prepare for vertical stacking if needed, but inner is flex row usually
+                                            gap: '12px',
+                                            border: '1px solid #F3F4F6'
+                                        }}>
+                                            <div style={{ display: 'flex', gap: '16px' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '6px', color: '#111827' }}>{product.name}</h3>
+                                                    {product.description && (
+                                                        <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '12px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
+                                                    )}
+
+                                                    {/* Variants Display */}
+                                                    {variants.filter(v => v.product_id === product.id).length > 0 && (
+                                                        <div style={{ marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                            {variants.filter(v => v.product_id === product.id).map(variant => (
+                                                                <span key={variant.id} style={{
+                                                                    fontSize: '0.75rem',
+                                                                    padding: '2px 8px',
+                                                                    borderRadius: '12px',
+                                                                    background: '#F3F4F6',
+                                                                    color: '#4B5563',
+                                                                    border: '1px solid #E5E7EB',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center'
+                                                                }}>
+                                                                    <strong style={{ fontWeight: 600, marginRight: '4px' }}>{variant.name}</strong>
+                                                                    {variant.price > 0 ? `+${variant.price} ${restaurant.currency}` : ''}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: restaurant.theme_color }}>
+                                                        {product.price} {restaurant.currency}
+                                                    </div>
                                                 </div>
-                                            )}
-
-                                            <div style={{ fontSize: '1rem', fontWeight: 700, color: restaurant.theme_color }}>
-                                                {product.price} {restaurant.currency}
+                                                {product.image_url && (
+                                                    <div style={{ width: '100px', height: '100px', flexShrink: 0, cursor: 'pointer' }} onClick={() => {
+                                                        setSelectedImage(product.image_url || '');
+                                                        // Log analytics
+                                                        const supabase = createClient();
+                                                        supabase.from('analytics').insert({
+                                                            restaurant_id: restaurant.id,
+                                                            event_type: 'view_product',
+                                                            metadata: { product_id: product.id }
+                                                        }).then();
+                                                    }}>
+                                                        <img
+                                                            src={product.image_url}
+                                                            alt={product.name}
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        {product.image_url && (
-                                            <div style={{ width: '100px', height: '100px', flexShrink: 0, cursor: 'pointer' }} onClick={() => {
-                                                setSelectedImage(product.image_url || '');
-                                                // Log analytics
-                                                const supabase = createClient();
-                                                supabase.from('analytics').insert({
-                                                    restaurant_id: restaurant.id,
-                                                    event_type: 'view_product',
-                                                    metadata: { product_id: product.id }
-                                                }).then();
-                                            }}>
-                                                <img
-                                                    src={product.image_url}
-                                                    alt={product.name}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </main>
+                        );
+                    })}
+                </main>
+            </div>
 
             {/* Image Modal */}
             {selectedImage && (
@@ -520,7 +637,7 @@ export default function PublicMenuPage() {
                     />
                 </div>
                 <div style={{ fontSize: '0.9rem', color: '#9CA3AF', marginBottom: '8px' }}>
-                    Bu menü <Link href="/" style={{ color: 'white', fontWeight: 'bold', textDecoration: 'none' }}>OneQR</Link> ile oluşturuldu.
+                    Bu menü <a href="https://oneqr.tr" target="_blank" style={{ color: 'white', fontWeight: 'bold', textDecoration: 'none' }}>OneQR</a> ile oluşturuldu.
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>
                     Siz de kendi QR menünüzü hemen oluşturun.
