@@ -15,8 +15,9 @@ export default function QrPage() {
     const [qrColor, setQrColor] = useState('#000000');
     const [useLogo, setUseLogo] = useState(true);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
-    const [qrType, setQrType] = useState<'menu' | 'card'>('menu');
+    const [qrType, setQrType] = useState<'menu' | 'card' | 'website'>('menu');
     const [plan, setPlan] = useState('freemium');
+    const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
 
     const supabase = createClient();
 
@@ -31,7 +32,7 @@ export default function QrPage() {
             for (let i = 0; i < 3; i++) {
                 const { data } = await supabase
                     .from('restaurants')
-                    .select('slug, name, logo_url, plan')
+                    .select('slug, name, logo_url, plan, website_url')
                     .eq('owner_id', user.id)
                     .maybeSingle();
 
@@ -47,6 +48,7 @@ export default function QrPage() {
                 setBusinessName(rest.name);
                 setLogoUrl(rest.logo_url);
                 setPlan(rest.plan || 'freemium');
+                setWebsiteUrl(rest.website_url || null);
             }
         };
         fetchInfo();
@@ -93,9 +95,12 @@ export default function QrPage() {
 
             pdf.setFontSize(14);
             pdf.setTextColor(100, 100, 100);
-            pdf.text('Menüye ulaşmak için kameranızla taratın', pdfWidth / 2, y + imgHeight + 15, { align: 'center' });
+            const footerText = qrType === 'menu' ? 'Menüye ulaşmak için kameranızla taratın' :
+                qrType === 'card' ? 'Kartvizite ulaşmak için kameranızla taratın' :
+                    'Web sitesine gitmek için kameranızla taratın';
+            pdf.text(footerText, pdfWidth / 2, y + imgHeight + 15, { align: 'center' });
 
-            const fileName = slug ? `OneQr-${slug}.pdf` : `OneQr.pdf`;
+            const fileName = slug ? `OneQr-${slug}-${qrType}.pdf` : `OneQr.pdf`;
             pdf.save(fileName);
         } catch (error) {
             console.error('PDF creation failed', error);
@@ -146,11 +151,12 @@ export default function QrPage() {
                     {/* QR Type Selection */}
                     <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '12px', color: '#374151' }}>QR Hedefi</div>
-                        <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                             <button
                                 onClick={() => setQrType('menu')}
                                 style={{
                                     flex: 1,
+                                    minWidth: '150px',
                                     padding: '12px',
                                     borderRadius: '8px',
                                     border: qrType === 'menu' ? '2px solid #2563EB' : '1px solid #E5E7EB',
@@ -163,6 +169,25 @@ export default function QrPage() {
                                 <i className="fa-solid fa-utensils" style={{ marginRight: '8px' }}></i>
                                 Menü
                             </button>
+
+                            <button
+                                onClick={() => setQrType('website')}
+                                style={{
+                                    flex: 1,
+                                    minWidth: '150px',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: qrType === 'website' ? '2px solid #2563EB' : '1px solid #E5E7EB',
+                                    background: qrType === 'website' ? '#EFF6FF' : 'white',
+                                    color: qrType === 'website' ? '#1E40AF' : '#6B7280',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                }}
+                            >
+                                <i className="fa-solid fa-globe" style={{ marginRight: '8px' }}></i>
+                                Web Sitesi
+                            </button>
+
                             <button
                                 onClick={() => {
                                     if (isEligibleForCard) setQrType('card');
@@ -170,6 +195,7 @@ export default function QrPage() {
                                 }}
                                 style={{
                                     flex: 1,
+                                    minWidth: '150px',
                                     padding: '12px',
                                     borderRadius: '8px',
                                     border: qrType === 'card' ? '2px solid #2563EB' : '1px solid #E5E7EB',
@@ -198,7 +224,11 @@ export default function QrPage() {
                             <div ref={qrRef} data-qr-container style={{ background: 'white', padding: '30px', textAlign: 'center', minWidth: '300px' }}>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '24px', color: '#111827' }}>{businessName}</div>
                                 <QRCodeSVG
-                                    value={qrType === 'menu' ? `${baseUrl}/menu/${slug}` : `${baseUrl}/k/${slug}`}
+                                    value={
+                                        qrType === 'menu' ? `${baseUrl}/menu/${slug}` :
+                                            qrType === 'card' ? `${baseUrl}/k/${slug}` :
+                                                (websiteUrl || `${baseUrl}/menu/${slug}`)
+                                    }
                                     size={250}
                                     level="H"
                                     fgColor={qrColor}
