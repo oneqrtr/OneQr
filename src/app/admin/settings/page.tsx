@@ -24,10 +24,12 @@ export default function SettingsPage() {
     const [instagramUrl, setInstagramUrl] = useState('');
     const [twitterUrl, setTwitterUrl] = useState('');
     const [websiteUrl, setWebsiteUrl] = useState('');
+    const [googleReviewUrl, setGoogleReviewUrl] = useState('');
     const [wifiSsid, setWifiSsid] = useState('');
     const [wifiPassword, setWifiPassword] = useState('');
 
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
+    const [plan, setPlan] = useState('freemium');
     const router = useRouter();
 
     const supabase = createClient();
@@ -46,6 +48,7 @@ export default function SettingsPage() {
             if (rest) {
                 setBusinessName(rest.name);
                 setDescription(rest.description || '');
+                setPlan(rest.plan || 'freemium');
 
                 // Contact info
                 setPhoneNumber(rest.phone_number || '');
@@ -63,6 +66,7 @@ export default function SettingsPage() {
                 setTwitterUrl(rest.twitter_url || '');
                 // Default to custom subdomain if no website is set
                 setWebsiteUrl(rest.website_url || `https://${rest.slug}.oneqr.tr`);
+                setGoogleReviewUrl(rest.google_review_url || '');
                 setWifiSsid(rest.wifi_ssid || '');
                 setWifiPassword(rest.wifi_password || '');
 
@@ -71,6 +75,8 @@ export default function SettingsPage() {
         };
         fetchSettings();
     }, []);
+
+    const isEligibleForAdvanced = plan === 'plusimum' || plan === 'trial' || plan === 'freemium';
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,11 +95,12 @@ export default function SettingsPage() {
                 is_location_enabled: isLocationEnabled,
                 location_lat: locationLat,
                 location_lng: locationLng,
-                instagram_url: instagramUrl,
-                twitter_url: twitterUrl,
-                website_url: websiteUrl,
-                wifi_ssid: wifiSsid,
-                wifi_password: wifiPassword
+                instagram_url: isEligibleForAdvanced ? instagramUrl : null, // Prevent saving if not eligible (extra security)
+                twitter_url: isEligibleForAdvanced ? twitterUrl : null,
+                website_url: isEligibleForAdvanced ? websiteUrl : null,
+                google_review_url: isEligibleForAdvanced ? googleReviewUrl : null,
+                wifi_ssid: isEligibleForAdvanced ? wifiSsid : null,
+                wifi_password: isEligibleForAdvanced ? wifiPassword : null
             })
             .eq('id', restaurantId);
 
@@ -160,40 +167,74 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Social & Wifi Section */}
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>Dijital Kartvizit & Bağlantılar</h3>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            Dijital Kartvizit & Bağlantılar
+                            {!isEligibleForAdvanced && <span style={{ fontSize: '0.7rem', background: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '4px' }}><i className="fa-solid fa-lock"></i> Plusimum</span>}
+                        </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group">
-                                <label className="form-label"><i className="fa-brands fa-instagram" style={{ marginRight: '8px', color: '#E1306C' }}></i> Instagram Linki</label>
+                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span><i className="fa-brands fa-instagram" style={{ marginRight: '8px', color: '#E1306C' }}></i> Instagram Linki</span>
+                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
+                                </label>
                                 <input
                                     className="form-input"
                                     value={instagramUrl}
                                     onChange={e => setInstagramUrl(e.target.value)}
                                     placeholder="https://instagram.com/kullaniciadi"
+                                    disabled={!isEligibleForAdvanced}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label className="form-label"><i className="fa-brands fa-twitter" style={{ marginRight: '8px', color: '#1DA1F2' }}></i> Twitter / X Linki</label>
+                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span><i className="fa-brands fa-twitter" style={{ marginRight: '8px', color: '#1DA1F2' }}></i> Twitter / X Linki</span>
+                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
+                                </label>
                                 <input
                                     className="form-input"
                                     value={twitterUrl}
                                     onChange={e => setTwitterUrl(e.target.value)}
                                     placeholder="https://twitter.com/kullaniciadi"
+                                    disabled={!isEligibleForAdvanced}
                                 />
                             </div>
-                            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                                <label className="form-label"><i className="fa-solid fa-globe" style={{ marginRight: '8px', color: '#4B5563' }}></i> Web Sitesi</label>
+                            <div className="form-group" style={{ gridColumn: '1 / -1', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span><i className="fa-solid fa-globe" style={{ marginRight: '8px', color: '#4B5563' }}></i> Web Sitesi</span>
+                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
+                                </label>
                                 <input
                                     className="form-input"
                                     value={websiteUrl}
                                     onChange={e => setWebsiteUrl(e.target.value)}
                                     placeholder="https://ornekwebsitesi.com"
+                                    disabled={!isEligibleForAdvanced}
                                 />
+                                {!isEligibleForAdvanced && <div style={{ fontSize: '0.8rem', color: '#D97706', marginTop: '4px' }}>Web sitesi yönlendirmesi Plusimum pakete özeldir.</div>}
+                            </div>
+
+                            <div className="form-group" style={{ gridColumn: '1 / -1', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span><i className="fa-solid fa-star" style={{ marginRight: '8px', color: '#F59E0B' }}></i> Google Yorum Linki</span>
+                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
+                                </label>
+                                <input
+                                    className="form-input"
+                                    value={googleReviewUrl}
+                                    onChange={e => setGoogleReviewUrl(e.target.value)}
+                                    placeholder="https://g.page/r/..."
+                                    disabled={!isEligibleForAdvanced}
+                                />
+                                <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>İşletmenizin Google Haritalar'daki "Yorum Yaz" linki.</div>
                             </div>
                         </div>
 
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '24px', marginBottom: '16px', color: '#4B5563' }}>Wifi Bilgileri (Müşterileriniz için)</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '24px', marginBottom: '16px', color: '#4B5563', display: 'flex', alignItems: 'center', gap: '8px', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                            Wifi Bilgileri (Müşterileriniz için)
+                            {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
                             <div className="form-group">
                                 <label className="form-label">Wifi Adı (SSID)</label>
                                 <input
@@ -201,6 +242,7 @@ export default function SettingsPage() {
                                     value={wifiSsid}
                                     onChange={e => setWifiSsid(e.target.value)}
                                     placeholder="Örn: Kafe_Misafir"
+                                    disabled={!isEligibleForAdvanced}
                                 />
                             </div>
                             <div className="form-group">
@@ -210,6 +252,7 @@ export default function SettingsPage() {
                                     value={wifiPassword}
                                     onChange={e => setWifiPassword(e.target.value)}
                                     placeholder="Wifi şifreniz"
+                                    disabled={!isEligibleForAdvanced}
                                 />
                             </div>
                         </div>

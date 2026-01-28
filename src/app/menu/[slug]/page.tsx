@@ -327,13 +327,13 @@ export default function PublicMenuPage() {
                         <div style={{
                             width: '100px',
                             height: '100px',
-                            background: restaurant.theme_color,
+                            background: 'white',
                             borderRadius: '50%',
                             margin: restaurant.hero_image_url ? '-50px auto 12px' : '0 auto 12px', // Pull up if hero exists
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white',
+                            color: restaurant.theme_color,
                             fontSize: '2rem',
                             fontWeight: 'bold',
                             border: '4px solid white', // Add border to separate from hero
@@ -414,8 +414,8 @@ export default function PublicMenuPage() {
                 <aside className="desktop-sidebar desktop-only">
                     <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                         <div style={{
-                            width: '80px', height: '80px', margin: '0 auto 12px', background: restaurant.theme_color, borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.5rem', fontWeight: 'bold', overflow: 'hidden'
+                            width: '80px', height: '80px', margin: '0 auto 12px', background: 'white', borderRadius: '50%', border: '1px solid #E5E7EB', boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: restaurant.theme_color, fontSize: '1.5rem', fontWeight: 'bold', overflow: 'hidden'
                         }}>
                             {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
                         </div>

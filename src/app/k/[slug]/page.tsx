@@ -191,12 +191,12 @@ END:VCARD`;
                     <div style={{
                         padding: '0 24px 24px',
                         display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr',
+                        gridTemplateColumns: '1fr 1fr',
                         gap: '12px'
                     }}>
                         {restaurant.is_call_enabled && restaurant.phone_number && (
                             <a href={`tel:${restaurant.phone_number}`} style={{ textDecoration: 'none' }}>
-                                <div style={{ background: '#EFF6FF', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#2563EB', cursor: 'pointer' }}>
+                                <div style={{ background: '#EFF6FF', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#2563EB', cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                     <i className="fa-solid fa-phone" style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'block' }}></i>
                                     <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ara</span>
                                 </div>
@@ -205,7 +205,7 @@ END:VCARD`;
 
                         {restaurant.is_whatsapp_enabled && restaurant.whatsapp_number && (
                             <a href={`https://wa.me/${restaurant.whatsapp_number}`} target="_blank" style={{ textDecoration: 'none' }}>
-                                <div style={{ background: '#ECFDF5', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#059669', cursor: 'pointer' }}>
+                                <div style={{ background: '#ECFDF5', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#059669', cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                     <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'block' }}></i>
                                     <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>WhatsApp</span>
                                 </div>
@@ -214,9 +214,18 @@ END:VCARD`;
 
                         {restaurant.is_location_enabled && restaurant.location_lat && (
                             <a href={`https://www.google.com/maps/search/?api=1&query=${restaurant.location_lat},${restaurant.location_lng}`} target="_blank" style={{ textDecoration: 'none' }}>
-                                <div style={{ background: '#FEF2F2', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#DC2626', cursor: 'pointer' }}>
+                                <div style={{ background: '#FEF2F2', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#DC2626', cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                     <i className="fa-solid fa-location-dot" style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'block' }}></i>
                                     <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Konum</span>
+                                </div>
+                            </a>
+                        )}
+
+                        {restaurant.google_review_url && (
+                            <a href={restaurant.google_review_url} target="_blank" style={{ textDecoration: 'none' }}>
+                                <div style={{ background: '#FFFBEB', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#D97706', cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                    <i className="fa-brands fa-google" style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'block' }}></i>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Yorum Yap</span>
                                 </div>
                             </a>
                         )}
