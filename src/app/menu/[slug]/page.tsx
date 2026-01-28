@@ -252,7 +252,7 @@ export default function PublicMenuPage() {
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: '#F9FAFB', paddingBottom: '80px' }}>
+        <div style={{ minHeight: '100vh', background: '#F9FAFB' }}>
 
             {/* Header / Cover - Not Sticky */}
             <header style={{ background: 'white', padding: '0', textAlign: 'center', borderBottom: '1px solid #E5E7EB' }}>
