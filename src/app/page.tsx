@@ -182,7 +182,7 @@ export default function Home() {
                 <div style={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                   background: '#1F2937', borderRadius: '12px 12px 0 0', padding: '12px 12px 0',
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
                 }}>
                   <div style={{ width: '100%', height: '100%', background: 'white', borderRadius: '8px 8px 0 0', overflow: 'hidden', position: 'relative' }}>
                     <iframe
@@ -200,11 +200,14 @@ export default function Home() {
                     {/* Invisible Scroll Overlay for better UX on non-touch (optional, but keep it interactive as requested) */}
                   </div>
                 </div>
-                {/* Laptop Bottom Deck */}
+                {/* Laptop Bottom Deck - Improved */}
                 <div style={{
-                  position: 'absolute', bottom: '-15px', left: '-10%', width: '120%', height: '20px',
-                  background: '#374151', borderRadius: '0 0 20px 20px', zIndex: -1
-                }}></div>
+                  position: 'absolute', bottom: '-16px', left: '-5%', width: '110%', height: '24px',
+                  background: '#374151', borderRadius: '0 0 16px 16px', zIndex: -1,
+                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '15%', height: '4px', background: '#4B5563', borderRadius: '0 0 4px 4px' }}></div>
+                </div>
               </div>
 
             </div>
@@ -411,18 +414,18 @@ export default function Home() {
             <div className="pricing-card" style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', position: 'relative' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Premium</h3>
               <div className="price" style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>100 ₺</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>99 ₺</span>
                 <span style={{ color: '#6B7280' }}>/ay + KDV</span>
               </div>
               <div style={{ color: '#2563EB', fontWeight: 600, fontSize: '0.9rem', marginBottom: '16px' }}>
-                Veya yıllık 500 ₺ (2 ay bedava)
+                Veya yıllık 499 ₺ (7 Ay Bedavaya Gelir!)
               </div>
               <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Temel dijital menü ihtiyacı olan işletmeler için.</p>
               <Link href="/register?plan=premium" className="btn btn-outline" style={{ width: '100%' }}>Paketi Seç</Link>
               <ul style={{ marginTop: '32px', color: '#4B5563', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>oneqr.tr/menu/adiniz</strong></li>
                 <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Temel Tema Özelleştirme</li>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Limitli Ürün & Kategori</li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> 50 Ürün ile Sınırlı</li>
                 <li style={{ opacity: 0.5 }}><i className="fa-solid fa-xmark" style={{ color: '#9CA3AF', marginRight: '8px' }}></i> Özel Subdomain Yok</li>
               </ul>
             </div>
@@ -454,11 +457,11 @@ export default function Home() {
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Plusimum</h3>
               <div className="price" style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>200 ₺</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>199 ₺</span>
                 <span style={{ color: '#6B7280' }}>/ay + KDV</span>
               </div>
               <div style={{ color: '#10B981', fontWeight: 600, fontSize: '0.9rem', marginBottom: '16px' }}>
-                Veya yıllık 1000 ₺ (yarı fiyatına!)
+                Veya yıllık 999 ₺ (7 Ay Bedavaya Gelir!)
               </div>
               <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Tam profesyonel çözüm. Kendi markanız, kendi siteniz.</p>
               <Link href="/register?plan=plusimum" className="btn btn-primary" style={{ width: '100%' }}>Avantajlı Paketi Seç</Link>
