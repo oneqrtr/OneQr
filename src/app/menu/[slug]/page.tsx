@@ -14,6 +14,8 @@ interface Restaurant {
     theme_color: string;
     currency: string;
     status: string;
+    created_at: string;
+    plan?: string; // 'freemium', 'premium', 'plusimum'
     logo_url?: string;
     description?: string;
     hero_image_url?: string;
@@ -81,6 +83,37 @@ export default function PublicMenuPage() {
                 if (restError || !restData) {
                     setLoading(false);
                     return; // Handle not found
+                }
+
+                // SUBSCRIPTION ENFORCEMENT logic
+                const plan = restData.plan || 'freemium';
+                const createdDate = new Date(restData.created_at);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const isTrialActive = diffDays <= 14;
+
+                const hostname = window.location.hostname;
+                const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+                const rootDomain = isLocal ? 'localhost' : 'oneqr.tr';
+                const isSubdomain = hostname !== rootDomain && hostname !== `www.${rootDomain}`;
+
+                // Rule: Premium cannot use subdomain
+                // Rule: Freemium can use subdomain only during trial
+                // Rule: Plusimum can always use subdomain
+
+                if (isSubdomain) {
+                    let allowed = false;
+                    if (plan === 'plusimum') allowed = true;
+                    else if (plan === 'freemium' && isTrialActive) allowed = true;
+                    // premium is never allowed on subdomain
+
+                    if (!allowed) {
+                        // Redirect to root path variant
+                        const rootUrl = isLocal ? `http://localhost:3000/menu/${slug}` : `https://oneqr.tr/menu/${slug}`;
+                        window.location.href = rootUrl;
+                        return;
+                    }
                 }
 
                 setRestaurant(restData);

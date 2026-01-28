@@ -292,42 +292,46 @@ export default function Home() {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: '32px',
-            maxWidth: '1000px',
+            maxWidth: '1200px',
             margin: '0 auto'
           }}>
-            {/* Free Trial Plan */}
+            {/* Freemium Plan */}
             <div className="pricing-card" style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', position: 'relative' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Ücretsiz Deneme</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Freemium</h3>
               <div className="price" style={{ marginBottom: '24px' }}>
                 <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>0 ₺</span>
-                <span style={{ color: '#6B7280' }}>/ 1 Hafta</span>
+                <span style={{ color: '#6B7280' }}>/ 14 Gün</span>
               </div>
-              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Sistemi tanımanız için tamamen ücretsiz, kredi kartı gerekmez.</p>
+              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Sistemi tanımanız için 14 gün boyunca tüm özellikler açık.</p>
               <Link href="/register?plan=trial" className="btn btn-outline" style={{ width: '100%' }}>Hemen Başla</Link>
               <ul style={{ marginTop: '32px', color: '#4B5563', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>7 Gün Tam Erişim</strong></li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>14 Gün Tam Erişim</strong></li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Geçici Subdomain Hakkı</li>
                 <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Kredi Kartı İstenmez</li>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Sınırsız Ürün & Kategori</li>
               </ul>
             </div>
 
-            {/* Monthly Plan */}
+            {/* Premium Plan */}
             <div className="pricing-card" style={{ background: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', position: 'relative' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Aylık Paket</h3>
-              <div className="price" style={{ marginBottom: '24px' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>149 ₺</span>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Premium</h3>
+              <div className="price" style={{ marginBottom: '8px' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>100 ₺</span>
                 <span style={{ color: '#6B7280' }}>/ay + KDV</span>
               </div>
-              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Taahhüt vermeden, dilediğiniz zaman iptal edebilirsiniz.</p>
-              <Link href="/register?plan=monthly" className="btn btn-outline" style={{ width: '100%' }}>Paketi Seç</Link>
+              <div style={{ color: '#2563EB', fontWeight: 600, fontSize: '0.9rem', marginBottom: '16px' }}>
+                Veya yıllık 500 ₺ (2 ay bedava)
+              </div>
+              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Temel dijital menü ihtiyacı olan işletmeler için.</p>
+              <Link href="/register?plan=premium" className="btn btn-outline" style={{ width: '100%' }}>Paketi Seç</Link>
               <ul style={{ marginTop: '32px', color: '#4B5563', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Her Ay Yenilenir</li>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Dilediğin Zaman İptal</li>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> 7/24 Teknik Destek</li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>oneqr.tr/menu/adiniz</strong></li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Temel Tema Özelleştirme</li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Limitli Ürün & Kategori</li>
+                <li style={{ opacity: 0.5 }}><i className="fa-solid fa-xmark" style={{ color: '#9CA3AF', marginRight: '8px' }}></i> Özel Subdomain Yok</li>
               </ul>
             </div>
 
-            {/* Yearly Plan (Featured) */}
+            {/* Plusimum Plan (Flagship) */}
             <div className="pricing-card featured" style={{
               background: 'white',
               padding: '32px',
@@ -352,20 +356,21 @@ export default function Home() {
               }}>
                 EN ÇOK TERCİH EDİLEN
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Yıllık Pro</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Plusimum</h3>
               <div className="price" style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>999 ₺</span>
-                <span style={{ color: '#6B7280' }}>/yıl + KDV</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827' }}>200 ₺</span>
+                <span style={{ color: '#6B7280' }}>/ay + KDV</span>
               </div>
               <div style={{ color: '#10B981', fontWeight: 600, fontSize: '0.9rem', marginBottom: '16px' }}>
-                Aylık sadece 83 ₺'ye geliyor!
+                Veya yıllık 1000 ₺ (yarı fiyatına!)
               </div>
-              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>İşletmeniz için en mantıklı seçim. Neredeyse yarı fiyatına!</p>
-              <Link href="/register?plan=yearly" className="btn btn-primary" style={{ width: '100%' }}>Yıllık Avantajı Seç</Link>
+              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '0.95rem' }}>Tam profesyonel çözüm. Kendi markanız, kendi siteniz.</p>
+              <Link href="/register?plan=plusimum" className="btn btn-primary" style={{ width: '100%' }}>Avantajlı Paketi Seç</Link>
               <ul style={{ marginTop: '32px', color: '#4B5563', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>Net %45 İndirim</strong></li>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>789 ₺ Cebinizde Kalsın</strong></li>
-                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Kurulum & Menü Giriş Desteği</li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>adiniz.oneqr.tr Sahibi Olun</strong></li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Sınırsız Ürün & Kategori</li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> Gelişmiş Marka & Renk Yönetimi</li>
+                <li><i className="fa-solid fa-check" style={{ color: '#10B981', marginRight: '8px' }}></i> <strong>Hediye:</strong> Dijital Kartvizit Sitesi</li>
               </ul>
             </div>
           </div>

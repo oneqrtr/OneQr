@@ -471,10 +471,11 @@ export default function SuperAdminPage() {
                                                             borderRadius: '4px',
                                                             fontSize: '0.85rem',
                                                             fontWeight: 600,
-                                                            background: p.plan_type === 'yearly' ? '#FEF3C7' : '#EFF6FF',
-                                                            color: p.plan_type === 'yearly' ? '#92400E' : '#1E40AF'
+                                                            background: p.plan_type.includes('yearly') ? '#FEF3C7' : '#EFF6FF',
+                                                            color: p.plan_type.includes('yearly') ? '#92400E' : '#1E40AF',
+                                                            textTransform: 'capitalize'
                                                         }}>
-                                                            {p.plan_type === 'monthly' ? 'Aylık' : 'Yıllık'}
+                                                            {p.plan_type.replace('_', ' ')}
                                                         </span>
                                                     </td>
                                                     <td style={{ padding: '16px', fontWeight: 600 }}>{p.amount} ₺</td>
@@ -579,24 +580,25 @@ export default function SuperAdminPage() {
                                             const dateInput = document.querySelector('input[name="plan_ends_at"]') as HTMLInputElement;
                                             if (dateInput) {
                                                 const now = new Date();
-                                                if (val === 'monthly') {
-                                                    now.setMonth(now.getMonth() + 1);
-                                                } else if (val === 'yearly') {
-                                                    now.setFullYear(now.getFullYear() + 1);
-                                                } else if (val === 'trial') {
+                                                // Handle presets
+                                                // We don't know exact period from simple plan name like 'premium', 
+                                                // so we might default to +1 month or just leave current date.
+                                                // Let's modify values to include period for helper logic only? 
+                                                // No, value must be valid DB plan enum/text.
+
+                                                if (val === 'trial') {
                                                     now.setDate(now.getDate() + 14);
-                                                } else {
-                                                    // expired or others, maybe clear or keep current
-                                                    return;
+                                                    dateInput.value = now.toISOString().split('T')[0];
                                                 }
-                                                dateInput.value = now.toISOString().split('T')[0];
+                                                // For others we don't auto-set date because we don't know if it's monthly or yearly context in this simple dropdown
                                             }
                                         }}
                                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
                                     >
-                                        <option value="trial">Deneme</option>
-                                        <option value="monthly">Aylık Paket (149 TL)</option>
-                                        <option value="yearly">Yıllık Pro (1199 TL)</option>
+                                        <option value="freemium">Freemium</option>
+                                        <option value="premium">Premium</option>
+                                        <option value="plusimum">Plusimum</option>
+                                        <option value="trial">Deneme (14 Gün)</option>
                                         <option value="expired">Süresi Dolmuş</option>
                                     </select>
                                 </div>
