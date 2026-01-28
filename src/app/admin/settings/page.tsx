@@ -22,9 +22,14 @@ export default function SettingsPage() {
 
     // Social Media & Wifi States
     const [instagramUrl, setInstagramUrl] = useState('');
-    const [twitterUrl, setTwitterUrl] = useState('');
+    const [isInstagramEnabled, setIsInstagramEnabled] = useState(true);
+    const [tiktokUrl, setTiktokUrl] = useState('');
+    const [isTiktokEnabled, setIsTiktokEnabled] = useState(true);
     const [websiteUrl, setWebsiteUrl] = useState('');
+    const [isWebsiteEnabled, setIsWebsiteEnabled] = useState(true);
     const [googleReviewUrl, setGoogleReviewUrl] = useState('');
+    const [isGoogleReviewEnabled, setIsGoogleReviewEnabled] = useState(true);
+
     const [wifiSsid, setWifiSsid] = useState('');
     const [wifiPassword, setWifiPassword] = useState('');
 
@@ -63,10 +68,18 @@ export default function SettingsPage() {
 
                 // Social & Wifi
                 setInstagramUrl(rest.instagram_url || '');
-                setTwitterUrl(rest.twitter_url || '');
+                setIsInstagramEnabled(rest.is_instagram_enabled ?? true);
+
+                setTiktokUrl(rest.tiktok_url || '');
+                setIsTiktokEnabled(rest.is_tiktok_enabled ?? true);
+
                 // Default to custom subdomain if no website is set
                 setWebsiteUrl(rest.website_url || `https://${rest.slug}.oneqr.tr`);
+                setIsWebsiteEnabled(rest.is_website_enabled ?? true);
+
                 setGoogleReviewUrl(rest.google_review_url || '');
+                setIsGoogleReviewEnabled(rest.is_google_review_enabled ?? true);
+
                 setWifiSsid(rest.wifi_ssid || '');
                 setWifiPassword(rest.wifi_password || '');
 
@@ -96,9 +109,17 @@ export default function SettingsPage() {
                 location_lat: locationLat,
                 location_lng: locationLng,
                 instagram_url: isEligibleForAdvanced ? instagramUrl : null, // Prevent saving if not eligible (extra security)
-                twitter_url: isEligibleForAdvanced ? twitterUrl : null,
+                is_instagram_enabled: isEligibleForAdvanced ? isInstagramEnabled : false,
+
+                tiktok_url: isEligibleForAdvanced ? tiktokUrl : null,
+                is_tiktok_enabled: isEligibleForAdvanced ? isTiktokEnabled : false,
+
                 website_url: isEligibleForAdvanced ? websiteUrl : null,
+                is_website_enabled: isEligibleForAdvanced ? isWebsiteEnabled : false,
+
                 google_review_url: isEligibleForAdvanced ? googleReviewUrl : null,
+                is_google_review_enabled: isEligibleForAdvanced ? isGoogleReviewEnabled : false,
+
                 wifi_ssid: isEligibleForAdvanced ? wifiSsid : null,
                 wifi_password: isEligibleForAdvanced ? wifiPassword : null
             })
@@ -173,60 +194,120 @@ export default function SettingsPage() {
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
-                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span><i className="fa-brands fa-instagram" style={{ marginRight: '8px', color: '#E1306C' }}></i> Instagram Linki</span>
-                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
-                                </label>
-                                <input
-                                    className="form-input"
-                                    value={instagramUrl}
-                                    onChange={e => setInstagramUrl(e.target.value)}
-                                    placeholder="https://instagram.com/kullaniciadi"
-                                    disabled={!isEligibleForAdvanced}
-                                />
+                            {/* Instagram */}
+                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6, background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fa-brands fa-instagram" style={{ color: '#E1306C' }}></i> Instagram Linki
+                                        {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706', fontSize: '0.8rem' }}></i>}
+                                    </label>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={isInstagramEnabled}
+                                            onChange={(e) => setIsInstagramEnabled(e.target.checked)}
+                                            disabled={!isEligibleForAdvanced}
+                                        />
+                                    </div>
+                                </div>
+                                {isInstagramEnabled && (
+                                    <input
+                                        className="form-input"
+                                        value={instagramUrl}
+                                        onChange={e => setInstagramUrl(e.target.value)}
+                                        placeholder="https://instagram.com/kullaniciadi"
+                                        disabled={!isEligibleForAdvanced}
+                                        style={{ fontSize: '0.9rem' }}
+                                    />
+                                )}
                             </div>
-                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
-                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span><i className="fa-brands fa-twitter" style={{ marginRight: '8px', color: '#1DA1F2' }}></i> Twitter / X Linki</span>
-                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
-                                </label>
-                                <input
-                                    className="form-input"
-                                    value={twitterUrl}
-                                    onChange={e => setTwitterUrl(e.target.value)}
-                                    placeholder="https://twitter.com/kullaniciadi"
-                                    disabled={!isEligibleForAdvanced}
-                                />
+                            {/* Tiktok */}
+                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6, background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fa-brands fa-tiktok" style={{ color: '#000000' }}></i> TikTok Linki
+                                        {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706', fontSize: '0.8rem' }}></i>}
+                                    </label>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={isTiktokEnabled}
+                                            onChange={(e) => setIsTiktokEnabled(e.target.checked)}
+                                            disabled={!isEligibleForAdvanced}
+                                        />
+                                    </div>
+                                </div>
+                                {isTiktokEnabled && (
+                                    <input
+                                        className="form-input"
+                                        value={tiktokUrl}
+                                        onChange={e => setTiktokUrl(e.target.value)}
+                                        placeholder="https://tiktok.com/@kullaniciadi"
+                                        disabled={!isEligibleForAdvanced}
+                                        style={{ fontSize: '0.9rem' }}
+                                    />
+                                )}
                             </div>
-                            <div className="form-group" style={{ gridColumn: '1 / -1', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
-                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span><i className="fa-solid fa-globe" style={{ marginRight: '8px', color: '#4B5563' }}></i> Web Sitesi</span>
-                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
-                                </label>
-                                <input
-                                    className="form-input"
-                                    value={websiteUrl}
-                                    onChange={e => setWebsiteUrl(e.target.value)}
-                                    placeholder="https://ornekwebsitesi.com"
-                                    disabled={!isEligibleForAdvanced}
-                                />
-                                {!isEligibleForAdvanced && <div style={{ fontSize: '0.8rem', color: '#D97706', marginTop: '4px' }}>Web sitesi yönlendirmesi Plusimum pakete özeldir.</div>}
+                            {/* Website */}
+                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6, background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fa-solid fa-globe" style={{ color: '#4B5563' }}></i> Web Sitesi
+                                        {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706', fontSize: '0.8rem' }}></i>}
+                                    </label>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={isWebsiteEnabled}
+                                            onChange={(e) => setIsWebsiteEnabled(e.target.checked)}
+                                            disabled={!isEligibleForAdvanced}
+                                        />
+                                    </div>
+                                </div>
+                                {isWebsiteEnabled && (
+                                    <>
+                                        <input
+                                            className="form-input"
+                                            value={websiteUrl}
+                                            onChange={e => setWebsiteUrl(e.target.value)}
+                                            placeholder="https://ornekwebsitesi.com"
+                                            disabled={!isEligibleForAdvanced}
+                                            style={{ fontSize: '0.9rem' }}
+                                        />
+                                        {!isEligibleForAdvanced && <div style={{ fontSize: '0.7rem', color: '#D97706', marginTop: '4px' }}>Plusimum'a özeldir.</div>}
+                                    </>
+                                )}
                             </div>
 
-                            <div className="form-group" style={{ gridColumn: '1 / -1', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
-                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span><i className="fa-solid fa-star" style={{ marginRight: '8px', color: '#F59E0B' }}></i> Google Yorum Linki</span>
-                                    {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
-                                </label>
-                                <input
-                                    className="form-input"
-                                    value={googleReviewUrl}
-                                    onChange={e => setGoogleReviewUrl(e.target.value)}
-                                    placeholder="https://g.page/r/..."
-                                    disabled={!isEligibleForAdvanced}
-                                />
-                                <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>İşletmenizin Google Haritalar'daki "Yorum Yaz" linki.</div>
+                            {/* Google Review */}
+                            <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6, background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fa-solid fa-star" style={{ color: '#F59E0B' }}></i> Google Yorum Linki
+                                        {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706', fontSize: '0.8rem' }}></i>}
+                                    </label>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={isGoogleReviewEnabled}
+                                            onChange={(e) => setIsGoogleReviewEnabled(e.target.checked)}
+                                            disabled={!isEligibleForAdvanced}
+                                        />
+                                    </div>
+                                </div>
+                                {isGoogleReviewEnabled && (
+                                    <>
+                                        <input
+                                            className="form-input"
+                                            value={googleReviewUrl}
+                                            onChange={e => setGoogleReviewUrl(e.target.value)}
+                                            placeholder="https://g.page/r/..."
+                                            disabled={!isEligibleForAdvanced}
+                                            style={{ fontSize: '0.9rem' }}
+                                        />
+                                        <div style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>İşletmenizin Google Haritalar'daki "Yorum Yaz" linki.</div>
+                                    </>
+                                )}
                             </div>
                         </div>
 

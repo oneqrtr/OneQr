@@ -221,7 +221,7 @@ END:VCARD`;
                             </a>
                         )}
 
-                        {restaurant.google_review_url && (
+                        {restaurant.google_review_url && (restaurant.is_google_review_enabled !== false) && (
                             <a href={restaurant.google_review_url} target="_blank" style={{ textDecoration: 'none' }}>
                                 <div style={{ background: '#FFFBEB', padding: '16px', borderRadius: '12px', textAlign: 'center', color: '#D97706', cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                     <i className="fa-brands fa-google" style={{ fontSize: '1.5rem', marginBottom: '8px', display: 'block' }}></i>
@@ -233,31 +233,33 @@ END:VCARD`;
 
                     {/* Social Media List */}
                     <div style={{ padding: '0 24px 24px' }}>
-                        {(restaurant.instagram_url || restaurant.twitter_url || restaurant.website_url) && (
-                            <div style={{ background: '#F9FAFB', borderRadius: '12px', overflow: 'hidden' }}>
-                                {restaurant.instagram_url && (
-                                    <a href={restaurant.instagram_url} target="_blank" style={{ display: 'flex', alignItems: 'center', padding: '16px', textDecoration: 'none', color: '#374151', borderBottom: '1px solid #E5E7EB' }}>
-                                        <i className="fa-brands fa-instagram" style={{ fontSize: '1.2rem', width: '32px', color: '#E1306C' }}></i>
-                                        <span style={{ fontWeight: 500 }}>Instagram'da Takip Et</span>
-                                        <i className="fa-solid fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9CA3AF' }}></i>
-                                    </a>
-                                )}
-                                {restaurant.twitter_url && (
-                                    <a href={restaurant.twitter_url} target="_blank" style={{ display: 'flex', alignItems: 'center', padding: '16px', textDecoration: 'none', color: '#374151', borderBottom: '1px solid #E5E7EB' }}>
-                                        <i className="fa-brands fa-twitter" style={{ fontSize: '1.2rem', width: '32px', color: '#1DA1F2' }}></i>
-                                        <span style={{ fontWeight: 500 }}>Twitter / X</span>
-                                        <i className="fa-solid fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9CA3AF' }}></i>
-                                    </a>
-                                )}
-                                {restaurant.website_url && (
-                                    <a href={restaurant.website_url} target="_blank" style={{ display: 'flex', alignItems: 'center', padding: '16px', textDecoration: 'none', color: '#374151' }}>
-                                        <i className="fa-solid fa-globe" style={{ fontSize: '1.2rem', width: '32px', color: '#6B7280' }}></i>
-                                        <span style={{ fontWeight: 500 }}>Web Sitesini Ziyaret Et</span>
-                                        <i className="fa-solid fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9CA3AF' }}></i>
-                                    </a>
-                                )}
-                            </div>
-                        )}
+                        {((restaurant.instagram_url && restaurant.is_instagram_enabled !== false) ||
+                            (restaurant.tiktok_url && restaurant.is_tiktok_enabled !== false) ||
+                            (restaurant.website_url && restaurant.is_website_enabled !== false)) && (
+                                <div style={{ background: '#F9FAFB', borderRadius: '12px', overflow: 'hidden' }}>
+                                    {restaurant.instagram_url && (restaurant.is_instagram_enabled !== false) && (
+                                        <a href={restaurant.instagram_url} target="_blank" style={{ display: 'flex', alignItems: 'center', padding: '16px', textDecoration: 'none', color: '#374151', borderBottom: '1px solid #E5E7EB' }}>
+                                            <i className="fa-brands fa-instagram" style={{ fontSize: '1.2rem', width: '32px', color: '#E1306C' }}></i>
+                                            <span style={{ fontWeight: 500 }}>Instagram'da Takip Et</span>
+                                            <i className="fa-solid fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9CA3AF' }}></i>
+                                        </a>
+                                    )}
+                                    {restaurant.tiktok_url && (restaurant.is_tiktok_enabled !== false) && (
+                                        <a href={restaurant.tiktok_url} target="_blank" style={{ display: 'flex', alignItems: 'center', padding: '16px', textDecoration: 'none', color: '#374151', borderBottom: '1px solid #E5E7EB' }}>
+                                            <i className="fa-brands fa-tiktok" style={{ fontSize: '1.2rem', width: '32px', color: '#000000' }}></i>
+                                            <span style={{ fontWeight: 500 }}>TikTok'ta Takip Et</span>
+                                            <i className="fa-solid fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9CA3AF' }}></i>
+                                        </a>
+                                    )}
+                                    {restaurant.website_url && (restaurant.is_website_enabled !== false) && (
+                                        <a href={restaurant.website_url} target="_blank" style={{ display: 'flex', alignItems: 'center', padding: '16px', textDecoration: 'none', color: '#374151' }}>
+                                            <i className="fa-solid fa-globe" style={{ fontSize: '1.2rem', width: '32px', color: '#6B7280' }}></i>
+                                            <span style={{ fontWeight: 500 }}>Web Sitesini Ziyaret Et</span>
+                                            <i className="fa-solid fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.8rem', color: '#9CA3AF' }}></i>
+                                        </a>
+                                    )}
+                                </div>
+                            )}
 
                         {/* Wifi Card (Toggle) */}
                         {restaurant.wifi_ssid && (
