@@ -54,7 +54,9 @@ export default function QrPage() {
         fetchInfo();
     }, []);
 
-    const isEligibleForCard = plan === 'plusimum' || plan === 'trial';
+    // Premium users don't get custom domain features (website, card)
+    // Only Plusimum, Trial, or Freemium (if allowed) get them.
+    const isEligibleForAdvanced = plan === 'plusimum' || plan === 'trial' || plan === 'freemium';
 
     const handleDownload = async () => {
         if (!qrRef.current) return;
@@ -171,27 +173,32 @@ export default function QrPage() {
                             </button>
 
                             <button
-                                onClick={() => setQrType('website')}
+                                onClick={() => {
+                                    if (isEligibleForAdvanced) setQrType('website');
+                                    else alert('Web Sitesi özelliği Premium pakette mevcut değildir. Lütfen Plusimum pakete geçiniz.');
+                                }}
                                 style={{
                                     flex: 1,
                                     minWidth: '150px',
                                     padding: '12px',
                                     borderRadius: '8px',
                                     border: qrType === 'website' ? '2px solid #2563EB' : '1px solid #E5E7EB',
-                                    background: qrType === 'website' ? '#EFF6FF' : 'white',
-                                    color: qrType === 'website' ? '#1E40AF' : '#6B7280',
-                                    cursor: 'pointer',
-                                    fontWeight: 500
+                                    background: qrType === 'website' ? '#EFF6FF' : (isEligibleForAdvanced ? 'white' : '#F3F4F6'),
+                                    color: qrType === 'website' ? '#1E40AF' : (isEligibleForAdvanced ? '#6B7280' : '#9CA3AF'),
+                                    cursor: isEligibleForAdvanced ? 'pointer' : 'not-allowed',
+                                    fontWeight: 500,
+                                    position: 'relative'
                                 }}
                             >
                                 <i className="fa-solid fa-globe" style={{ marginRight: '8px' }}></i>
                                 Web Sitesi
+                                {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ marginLeft: '8px', color: '#D97706' }}></i>}
                             </button>
 
                             <button
                                 onClick={() => {
-                                    if (isEligibleForCard) setQrType('card');
-                                    else alert('Dijital Kartvizit özelliği sadece Plusimum pakette aktiftir.');
+                                    if (isEligibleForAdvanced) setQrType('card');
+                                    else alert('Dijital Kartvizit özelliği Premium pakette mevcut değildir. Lütfen Plusimum pakete geçiniz.');
                                 }}
                                 style={{
                                     flex: 1,
@@ -199,21 +206,21 @@ export default function QrPage() {
                                     padding: '12px',
                                     borderRadius: '8px',
                                     border: qrType === 'card' ? '2px solid #2563EB' : '1px solid #E5E7EB',
-                                    background: qrType === 'card' ? '#EFF6FF' : (isEligibleForCard ? 'white' : '#F3F4F6'),
-                                    color: qrType === 'card' ? '#1E40AF' : (isEligibleForCard ? '#6B7280' : '#9CA3AF'),
-                                    cursor: isEligibleForCard ? 'pointer' : 'not-allowed',
+                                    background: qrType === 'card' ? '#EFF6FF' : (isEligibleForAdvanced ? 'white' : '#F3F4F6'),
+                                    color: qrType === 'card' ? '#1E40AF' : (isEligibleForAdvanced ? '#6B7280' : '#9CA3AF'),
+                                    cursor: isEligibleForAdvanced ? 'pointer' : 'not-allowed',
                                     fontWeight: 500,
                                     position: 'relative'
                                 }}
                             >
                                 <i className="fa-solid fa-address-card" style={{ marginRight: '8px' }}></i>
                                 Dijital Kartvizit
-                                {!isEligibleForCard && <i className="fa-solid fa-lock" style={{ marginLeft: '8px', color: '#D97706' }}></i>}
+                                {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ marginLeft: '8px', color: '#D97706' }}></i>}
                             </button>
                         </div>
-                        {!isEligibleForCard && (
+                        {!isEligibleForAdvanced && (
                             <div style={{ marginTop: '12px', fontSize: '0.8rem', color: '#D97706' }}>
-                                * Dijital Kartvizit özelliği Plusimum pakete özeldir.
+                                * Web Sitesi ve Dijital Kartvizit özellikleri <strong>Plusimum</strong> pakete özeldir.
                             </div>
                         )}
                     </div>
