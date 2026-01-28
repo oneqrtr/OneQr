@@ -11,7 +11,6 @@ interface Restaurant {
     phone_number?: string;
     status: string;
     plan: string;
-    plan: string;
     plan_ends_at?: string;
     is_subdomain_enabled?: boolean;
 }
