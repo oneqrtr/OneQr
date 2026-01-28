@@ -130,9 +130,59 @@ export default function QrPage() {
                                     id="useLogo"
                                     checked={useLogo}
                                     onChange={(e) => setUseLogo(e.target.checked)}
+                                    disabled={!logoUrl} // Disable if no logo, though logoUrl check above handles visibility
                                     style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                 />
-                                <label htmlFor="useLogo" style={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151', cursor: 'pointer' }}>Logo Göster</label>
+                                <label htmlFor="useLogo" style={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151', cursor: 'pointer' }}>İşletme Logosunu Kullan</label>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* QR Type Selection */}
+                    <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '12px', color: '#374151' }}>QR Hedefi</div>
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            <button
+                                onClick={() => setQrType('menu')}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: qrType === 'menu' ? '2px solid #2563EB' : '1px solid #E5E7EB',
+                                    background: qrType === 'menu' ? '#EFF6FF' : 'white',
+                                    color: qrType === 'menu' ? '#1E40AF' : '#6B7280',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                }}
+                            >
+                                <i className="fa-solid fa-utensils" style={{ marginRight: '8px' }}></i>
+                                Menü
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (isEligibleForCard) setQrType('card');
+                                    else alert('Dijital Kartvizit özelliği sadece Plusimum pakette aktiftir.');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: qrType === 'card' ? '2px solid #2563EB' : '1px solid #E5E7EB',
+                                    background: qrType === 'card' ? '#EFF6FF' : (isEligibleForCard ? 'white' : '#F3F4F6'),
+                                    color: qrType === 'card' ? '#1E40AF' : (isEligibleForCard ? '#6B7280' : '#9CA3AF'),
+                                    cursor: isEligibleForCard ? 'pointer' : 'not-allowed',
+                                    fontWeight: 500,
+                                    position: 'relative'
+                                }}
+                            >
+                                <i className="fa-solid fa-address-card" style={{ marginRight: '8px' }}></i>
+                                Dijital Kartvizit
+                                {!isEligibleForCard && <i className="fa-solid fa-lock" style={{ marginLeft: '8px', color: '#D97706' }}></i>}
+                            </button>
+                        </div>
+                        {!isEligibleForCard && (
+                            <div style={{ marginTop: '12px', fontSize: '0.8rem', color: '#D97706' }}>
+                                * Dijital Kartvizit özelliği Plusimum pakete özeldir.
                             </div>
                         )}
                     </div>
@@ -143,20 +193,22 @@ export default function QrPage() {
                             <div ref={qrRef} data-qr-container style={{ background: 'white', padding: '30px', textAlign: 'center', minWidth: '300px' }}>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '24px', color: '#111827' }}>{businessName}</div>
                                 <QRCodeSVG
-                                    value={`${baseUrl}/menu/${slug}`}
+                                    value={qrType === 'menu' ? `${baseUrl}/menu/${slug}` : `${baseUrl}/k/${slug}`}
                                     size={250}
                                     level="H"
                                     fgColor={qrColor}
-                                    imageSettings={useLogo && logoUrl ? {
-                                        src: logoUrl,
+                                    imageSettings={{
+                                        src: (useLogo && logoUrl) ? logoUrl : "/logo-qr.png",
                                         x: undefined,
                                         y: undefined,
                                         height: 50,
                                         width: 50,
                                         excavate: true,
-                                    } : undefined}
+                                    }}
                                 />
-                                <div style={{ marginTop: '24px', fontSize: '0.9rem', color: '#6B7280', fontWeight: 500 }}>{businessName}</div>
+                                <div style={{ marginTop: '24px', fontSize: '0.9rem', color: '#6B7280', fontWeight: 500 }}>
+                                    {qrType === 'menu' ? 'Menüye ulaşmak için taratın' : 'Kartvizite ulaşmak için taratın'}
+                                </div>
                             </div>
                         </div>
 

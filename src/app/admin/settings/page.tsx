@@ -20,6 +20,13 @@ export default function SettingsPage() {
     const [locationLat, setLocationLat] = useState<number | null>(null);
     const [locationLng, setLocationLng] = useState<number | null>(null);
 
+    // Social Media & Wifi States
+    const [instagramUrl, setInstagramUrl] = useState('');
+    const [twitterUrl, setTwitterUrl] = useState('');
+    const [websiteUrl, setWebsiteUrl] = useState('');
+    const [wifiSsid, setWifiSsid] = useState('');
+    const [wifiPassword, setWifiPassword] = useState('');
+
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const router = useRouter();
 
@@ -51,6 +58,13 @@ export default function SettingsPage() {
                 setLocationLat(rest.location_lat);
                 setLocationLng(rest.location_lng);
 
+                // Social & Wifi
+                setInstagramUrl(rest.instagram_url || '');
+                setTwitterUrl(rest.twitter_url || '');
+                setWebsiteUrl(rest.website_url || '');
+                setWifiSsid(rest.wifi_ssid || '');
+                setWifiPassword(rest.wifi_password || '');
+
                 setRestaurantId(rest.id);
             }
         };
@@ -73,7 +87,12 @@ export default function SettingsPage() {
                 is_whatsapp_enabled: isWhatsappEnabled,
                 is_location_enabled: isLocationEnabled,
                 location_lat: locationLat,
-                location_lng: locationLng
+                location_lng: locationLng,
+                instagram_url: instagramUrl,
+                twitter_url: twitterUrl,
+                website_url: websiteUrl,
+                wifi_ssid: wifiSsid,
+                wifi_password: wifiPassword
             })
             .eq('id', restaurantId);
 
@@ -139,8 +158,65 @@ export default function SettingsPage() {
                             />
                         </div>
 
+                        {/* Social & Wifi Section */}
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>Dijital Kartvizit & Bağlantılar</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <label className="form-label"><i className="fa-brands fa-instagram" style={{ marginRight: '8px', color: '#E1306C' }}></i> Instagram Linki</label>
+                                <input
+                                    className="form-input"
+                                    value={instagramUrl}
+                                    onChange={e => setInstagramUrl(e.target.value)}
+                                    placeholder="https://instagram.com/kullaniciadi"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label"><i className="fa-brands fa-twitter" style={{ marginRight: '8px', color: '#1DA1F2' }}></i> Twitter / X Linki</label>
+                                <input
+                                    className="form-input"
+                                    value={twitterUrl}
+                                    onChange={e => setTwitterUrl(e.target.value)}
+                                    placeholder="https://twitter.com/kullaniciadi"
+                                />
+                            </div>
+                            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                <label className="form-label"><i className="fa-solid fa-globe" style={{ marginRight: '8px', color: '#4B5563' }}></i> Web Sitesi</label>
+                                <input
+                                    className="form-input"
+                                    value={websiteUrl}
+                                    onChange={e => setWebsiteUrl(e.target.value)}
+                                    placeholder="https://ornekwebsitesi.com"
+                                />
+                            </div>
+                        </div>
+
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '24px', marginBottom: '16px', color: '#4B5563' }}>Wifi Bilgileri (Müşterileriniz için)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <label className="form-label">Wifi Adı (SSID)</label>
+                                <input
+                                    className="form-input"
+                                    value={wifiSsid}
+                                    onChange={e => setWifiSsid(e.target.value)}
+                                    placeholder="Örn: Kafe_Misafir"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Wifi Şifresi</label>
+                                <input
+                                    className="form-input"
+                                    value={wifiPassword}
+                                    onChange={e => setWifiPassword(e.target.value)}
+                                    placeholder="Wifi şifreniz"
+                                />
+                            </div>
+                        </div>
+
+
                         {/* Contact Info */}
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>İletişim</h3>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>İletişim Butonları</h3>
+                        <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>Bu butonlar menünüzde ve dijital kartvizitinizde görünür.</p>
 
                         <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
