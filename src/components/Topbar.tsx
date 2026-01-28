@@ -34,15 +34,15 @@ export default function Topbar({ title }: { title: string }) {
                 {slug && (
                     <>
                         <Link href={`https://${slug}.oneqr.tr`} target="_blank" className="btn btn-sm" style={{ background: '#2563EB', color: 'white', marginRight: '8px' }}>
-                            <i className="fa-solid fa-globe" style={{ marginRight: '6px' }}></i> Siteye Git
+                            <i className="fa-solid fa-globe"></i> <span className="hidden md:inline ml-1">Siteye Git</span>
                         </Link>
                         {(plan === 'plusimum' || plan === 'trial') && (
                             <Link href={`/k/${slug}`} target="_blank" className="btn btn-sm" style={{ background: '#7C3AED', color: 'white', marginRight: '8px' }}>
-                                <i className="fa-solid fa-address-card" style={{ marginRight: '6px' }}></i> Kartviziti Gör
+                                <i className="fa-solid fa-address-card"></i> <span className="hidden md:inline ml-1">Kartviziti Gör</span>
                             </Link>
                         )}
                         <Link href={`/menu/${slug}`} target="_blank" className="btn btn-sm btn-outline">
-                            <i className="fa-solid fa-external-link-alt" style={{ marginRight: '6px' }}></i> Menüyü Gör
+                            <i className="fa-solid fa-external-link-alt"></i> <span className="hidden md:inline ml-1">Menüyü Gör</span>
                         </Link>
                     </>
                 )}

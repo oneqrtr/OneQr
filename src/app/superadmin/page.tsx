@@ -11,7 +11,9 @@ interface Restaurant {
     phone_number?: string;
     status: string;
     plan: string;
+    plan: string;
     plan_ends_at?: string;
+    is_subdomain_enabled?: boolean;
 }
 
 export default function SuperAdminPage() {
@@ -127,14 +129,22 @@ export default function SuperAdminPage() {
 
     const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
 
-    const handleUpdate = async (id: string, field: 'status' | 'plan' | 'details', value: any, newEndsAt?: string) => {
+    const handleUpdate = async (id: string, field: 'status' | 'plan' | 'details' | 'subdomain', value: any, newEndsAt?: string, newSubdomainStatus?: boolean) => {
         // Optimistic update
         setRestaurants(prev => prev.map(r =>
             r.id === id ? {
                 ...r,
                 ...(field === 'status' ? { status: value } : {}),
                 ...(field === 'plan' ? { plan: value, ...(newEndsAt ? { plan_ends_at: newEndsAt } : {}) } : {}),
-                ...(field === 'details' ? { name: value.name, slug: value.slug, plan: value.plan, status: value.status, ...(value.ends_at ? { plan_ends_at: value.ends_at } : {}) } : {})
+                ...(field === 'subdomain' ? { is_subdomain_enabled: value } : {}),
+                ...(field === 'details' ? {
+                    name: value.name,
+                    slug: value.slug,
+                    plan: value.plan,
+                    status: value.status,
+                    ...(value.ends_at ? { plan_ends_at: value.ends_at } : {}),
+                    is_subdomain_enabled: value.is_subdomain_enabled
+                } : {})
             } : r
         ));
 
@@ -147,18 +157,23 @@ export default function SuperAdminPage() {
         let newStatus = current.status;
         let newPlan = current.plan;
         let newEndsAtVal = current.plan_ends_at;
+        let newIsSubdomainEnabled = current.is_subdomain_enabled;
 
         if (field === 'details') {
             newName = value.name;
             newSlug = value.slug;
             newStatus = value.status;
             newPlan = value.plan;
+            newStatus = value.status;
             newEndsAtVal = value.ends_at || current.plan_ends_at;
+            newIsSubdomainEnabled = value.is_subdomain_enabled;
         } else if (field === 'status') {
             newStatus = value;
         } else if (field === 'plan') {
             newPlan = value;
             if (newEndsAt) newEndsAtVal = newEndsAt;
+        } else if (field === 'subdomain') {
+            newIsSubdomainEnabled = value;
         }
 
         // Unified RPC Call
@@ -168,7 +183,8 @@ export default function SuperAdminPage() {
             new_slug: newSlug,
             new_status: newStatus,
             new_plan: newPlan,
-            new_ends_at: newEndsAtVal
+            new_ends_at: newEndsAtVal,
+            new_is_subdomain_enabled: newIsSubdomainEnabled
         });
 
         if (error) {
@@ -337,9 +353,18 @@ export default function SuperAdminPage() {
                                                         <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                             <i className="fa-solid fa-utensils" style={{ fontSize: '0.75rem' }}></i> /menu/{rest.slug} ↗
                                                         </a>
-                                                        <a href={`https://${rest.slug}.oneqr.tr`} target="_blank" style={{ color: '#059669', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <i className="fa-solid fa-globe" style={{ fontSize: '0.75rem' }}></i> {rest.slug}.oneqr.tr ↗
-                                                        </a>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <a href={`https://${rest.slug}.oneqr.tr`} target="_blank" style={{ color: rest.is_subdomain_enabled ? '#059669' : '#9CA3AF', textDecoration: rest.is_subdomain_enabled ? 'none' : 'line-through', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <i className="fa-solid fa-globe" style={{ fontSize: '0.75rem' }}></i> {rest.slug}.oneqr.tr ↗
+                                                            </a>
+                                                            <button
+                                                                onClick={() => handleUpdate(rest.id, 'subdomain', !rest.is_subdomain_enabled)}
+                                                                title={rest.is_subdomain_enabled ? 'Pasife Al' : 'Aktife Al'}
+                                                                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.7 }}
+                                                            >
+                                                                {rest.is_subdomain_enabled ? '✅' : '⛔'}
+                                                            </button>
+                                                        </div>
                                                         {(rest.plan === 'plusimum' || rest.plan === 'trial') && (
                                                             <a href={`/k/${rest.slug}`} target="_blank" style={{ color: '#7C3AED', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                 <i className="fa-solid fa-address-card" style={{ fontSize: '0.75rem' }}></i> /k/{rest.slug} ↗
@@ -421,9 +446,14 @@ export default function SuperAdminPage() {
                                                     <a href={`/menu/${rest.slug}`} target="_blank" style={{ color: '#2563EB', textDecoration: 'none' }}>
                                                         <i className="fa-solid fa-utensils"></i> Menu ↗
                                                     </a>
-                                                    <a href={`https://${rest.slug}.oneqr.tr`} target="_blank" style={{ color: '#059669', textDecoration: 'none' }}>
-                                                        <i className="fa-solid fa-globe"></i> Domain ↗
-                                                    </a>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <a href={`https://${rest.slug}.oneqr.tr`} target="_blank" style={{ color: rest.is_subdomain_enabled ? '#059669' : '#9CA3AF', textDecoration: rest.is_subdomain_enabled ? 'none' : 'line-through' }}>
+                                                            <i className="fa-solid fa-globe"></i> Domain ↗
+                                                        </a>
+                                                        <button onClick={() => handleUpdate(rest.id, 'subdomain', !rest.is_subdomain_enabled)} style={{ border: 'none', background: 'none' }}>
+                                                            {rest.is_subdomain_enabled ? '✅' : '⛔'}
+                                                        </button>
+                                                    </div>
                                                     {(rest.plan === 'plusimum' || rest.plan === 'trial') && (
                                                         <a href={`/k/${rest.slug}`} target="_blank" style={{ color: '#7C3AED', textDecoration: 'none' }}>
                                                             <i className="fa-solid fa-address-card"></i> Kartvizit ↗
@@ -543,13 +573,15 @@ export default function SuperAdminPage() {
                             const newName = formData.get('name') as string;
                             const newSlug = formData.get('slug') as string;
                             const newStatus = formData.get('status') as string;
+                            const newSubdomainStatus = formData.get('is_subdomain_enabled') === 'on';
 
                             handleUpdate(selectedRestaurant.id, 'details', {
                                 name: newName,
                                 slug: newSlug,
                                 plan: newPlan,
                                 status: newStatus,
-                                ends_at: newEndsAt
+                                ends_at: newEndsAt,
+                                is_subdomain_enabled: newSubdomainStatus
                             });
                         }}>
                             <div style={{ marginBottom: '20px' }}>
@@ -626,6 +658,20 @@ export default function SuperAdminPage() {
                                         <option value="expired">Süresi Dolmuş</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div style={{ marginBottom: '20px', background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        name="is_subdomain_enabled"
+                                        defaultChecked={selectedRestaurant.is_subdomain_enabled}
+                                    />
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>Özel Subdomain Erişimine İzin Ver</span>
+                                </label>
+                                <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px', marginLeft: '24px' }}>
+                                    (Plusimum paketi haricinde kapalı olması önerilir)
+                                </p>
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>

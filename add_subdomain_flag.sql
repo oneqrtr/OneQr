@@ -1,0 +1,2 @@
+ALTER TABLE restaurants 
+ADD COLUMN IF NOT EXISTS is_subdomain_enabled BOOLEAN DEFAULT TRUE;
