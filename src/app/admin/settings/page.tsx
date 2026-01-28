@@ -61,7 +61,8 @@ export default function SettingsPage() {
                 // Social & Wifi
                 setInstagramUrl(rest.instagram_url || '');
                 setTwitterUrl(rest.twitter_url || '');
-                setWebsiteUrl(rest.website_url || '');
+                // Default to custom subdomain if no website is set
+                setWebsiteUrl(rest.website_url || `https://${rest.slug}.oneqr.tr`);
                 setWifiSsid(rest.wifi_ssid || '');
                 setWifiPassword(rest.wifi_password || '');
 
