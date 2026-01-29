@@ -1207,14 +1207,18 @@ ul {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: #2563EB;
   color: white;
   margin-left: 8px;
   transition: all 0.2s;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
+  /* Slightly larger icon */
+  text-decoration: none;
+  border: 1px solid transparent;
+  /* Ensure consistency */
 }
 
 .btn-icon-mobile:hover {
@@ -1227,20 +1231,37 @@ ul {
 }
 
 .btn-icon-mobile.outline {
-  background-color: transparent;
+  background-color: white;
   border: 1px solid #E5E7EB;
   color: #374151;
+}
+
+.btn-label-desktop {
+  display: none;
 }
 
 @media (min-width: 768px) {
   .btn-icon-mobile {
     width: auto;
-    height: auto;
+    height: 36px;
+    /* Standard height */
     border-radius: 8px;
-    padding: 8px 16px;
+    padding: 0 16px;
+    font-size: 0.9rem;
+  }
+
+  .btn-icon-mobile i {
+    font-size: 0.9rem;
+    margin-right: 8px;
   }
 
   .btn-icon-mobile.outline {
+    background-color: transparent;
     border-color: #E5E7EB;
+  }
+
+  .btn-label-desktop {
+    display: inline;
+    white-space: nowrap;
   }
 }
