@@ -21,7 +21,7 @@ export default function Topbar({ title }: { title: string }) {
 
             if (rest) {
                 setSlug(rest.slug);
-                setPlan(rest.plan || 'freemium');
+                setPlan(rest.plan || 'trial');
             }
         };
         fetchSlug();
@@ -33,10 +33,12 @@ export default function Topbar({ title }: { title: string }) {
             <div className="topbar-actions">
                 {slug && (
                     <>
-                        <Link href={`https://${slug}.oneqr.tr`} target="_blank" className="btn btn-sm" style={{ background: '#2563EB', color: 'white', marginRight: '8px' }}>
-                            <i className="fa-solid fa-globe"></i> <span className="hidden md:inline ml-1">Siteye Git</span>
-                        </Link>
-                        {(plan === 'plusimum' || plan === 'trial') && (
+                        {(plan === 'plusimum' || plan === 'trial' || plan === 'freemium') && (
+                            <Link href={`https://${slug}.oneqr.tr`} target="_blank" className="btn btn-sm" style={{ background: '#2563EB', color: 'white', marginRight: '8px' }}>
+                                <i className="fa-solid fa-globe"></i> <span className="hidden md:inline ml-1">Siteye Git</span>
+                            </Link>
+                        )}
+                        {(plan === 'plusimum' || plan === 'trial' || plan === 'freemium') && (
                             <Link href={`/k/${slug}`} target="_blank" className="btn btn-sm" style={{ background: '#7C3AED', color: 'white', marginRight: '8px' }}>
                                 <i className="fa-solid fa-address-card"></i> <span className="hidden md:inline ml-1">Kartviziti Gör</span>
                             </Link>
