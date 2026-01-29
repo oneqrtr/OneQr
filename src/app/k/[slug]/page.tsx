@@ -22,7 +22,14 @@ export default function DigitalCardPage() {
                 .eq('slug', slug)
                 .single();
 
-            if (data) setRestaurant(data);
+            if (data) {
+                // RESTRICTION: Premium users cannot view the Digital Card (redirect to menu)
+                if (data.plan === 'premium') {
+                    window.location.href = `/menu/${slug}`;
+                    return;
+                }
+                setRestaurant(data);
+            }
             setLoading(false);
         }
         if (slug) fetchRest();

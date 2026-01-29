@@ -13,6 +13,7 @@ interface Restaurant {
     plan: string;
     plan_ends_at?: string;
     is_subdomain_enabled?: boolean;
+    owner_email?: string;
 }
 
 export default function SuperAdminPage() {
@@ -337,6 +338,7 @@ export default function SuperAdminPage() {
                                     <thead style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                                         <tr>
                                             <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>RESTORAN ADI</th>
+                                            <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>E-POSTA</th>
                                             <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>DURUM</th>
                                             <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>PLAN</th>
                                             <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>OLUŞTURULMA</th>
@@ -370,6 +372,10 @@ export default function SuperAdminPage() {
                                                             </a>
                                                         )}
                                                     </div>
+                                                </td>
+                                                <td style={{ padding: '16px' }}>
+                                                    <div style={{ fontSize: '0.9rem', color: '#374151' }}>{rest.owner_email || '-'}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{rest.phone_number || '-'}</div>
                                                 </td>
                                                 <td style={{ padding: '16px' }}>
                                                     <div
@@ -465,6 +471,16 @@ export default function SuperAdminPage() {
                                             </button>
                                         </div>
 
+                                        {/* Contact Info in Mobile */}
+                                        <div style={{ background: '#F9FAFB', padding: '8px', borderRadius: '6px', marginBottom: '12px', fontSize: '0.85rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                                <i className="fa-solid fa-envelope" style={{ color: '#6B7280' }}></i> {rest.owner_email || '-'}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <i className="fa-solid fa-phone" style={{ color: '#6B7280' }}></i> {rest.phone_number || '-'}
+                                            </div>
+                                        </div>
+
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                                             <div>
                                                 <label style={{ fontSize: '0.75rem', color: '#6B7280' }}>Durum</label>
@@ -485,7 +501,6 @@ export default function SuperAdminPage() {
 
                                         <div style={{ fontSize: '0.85rem', color: '#6B7280', display: 'flex', gap: '16px' }}>
                                             <span>📅 {new Date(rest.created_at).toLocaleDateString()}</span>
-                                            <span>📞 {rest.phone_number || '-'}</span>
                                         </div>
                                     </div>
                                 ))}

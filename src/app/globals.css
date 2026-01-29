@@ -1201,3 +1201,46 @@ ul {
     padding: 20px;
   }
 }
+
+/* Mobile Icon Buttons for Topbar */
+.btn-icon-mobile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #2563EB;
+  color: white;
+  margin-left: 8px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.btn-icon-mobile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-icon-mobile.purple {
+  background-color: #7C3AED;
+}
+
+.btn-icon-mobile.outline {
+  background-color: transparent;
+  border: 1px solid #E5E7EB;
+  color: #374151;
+}
+
+@media (min-width: 768px) {
+  .btn-icon-mobile {
+    width: auto;
+    height: auto;
+    border-radius: 8px;
+    padding: 8px 16px;
+  }
+
+  .btn-icon-mobile.outline {
+    border-color: #E5E7EB;
+  }
+}

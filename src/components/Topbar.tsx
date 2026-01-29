@@ -34,17 +34,17 @@ export default function Topbar({ title }: { title: string }) {
                 {slug && (
                     <>
                         {(plan === 'plusimum' || plan === 'trial' || plan === 'freemium') && (
-                            <Link href={`https://${slug}.oneqr.tr`} target="_blank" className="btn btn-sm" style={{ background: '#2563EB', color: 'white', marginRight: '8px' }}>
-                                <i className="fa-solid fa-globe"></i> <span className="hidden md:inline ml-1">Siteye Git</span>
+                            <Link href={`https://${slug}.oneqr.tr`} target="_blank" className="btn-icon-mobile" title="Siteye Git">
+                                <i className="fa-solid fa-globe"></i> <span className="hidden md:inline ml-2">Siteye Git</span>
                             </Link>
                         )}
                         {(plan === 'plusimum' || plan === 'trial' || plan === 'freemium') && (
-                            <Link href={`/k/${slug}`} target="_blank" className="btn btn-sm" style={{ background: '#7C3AED', color: 'white', marginRight: '8px' }}>
-                                <i className="fa-solid fa-address-card"></i> <span className="hidden md:inline ml-1">Kartviziti Gör</span>
+                            <Link href={`/k/${slug}`} target="_blank" className="btn-icon-mobile purple" title="Kartviziti Gör">
+                                <i className="fa-solid fa-address-card"></i> <span className="hidden md:inline ml-2">Kartvizit</span>
                             </Link>
                         )}
-                        <Link href={`/menu/${slug}`} target="_blank" className="btn btn-sm btn-outline">
-                            <i className="fa-solid fa-external-link-alt"></i> <span className="hidden md:inline ml-1">Menüyü Gör</span>
+                        <Link href={`/menu/${slug}`} target="_blank" className="btn-icon-mobile outline" title="Menüyü Gör">
+                            <i className="fa-solid fa-arrow-up-right-from-square"></i> <span className="hidden md:inline ml-2">Menü</span>
                         </Link>
                     </>
                 )}
