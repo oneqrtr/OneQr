@@ -10,6 +10,8 @@ interface ContactFabProps {
     locationLat?: number;
     locationLng?: number;
     themeColor: string;
+    cartCount?: number;
+    onWhatsappClick?: () => void;
 }
 
 export default function ContactFab({
@@ -20,7 +22,9 @@ export default function ContactFab({
     whatsappNumber,
     locationLat,
     locationLng,
-    themeColor
+    themeColor,
+    cartCount = 0,
+    onWhatsappClick
 }: ContactFabProps) {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -42,7 +46,8 @@ export default function ContactFab({
         fontSize: '1.5rem',
         zIndex: 100,
         transition: 'transform 0.3s ease',
-        transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)'
+        transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+        position: 'relative'
     };
 
     const actionButtonStyle = (bgColor: string, delay: string): React.CSSProperties => ({
@@ -66,6 +71,71 @@ export default function ContactFab({
         position: 'relative'
     });
 
+    const badgeStyle: React.CSSProperties = {
+        position: 'absolute',
+        top: '-5px',
+        right: '-5px',
+        backgroundColor: '#EF4444',
+        color: 'white',
+        borderRadius: '50%',
+        width: '20px',
+        height: '20px',
+        fontSize: '0.75rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        border: '2px solid white',
+        zIndex: 101,
+        // Ensure badge doesn't rotate with parent transform if placed inside rotating element, 
+        // but here we are placing inside relative container, mainButtonStyle has rotate.
+        // If we put badge inside main button, it will rotate.
+        // Better to handle rotation carefully or counter-rotate if needed, 
+        // OR simpler: place badge outside the rotating icon wrapper but inside the container.
+        // Current structure: container -> div(mainButton) -> icon.
+        // We will place badge inside div(mainButton). It will rotate. 
+        // For a perfectly upright badge, we'd need to separate the button background from the icon rotation,
+        // or counter-rotate the badge. 
+        // However, standard FABs often rotate the whole thing (like 'plus' to 'x').
+        // Let's keep it simple. If it rotates 45deg, the badge rotates too. 
+        // Actually, 'plus' icon rotates. If we want badge to NOT rotate, we should restructure.
+        // But for now, let's stick to the prompt's request which implies a simple badge.
+        // The user prompt shows HTML examples.
+    };
+
+    // Helper to render WhatsApp button content
+    const renderWhatsappButton = () => {
+        const hasCart = cartCount > 0;
+
+        // If we have items in cart and a handler, we prioritize that over direct link
+        // BUT user said: "sepete ekleme bittiğinde ise watsapp icona tıklandıgında eğer sepet doluysa bir modal açılacak."
+        // So we use onClick if cartCount > 0
+
+        const handleClick = (e: React.MouseEvent) => {
+            if (hasCart && onWhatsappClick) {
+                e.preventDefault();
+                onWhatsappClick();
+            }
+        };
+
+        return (
+            <a
+                href={hasCart ? '#' : `https://wa.me/${whatsappNumber}`}
+                onClick={handleClick}
+                target={hasCart ? undefined : "_blank"}
+                rel={hasCart ? undefined : "noopener noreferrer"}
+                style={actionButtonStyle('#25D366', '0.2s')}
+                title="Whatsapp"
+            >
+                {/* Badge on WhatsApp button when open */}
+                {isOpen && hasCart && (
+                    <span style={badgeStyle}>{cartCount}</span>
+                )}
+                <i className="fa-brands fa-whatsapp"></i>
+            </a>
+        );
+    };
+
     return (
         <div style={{
             position: 'fixed',
@@ -83,17 +153,7 @@ export default function ContactFab({
                 alignItems: 'center',
                 marginBottom: '8px'
             }}>
-                {whatsappEnabled && whatsappNumber && (
-                    <a
-                        href={`https://wa.me/${whatsappNumber}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={actionButtonStyle('#25D366', '0.2s')}
-                        title="Whatsapp"
-                    >
-                        <i className="fa-brands fa-whatsapp"></i>
-                    </a>
-                )}
+                {whatsappEnabled && whatsappNumber && renderWhatsappButton()}
 
                 {callEnabled && phoneNumber && (
                     <a
@@ -120,6 +180,11 @@ export default function ContactFab({
 
             {/* Main Toggle Button */}
             <div onClick={toggleOpen} style={mainButtonStyle}>
+                {/* Badge on Main Button when closed */}
+                {!isOpen && cartCount > 0 && (
+                    <span style={badgeStyle}>{cartCount}</span>
+                )}
+
                 {isOpen ? (
                     <i className="fa-solid fa-plus"></i>
                 ) : (
