@@ -69,6 +69,136 @@ export default function PublicMenuPage() {
     const [activeCategory, setActiveCategory] = useState<string>('');
     const [selectedImage, setSelectedImage] = useState<string>(''); // For Image Modal
 
+    // Cart State
+    interface CartItem {
+        id: string;
+        name: string;
+        price: number;
+        quantity: number;
+        variantName?: string;
+    }
+    const [cart, setCart] = useState<CartItem[]>([]);
+
+    // Modal States
+    const [selectedProductForVariant, setSelectedProductForVariant] = useState<Product | null>(null);
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+
+    // Customer Info State
+    const [customerInfo, setCustomerInfo] = useState({
+        fullName: '',
+        addressType: 'manual' as 'manual' | 'location',
+        locationLat: null as number | null,
+        locationLng: null as number | null,
+        addressDetail: '',
+        paymentMethod: 'cash' as string // 'cash' or 'credit_card'
+    });
+
+    const isOrderEnabled = true; // Always true for now (or check plan)
+
+    const addToCart = (product: Product, variant?: Variant) => {
+        if (!isOrderEnabled) return;
+        setCart(prev => {
+            const existingItem = prev.find(item => item.id === product.id && item.variantName === variant?.name);
+            if (existingItem) {
+                return prev.map(item =>
+                    (item.id === product.id && item.variantName === variant?.name)
+                        ? { ...item, quantity: item.quantity + 1 }
+                        : item
+                );
+            } else {
+                return [...prev, {
+                    id: product.id,
+                    name: product.name,
+                    price: variant ? (product.price + variant.price) : product.price,
+                    quantity: 1,
+                    variantName: variant?.name
+                }];
+            }
+        });
+        setSelectedProductForVariant(null);
+    };
+
+    const updateCartItemQuantity = (productId: string, variantName: string | undefined, delta: number) => {
+        setCart(prev => {
+            return prev.map(item => {
+                if (item.id === productId && item.variantName === variantName) {
+                    const newQuantity = Math.max(0, item.quantity + delta);
+                    return { ...item, quantity: newQuantity };
+                }
+                return item;
+            }).filter(item => item.quantity > 0);
+        });
+    };
+
+    const handleProductClick = (product: Product) => {
+        if (!isOrderEnabled) return;
+        const productVariants = variants.filter(v => v.product_id === product.id);
+        if (productVariants.length > 0) {
+            setSelectedProductForVariant(product);
+        } else {
+            addToCart(product);
+        }
+    };
+
+    const cartTotalCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+    const getPaymentMethodLabel = (method: string) => {
+        if (method === 'cash') return 'Nakit';
+        if (method === 'credit_card') return 'Kredi Kartı';
+        return method;
+    };
+
+    const sendWhatsappOrder = () => {
+        if (!restaurant || !restaurant.whatsapp_number) return;
+
+        let message = `Merhabalar, *${restaurant.name}* üzerinden sipariş vermek istiyorum:\n\n`;
+        let totalAmount = 0;
+
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            totalAmount += itemTotal;
+            message += `${item.quantity}x ${item.name}${item.variantName ? ` (${item.variantName})` : ''}: ${itemTotal} ${restaurant.currency}\n`;
+        });
+
+        message += `\n*Toplam Tutar: ${totalAmount} ${restaurant.currency}*\n`;
+        message += `--------------------------------\n`;
+        message += `*Müşteri Bilgileri:*\n`;
+        message += `👤 İsim: ${customerInfo.fullName}\n`;
+
+        if (customerInfo.addressType === 'location' && customerInfo.locationLat && customerInfo.locationLng) {
+            message += `📍 Konum: https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
+        }
+
+        message += `🏠 Adres Detayı: ${customerInfo.addressDetail}\n`;
+        message += `💳 Ödeme Yöntemi: ${getPaymentMethodLabel(customerInfo.paymentMethod)}`;
+
+        const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+        setIsCheckoutModalOpen(false);
+    };
+
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            alert('Tarayıcınız konum servisini desteklemiyor.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setCustomerInfo({
+                    ...customerInfo,
+                    addressType: 'location',
+                    locationLat: position.coords.latitude,
+                    locationLng: position.coords.longitude
+                });
+                alert('Konumunuz alındı.');
+            },
+            (error) => {
+                console.error(error);
+                alert('Konum alınamadı.');
+            }
+        );
+    };
+
     useEffect(() => {
         const fetchMenu = async () => {
             try {
@@ -317,26 +447,29 @@ export default function PublicMenuPage() {
             <div className="mobile-only">
                 <header style={{ background: 'white', padding: '0', textAlign: 'center', borderBottom: '1px solid #E5E7EB' }}>
                     {/* Hero Image */}
-                    {restaurant.hero_image_url && (
-                        <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
-                            <img src={restaurant.hero_image_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                    )}
+                    <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
+                        <img
+                            src={restaurant.hero_image_url || "/images/defaults/cover_pizza.png"}
+                            alt="Cover"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => { e.currentTarget.src = "/images/defaults/cover_pizza.png"; }}
+                        />
+                    </div>
 
-                    <div style={{ padding: '24px', paddingTop: restaurant.hero_image_url ? '0' : '24px' }}>
+                    <div style={{ padding: '0 24px 24px' }}>
                         <div style={{
                             width: '100px',
                             height: '100px',
                             background: 'white',
                             borderRadius: '50%',
-                            margin: restaurant.hero_image_url ? '-50px auto 12px' : '0 auto 12px', // Pull up if hero exists
+                            margin: '-50px auto 12px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: restaurant.theme_color,
                             fontSize: '2rem',
                             fontWeight: 'bold',
-                            border: '4px solid white', // Add border to separate from hero
+                            border: '4px solid white',
                             position: 'relative',
                             zIndex: 11,
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
@@ -459,11 +592,14 @@ export default function PublicMenuPage() {
                 {/* Main Product Content */}
                 <main className="content-area">
                     {/* Desktop Hero Image (if exists) */}
-                    {restaurant.hero_image_url && (
-                        <div className="desktop-only" style={{ width: '100%', height: '250px', borderRadius: '16px', overflow: 'hidden', marginBottom: '32px' }}>
-                            <img src={restaurant.hero_image_url} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                    )}
+                    <div className="desktop-only" style={{ width: '100%', height: '250px', borderRadius: '16px', overflow: 'hidden', marginBottom: '32px' }}>
+                        <img
+                            src={restaurant.hero_image_url || "/images/defaults/cover_pizza.png"}
+                            alt="Cover"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => { e.currentTarget.src = "/images/defaults/cover_pizza.png"; }}
+                        />
+                    </div>
 
                     {categories.map(cat => {
                         const catProducts = products.filter(p => p.category_id === cat.id);
@@ -521,8 +657,32 @@ export default function PublicMenuPage() {
                                                         </div>
                                                     )}
 
-                                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: restaurant.theme_color }}>
-                                                        {product.price} {restaurant.currency}
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: restaurant.theme_color }}>
+                                                            {product.price} {restaurant.currency}
+                                                        </div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleProductClick(product);
+                                                            }}
+                                                            style={{
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '50%',
+                                                                border: 'none',
+                                                                background: restaurant.theme_color,
+                                                                color: 'white',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                cursor: 'pointer',
+                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                                fontSize: '1.2rem'
+                                                            }}
+                                                        >
+                                                            <i className="fa-solid fa-plus"></i>
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 {product.image_url && (
@@ -556,53 +716,207 @@ export default function PublicMenuPage() {
             {/* Image Modal */}
             {selectedImage && (
                 <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.85)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: '20px',
-                    backdropFilter: 'blur(5px)'
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000, padding: '20px', backdropFilter: 'blur(5px)'
                 }} onClick={() => setSelectedImage('')}>
                     <div style={{ position: 'relative', maxWidth: '100%', maxHeight: '90vh' }}>
                         <button
                             onClick={() => setSelectedImage('')}
                             style={{
-                                position: 'absolute',
-                                top: '-40px',
-                                right: '0',
-                                background: 'rgba(0,0,0,0.5)',
-                                border: 'none',
-                                color: 'white',
-                                width: '30px',
-                                height: '30px',
-                                borderRadius: '50%',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.2rem',
-                                zIndex: 1001
+                                position: 'absolute', top: '-40px', right: '0', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white',
+                                width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', zIndex: 1001
                             }}
                         >
                             <i className="fa-solid fa-xmark"></i>
                         </button>
-                        <img
-                            src={selectedImage}
-                            alt="Full Screen"
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '80vh',
-                                borderRadius: '8px',
-                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                            }}
-                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the image
-                        />
+                        <img src={selectedImage} alt="Full Screen" style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }} onClick={(e) => e.stopPropagation()} />
+                    </div>
+                </div>
+            )}
+
+            {/* Variant Modal */}
+            {selectedProductForVariant && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)'
+                }} onClick={() => setSelectedProductForVariant(null)}>
+                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', color: '#111827' }}>{selectedProductForVariant.name}</h3>
+                        <p style={{ color: '#6B7280', marginBottom: '16px' }}>Lütfen bir seçenek belirleyin:</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {variants.filter(v => v.product_id === selectedProductForVariant!.id).map(variant => (
+                                <button
+                                    key={variant.id}
+                                    onClick={() => addToCart(selectedProductForVariant!, variant)}
+                                    style={{
+                                        padding: '12px 16px', borderRadius: '8px', border: '1px solid #E5E7EB',
+                                        background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                        cursor: 'pointer', textAlign: 'left'
+                                    }}
+                                >
+                                    <span style={{ fontWeight: 500, color: '#374151' }}>{variant.name}</span>
+                                    <span style={{ color: restaurant?.theme_color, fontWeight: 600 }}>+{variant.price} {restaurant?.currency}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Checkout Modal */}
+            {isCheckoutModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                    backdropFilter: 'blur(3px)'
+                }} onClick={() => setIsCheckoutModalOpen(false)}>
+                    <div style={{
+                        background: 'white', borderRadius: '24px 24px 0 0', padding: '24px', width: '100%', maxWidth: '600px',
+                        maxHeight: '90vh', overflowY: 'auto', animation: 'slideUp 0.3s ease-out'
+                    }} onClick={e => e.stopPropagation()}>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>Sepetim</h3>
+                            <button onClick={() => setIsCheckoutModalOpen(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', color: '#6B7280', cursor: 'pointer' }}>
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        {/* Cart Items List */}
+                        <div style={{ marginBottom: '24px', borderBottom: '1px solid #E5E7EB', paddingBottom: '16px' }}>
+                            {cart.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '32px 0', color: '#6B7280' }}>
+                                    <i className="fa-solid fa-basket-shopping" style={{ fontSize: '2rem', marginBottom: '12px', color: '#D1D5DB' }}></i>
+                                    <p>Sepetinizde ürün bulunmuyor.</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {cart.map((item, idx) => (
+                                        <div key={`${item.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F9FAFB', padding: '12px', borderRadius: '12px', border: '1px solid #F3F4F6' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 600, color: '#374151', fontSize: '0.95rem' }}>{item.name}</div>
+                                                {item.variantName && <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{item.variantName}</div>}
+                                                <div style={{ fontSize: '0.9rem', color: restaurant?.theme_color || '#000', fontWeight: 700, marginTop: '4px' }}>
+                                                    {item.price * item.quantity} {restaurant?.currency}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '6px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                                <button
+                                                    onClick={() => updateCartItemQuantity(item.id, item.variantName, -1)}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#F3F4F6', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: '4px' }}
+                                                >-</button>
+                                                <span style={{ fontWeight: 600, fontSize: '1rem', minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
+                                                <button
+                                                    onClick={() => updateCartItemQuantity(item.id, item.variantName, 1)}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#F3F4F6', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: '4px' }}
+                                                >+</button>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', padding: '16px', background: '#F9FAFB', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+                                        <span style={{ fontWeight: 600, color: '#374151', fontSize: '1.1rem' }}>Toplam Tutar</span>
+                                        <span style={{ fontWeight: 800, color: restaurant?.theme_color || '#000', fontSize: '1.25rem' }}>
+                                            {cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} {restaurant?.currency}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Customer Form */}
+                        {cart.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>Sipariş Bilgileri</h3>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Ad Soyad</label>
+                                    <input
+                                        type="text"
+                                        value={customerInfo.fullName}
+                                        onChange={e => setCustomerInfo({ ...customerInfo, fullName: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }}
+                                        placeholder="Adınız Soyadınız"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Teslimat Adresi</label>
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                        <button
+                                            onClick={handleGetLocation}
+                                            style={{
+                                                flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB',
+                                                background: customerInfo.addressType === 'location' ? '#EFF6FF' : 'white',
+                                                color: customerInfo.addressType === 'location' ? '#2563EB' : '#374151',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer'
+                                            }}
+                                        >
+                                            <i className="fa-solid fa-location-crosshairs"></i> Konumumu Kullan
+                                        </button>
+                                        <button
+                                            onClick={() => setCustomerInfo({ ...customerInfo, addressType: 'manual', locationLat: null, locationLng: null })}
+                                            style={{
+                                                flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB',
+                                                background: customerInfo.addressType === 'manual' ? '#EFF6FF' : 'white',
+                                                color: customerInfo.addressType === 'manual' ? '#2563EB' : '#374151',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer'
+                                            }}
+                                        >
+                                            <i className="fa-solid fa-pen"></i> Elle Gir
+                                        </button>
+                                    </div>
+
+                                    <textarea
+                                        value={customerInfo.addressDetail}
+                                        onChange={e => setCustomerInfo({ ...customerInfo, addressDetail: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }}
+                                        placeholder={customerInfo.addressType === 'location' ? "Daire No, Kat, Zil vb. detayları ekleyin..." : "Mahalle, Cadde, Sokak, No, Daire..."}
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Ödeme Yöntemi</label>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <label style={{ flex: 1, padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'cash' ? '#25D366' : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F0FDF4' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input type="radio" name="payment" value="cash" checked={customerInfo.paymentMethod === 'cash'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'cash' })} />
+                                            <span>Nakit</span>
+                                        </label>
+                                        <label style={{ flex: 1, padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'credit_card' ? '#25D366' : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F0FDF4' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input type="radio" name="payment" value="credit_card" checked={customerInfo.paymentMethod === 'credit_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'credit_card' })} />
+                                            <span>Kredi Kartı</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={sendWhatsappOrder}
+                                    disabled={!customerInfo.fullName || !customerInfo.addressDetail}
+                                    style={{
+                                        marginTop: '16px',
+                                        background: '#25D366',
+                                        color: 'white',
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        fontSize: '1rem',
+                                        fontWeight: 700,
+                                        cursor: (customerInfo.fullName && customerInfo.addressDetail) ? 'pointer' : 'not-allowed',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        opacity: (customerInfo.fullName && customerInfo.addressDetail) ? 1 : 0.6,
+                                        width: '100%'
+                                    }}
+                                >
+                                    <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.2rem' }}></i>
+                                    Siparişi Whatsapp'a Gönder
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -654,6 +968,8 @@ export default function PublicMenuPage() {
                 locationLat={restaurant.location_lat}
                 locationLng={restaurant.location_lng}
                 themeColor={restaurant.theme_color}
+                cartCount={cartTotalCount}
+                onWhatsappClick={() => setIsCheckoutModalOpen(true)}
             />
 
         </div>
