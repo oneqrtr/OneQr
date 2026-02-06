@@ -73,18 +73,33 @@ export default function OrdersPage() {
 
     useEffect(() => {
         const fetchOrders = async () => {
+            console.log("Siparişler sayfası yükleniyor...");
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return; // Handle auth redirect or component guard
+
+            if (!user) {
+                console.error("Kullanıcı oturumu bulunamadı.");
+                setLoading(false);
+                return;
+            }
+
+            console.log("Kullanıcı ID:", user.id);
 
             // Get Restaurant ID
-            const { data: rest } = await supabase
+            const { data: rest, error: restError } = await supabase
                 .from('restaurants')
                 .select('id')
                 .eq('owner_id', user.id)
                 .single();
 
+            if (restError) {
+                console.error("Restoran bilgisi çekilemedi:", restError);
+                setLoading(false);
+                return;
+            }
+
             if (rest) {
+                console.log("Restoran ID:", rest.id);
                 setRestaurantId(rest.id);
 
                 // Fetch existing orders
