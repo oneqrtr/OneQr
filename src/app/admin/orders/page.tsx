@@ -22,6 +22,7 @@ interface Order {
     location_lat?: number;
     location_lng?: number;
     order_number?: number;
+    customer_order_count?: number;
     items: OrderItem[];
     total_amount: number;
     payment_method: string;
@@ -328,6 +329,11 @@ export default function OrdersPage() {
                                                 <span style={{ color: '#F59E0B', marginRight: '8px' }}>#{order.order_number}</span>
                                             )}
                                             {order.customer_name}
+                                            {order.customer_order_count && (
+                                                <span style={{ fontWeight: 400, color: '#6B7280', fontSize: '0.9rem', marginLeft: '6px' }}>
+                                                    ({order.customer_order_count})
+                                                </span>
+                                            )}
                                         </div>
                                         <div style={{ color: '#6B7280', fontSize: '0.9rem' }}>{formatDate(order.created_at)}</div>
                                         <div style={{ color: '#374151', fontSize: '0.9rem', marginTop: '4px' }}>
