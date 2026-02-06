@@ -21,6 +21,7 @@ interface Order {
     address_detail?: string;
     location_lat?: number;
     location_lng?: number;
+    order_number?: number;
     items: OrderItem[];
     total_amount: number;
     payment_method: string;
@@ -218,7 +219,7 @@ export default function OrdersPage() {
             `}</style>
             <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '1px dashed black', paddingBottom: '10px' }}>
                 <h1 style={{ fontSize: '24px', margin: '0 0 10px' }}>OneQR Menü</h1>
-                <h2 style={{ fontSize: '18px', margin: 0 }}>Sipariş Fişi</h2>
+                <h2 style={{ fontSize: '18px', margin: 0 }}>Sipariş Fişi #{order.order_number || '?'}</h2>
                 <p style={{ margin: '5px 0' }}>{formatDate(order.created_at)}</p>
             </div>
 
@@ -322,7 +323,10 @@ export default function OrdersPage() {
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
-                                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#111827' }}>{order.customer_name}</div>
+                                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#111827' }}>
+                                            <span style={{ color: '#F59E0B', marginRight: '8px' }}>#{order.order_number}</span>
+                                            {order.customer_name}
+                                        </div>
                                         <div style={{ color: '#6B7280', fontSize: '0.9rem' }}>{formatDate(order.created_at)}</div>
                                         <div style={{ color: '#374151', fontSize: '0.9rem', marginTop: '4px' }}>
                                             <i className="fa-solid fa-phone" style={{ marginRight: '6px', color: '#9CA3AF' }}></i>
