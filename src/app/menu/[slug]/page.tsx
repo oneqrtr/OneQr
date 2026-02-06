@@ -94,6 +94,39 @@ export default function PublicMenuPage() {
         paymentMethod: 'cash' as string // 'cash' or 'credit_card'
     });
 
+    useEffect(() => {
+        const savedInfo = localStorage.getItem('oneqr_customer_info');
+        if (savedInfo) {
+            try {
+                const parsed = JSON.parse(savedInfo);
+                setCustomerInfo(prev => ({
+                    ...prev,
+                    ...parsed
+                }));
+            } catch (e) {
+                console.error("Failed to parse saved customer info", e);
+            }
+        }
+    }, []);
+
+    const saveCustomerInfoToLocal = () => {
+        try {
+            localStorage.setItem('oneqr_customer_info', JSON.stringify({
+                fullName: customerInfo.fullName,
+                phone: customerInfo.phone,
+                addressType: customerInfo.addressType,
+                addressDetail: customerInfo.addressDetail,
+                // Don't save location coordinates as user might be elsewhere next time, or do save if preferred. 
+                // Let's save address detail but maybe clear coordinates if manual address is typical.
+                // Keeping it simple for now and saving all non-one-time fields.
+                locationLat: customerInfo.locationLat,
+                locationLng: customerInfo.locationLng
+            }));
+        } catch (e) {
+            console.error("Failed to save customer info", e);
+        }
+    };
+
     const isOrderEnabled = true; // Always true for now (or check plan)
 
     const addToCart = (product: Product, variant?: Variant) => {
@@ -178,6 +211,7 @@ export default function PublicMenuPage() {
         message += `💳 Ödeme Yöntemi: ${getPaymentMethodLabel(customerInfo.paymentMethod)}`;
 
         const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
+        saveCustomerInfoToLocal();
         window.open(url, '_blank');
         setIsCheckoutModalOpen(false);
     };
@@ -204,6 +238,7 @@ export default function PublicMenuPage() {
         });
 
         setIsSubmitting(false);
+        saveCustomerInfoToLocal();
 
         if (error) {
             console.error('Sipariş hatası:', error);
