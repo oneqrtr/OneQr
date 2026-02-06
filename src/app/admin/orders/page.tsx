@@ -33,6 +33,7 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true);
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
     // Audio context ref for sound
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -71,11 +72,17 @@ export default function OrdersPage() {
         }
     };
 
+    const isSameDay = (d1: Date, d2: Date) => {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    };
+
     useEffect(() => {
         let channel: any = null;
 
         const fetchOrders = async () => {
-            console.log("Siparişler sayfası yükleniyor...");
+            setLoading(true);
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
 
@@ -85,60 +92,76 @@ export default function OrdersPage() {
                 return;
             }
 
-            console.log("Kullanıcı ID:", user.id);
-
             // Get Restaurant ID
-            const { data: rest, error: restError } = await supabase
-                .from('restaurants')
-                .select('id')
-                .eq('owner_id', user.id)
-                .single();
+            let restId = restaurantId;
+            if (!restId) {
+                const { data: rest, error: restError } = await supabase
+                    .from('restaurants')
+                    .select('id')
+                    .eq('owner_id', user.id)
+                    .single();
 
-            if (restError) {
-                console.error("Restoran bilgisi çekilemedi:", restError);
-                setLoading(false);
-                return;
+                if (restError || !rest) {
+                    console.error("Restoran bilgisi çekilemedi:", restError);
+                    setLoading(false);
+                    return;
+                }
+                restId = rest.id;
+                setRestaurantId(rest.id);
             }
 
-            if (rest) {
-                console.log("Restoran ID:", rest.id);
-                setRestaurantId(rest.id);
+            if (restId) {
+                // Calculate Start and End of Selected Date
+                const startOfDay = new Date(selectedDate);
+                startOfDay.setHours(0, 0, 0, 0);
 
-                // Fetch existing orders
+                const endOfDay = new Date(selectedDate);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                // Fetch orders for the selected date range
                 const { data: existingOrders } = await supabase
                     .from('orders')
                     .select('*')
-                    .eq('restaurant_id', rest.id)
+                    .eq('restaurant_id', restId)
+                    .gte('created_at', startOfDay.toISOString())
+                    .lte('created_at', endOfDay.toISOString())
                     .order('created_at', { ascending: false });
 
                 if (existingOrders) {
                     setOrders(existingOrders);
+                } else {
+                    setOrders([]);
                 }
 
-                // Subscribe to Realtime
-                channel = supabase
-                    .channel('orders-channel')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'INSERT',
-                            schema: 'public',
-                            table: 'orders',
-                            filter: `restaurant_id=eq.${rest.id}`
-                        },
-                        (payload) => {
-                            const newOrder = payload.new as Order;
-                            setOrders(prev => [newOrder, ...prev]);
-                            playNotificationSound();
-                            // Auto print trigger
-                            handleAutoPrint(newOrder);
-                        }
-                    )
-                    .subscribe();
-            } else {
-                console.error("No restaurant found for user");
+                // Subscribe to Realtime (Only if viewing TODAY)
+                if (channel) supabase.removeChannel(channel);
+
+                if (isSameDay(selectedDate, new Date())) {
+                    channel = supabase
+                        .channel('orders-channel')
+                        .on(
+                            'postgres_changes',
+                            {
+                                event: 'INSERT',
+                                schema: 'public',
+                                table: 'orders',
+                                filter: `restaurant_id=eq.${restId}`
+                            },
+                            (payload) => {
+                                const newOrder = payload.new as Order;
+                                const orderDate = new Date(newOrder.created_at);
+                                // Double check (though DB timezone matches)
+                                if (isSameDay(orderDate, new Date())) {
+                                    setOrders(prev => [newOrder, ...prev]);
+                                    playNotificationSound();
+                                    handleAutoPrint(newOrder);
+                                }
+                            }
+                        )
+                        .subscribe();
+                }
             }
-            // Always stop loading
+
             setLoading(false);
         };
 
@@ -150,7 +173,7 @@ export default function OrdersPage() {
                 supabase.removeChannel(channel);
             }
         };
-    }, []);
+    }, [selectedDate]); // Refetch when date changes
 
     const handleAutoPrint = (order: Order) => {
         setPrintingOrder(order);
@@ -245,7 +268,37 @@ export default function OrdersPage() {
 
     return (
         <div style={{ padding: '24px' }}>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '24px', color: '#111827' }}>Gelen Siparişler</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Gelen Siparişler</h1>
+
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', overflow: 'hidden' }}>
+                        <button
+                            onClick={() => {
+                                const prevDay = new Date(selectedDate);
+                                prevDay.setDate(prevDay.getDate() - 1);
+                                setSelectedDate(prevDay);
+                            }}
+                            style={{ border: 'none', background: 'transparent', padding: '8px 12px', cursor: 'pointer', borderRight: '1px solid #E5E7EB', color: '#6B7280' }}
+                        >
+                            <i className="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <div style={{ padding: '8px 16px', fontWeight: 600, fontSize: '0.9rem', color: '#374151', minWidth: '120px', textAlign: 'center' }}>
+                            {selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                        <button
+                            onClick={() => {
+                                const nextDay = new Date(selectedDate);
+                                nextDay.setDate(nextDay.getDate() + 1);
+                                setSelectedDate(nextDay);
+                            }}
+                            style={{ border: 'none', background: 'transparent', padding: '8px 12px', cursor: 'pointer', borderLeft: '1px solid #E5E7EB', color: '#6B7280' }}
+                        >
+                            <i className="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {loading ? (
                 <div>Yükleniyor...</div>
