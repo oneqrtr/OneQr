@@ -72,6 +72,8 @@ export default function OrdersPage() {
     };
 
     useEffect(() => {
+        let channel: any = null;
+
         const fetchOrders = async () => {
             console.log("Siparişler sayfası yükleniyor...");
             const supabase = createClient();
@@ -114,7 +116,7 @@ export default function OrdersPage() {
                 }
 
                 // Subscribe to Realtime
-                const channel = supabase
+                channel = supabase
                     .channel('orders-channel')
                     .on(
                         'postgres_changes',
@@ -133,11 +135,6 @@ export default function OrdersPage() {
                         }
                     )
                     .subscribe();
-
-                // Cleanup on unmount (only if channel created)
-                return () => {
-                    supabase.removeChannel(channel);
-                };
             } else {
                 console.error("No restaurant found for user");
             }
@@ -146,6 +143,13 @@ export default function OrdersPage() {
         };
 
         fetchOrders();
+
+        return () => {
+            if (channel) {
+                const supabase = createClient();
+                supabase.removeChannel(channel);
+            }
+        };
     }, []);
 
     const handleAutoPrint = (order: Order) => {
