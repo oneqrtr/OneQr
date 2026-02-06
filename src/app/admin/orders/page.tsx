@@ -324,7 +324,9 @@ export default function OrdersPage() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div>
                                         <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#111827' }}>
-                                            <span style={{ color: '#F59E0B', marginRight: '8px' }}>#{order.order_number}</span>
+                                            {order.order_number && (
+                                                <span style={{ color: '#F59E0B', marginRight: '8px' }}>#{order.order_number}</span>
+                                            )}
                                             {order.customer_name}
                                         </div>
                                         <div style={{ color: '#6B7280', fontSize: '0.9rem' }}>{formatDate(order.created_at)}</div>
