@@ -119,10 +119,14 @@ export default function OrdersPage() {
                     )
                     .subscribe();
 
+                // Cleanup on unmount (only if channel created)
                 return () => {
                     supabase.removeChannel(channel);
                 };
+            } else {
+                console.error("No restaurant found for user");
             }
+            // Always stop loading
             setLoading(false);
         };
 
