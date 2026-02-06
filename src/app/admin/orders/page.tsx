@@ -19,6 +19,8 @@ interface Order {
     customer_phone?: string;
     address_type?: string;
     address_detail?: string;
+    location_lat?: number;
+    location_lng?: number;
     items: OrderItem[];
     total_amount: number;
     payment_method: string;
