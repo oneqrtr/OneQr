@@ -86,6 +86,7 @@ export default function PublicMenuPage() {
     // Customer Info State
     const [customerInfo, setCustomerInfo] = useState({
         fullName: '',
+        phone: '',
         addressType: 'manual' as 'manual' | 'location',
         locationLat: null as number | null,
         locationLng: null as number | null,
@@ -148,6 +149,9 @@ export default function PublicMenuPage() {
         return method;
     };
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState(false);
+
     const sendWhatsappOrder = () => {
         if (!restaurant || !restaurant.whatsapp_number) return;
 
@@ -164,6 +168,7 @@ export default function PublicMenuPage() {
         message += `--------------------------------\n`;
         message += `*Müşteri Bilgileri:*\n`;
         message += `👤 İsim: ${customerInfo.fullName}\n`;
+        message += `📞 Telefon: ${customerInfo.phone}\n`;
 
         if (customerInfo.addressType === 'location' && customerInfo.locationLat && customerInfo.locationLng) {
             message += `📍 Konum: https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
@@ -175,6 +180,40 @@ export default function PublicMenuPage() {
         const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
         setIsCheckoutModalOpen(false);
+    };
+
+    const submitSystemOrder = async () => {
+        if (!restaurant) return;
+        setIsSubmitting(true);
+
+        const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        const supabase = createClient();
+        const { error } = await supabase.from('orders').insert({
+            restaurant_id: restaurant.id,
+            customer_name: customerInfo.fullName,
+            customer_phone: customerInfo.phone,
+            address_type: customerInfo.addressType,
+            address_detail: customerInfo.addressDetail,
+            location_lat: customerInfo.locationLat,
+            location_lng: customerInfo.locationLng,
+            payment_method: customerInfo.paymentMethod,
+            items: cart, // Supabase handles JSONB
+            total_amount: totalAmount,
+            status: 'pending'
+        });
+
+        setIsSubmitting(false);
+
+        if (error) {
+            console.error('Sipariş hatası:', error);
+            alert('Sipariş oluşturulurken bir hata oluştu. Lütfen tekrar deneyiniz.');
+        } else {
+            setOrderSuccess(true);
+            setCart([]);
+            // Close modal after 3 seconds or show success UI inside modal
+            // User requested confirmation screen. We will handle it in the render.
+        }
     };
 
     const handleGetLocation = () => {
@@ -842,6 +881,17 @@ export default function PublicMenuPage() {
                                 </div>
 
                                 <div>
+                                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Telefon Numarası</label>
+                                    <input
+                                        type="tel"
+                                        value={customerInfo.phone}
+                                        onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }}
+                                        placeholder="05XX XXX XX XX"
+                                    />
+                                </div>
+
+                                <div>
                                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Teslimat Adresi</label>
                                     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                                         <button
@@ -891,29 +941,94 @@ export default function PublicMenuPage() {
                                     </div>
                                 </div>
 
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+                                    <button
+                                        onClick={submitSystemOrder}
+                                        disabled={!customerInfo.fullName || !customerInfo.phone || !customerInfo.addressDetail || isSubmitting}
+                                        style={{
+                                            background: '#F59E0B',
+                                            color: 'white',
+                                            padding: '16px',
+                                            borderRadius: '12px',
+                                            border: 'none',
+                                            fontSize: '1rem',
+                                            fontWeight: 700,
+                                            cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 'pointer' : 'not-allowed',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 1 : 0.6,
+                                            width: '100%'
+                                        }}
+                                    >
+                                        {isSubmitting ? (
+                                            <i className="fa-solid fa-spinner fa-spin"></i>
+                                        ) : (
+                                            <i className="fa-solid fa-check"></i>
+                                        )}
+                                        {isSubmitting ? 'Sipariş Oluşturuluyor...' : 'Siparişi Tamamla'}
+                                    </button>
+
+                                    {restaurant.whatsapp_number && (
+                                        <button
+                                            onClick={sendWhatsappOrder}
+                                            disabled={!customerInfo.fullName || !customerInfo.phone || !customerInfo.addressDetail || isSubmitting}
+                                            style={{
+                                                background: 'white',
+                                                color: '#25D366',
+                                                padding: '12px',
+                                                borderRadius: '12px',
+                                                border: '2px solid #25D366',
+                                                fontSize: '0.95rem',
+                                                fontWeight: 600,
+                                                cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 'pointer' : 'not-allowed',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                                opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 1 : 0.6,
+                                                width: '100%'
+                                            }}
+                                        >
+                                            <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.2rem' }}></i>
+                                            Whatsapp ile Gönder
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Success Screen */}
+                        {orderSuccess && (
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <div style={{
+                                    width: '80px', height: '80px', background: '#D1FAE5', color: '#10B981',
+                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '2.5rem', margin: '0 auto 24px'
+                                }}>
+                                    <i className="fa-solid fa-check"></i>
+                                </div>
+                                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>Siparişiniz Alındı!</h3>
+                                <p style={{ color: '#6B7280', marginBottom: '32px' }}>
+                                    Siparişiniz restorana iletildi. En kısa sürede hazırlanacaktır.
+                                </p>
                                 <button
-                                    onClick={sendWhatsappOrder}
-                                    disabled={!customerInfo.fullName || !customerInfo.addressDetail}
+                                    onClick={() => {
+                                        setOrderSuccess(false);
+                                        setIsCheckoutModalOpen(false);
+                                    }}
                                     style={{
-                                        marginTop: '16px',
-                                        background: '#25D366',
+                                        background: restaurant.theme_color,
                                         color: 'white',
-                                        padding: '16px',
-                                        borderRadius: '12px',
+                                        padding: '12px 32px',
+                                        borderRadius: '8px',
                                         border: 'none',
-                                        fontSize: '1rem',
-                                        fontWeight: 700,
-                                        cursor: (customerInfo.fullName && customerInfo.addressDetail) ? 'pointer' : 'not-allowed',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        opacity: (customerInfo.fullName && customerInfo.addressDetail) ? 1 : 0.6,
-                                        width: '100%'
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
                                     }}
                                 >
-                                    <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.2rem' }}></i>
-                                    Siparişi Whatsapp'a Gönder
+                                    Tamam
                                 </button>
                             </div>
                         )}
@@ -970,6 +1085,8 @@ export default function PublicMenuPage() {
                 themeColor={restaurant.theme_color}
                 cartCount={cartTotalCount}
                 onWhatsappClick={() => setIsCheckoutModalOpen(true)}
+                onCartClick={() => setIsCheckoutModalOpen(true)}
+                orderEnabled={true}
             />
 
         </div>

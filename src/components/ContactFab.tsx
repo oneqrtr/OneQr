@@ -24,8 +24,10 @@ export default function ContactFab({
     locationLng,
     themeColor,
     cartCount = 0,
-    onWhatsappClick
-}: ContactFabProps) {
+    onWhatsappClick,
+    onCartClick,
+    orderEnabled = false
+}: ContactFabProps & { onCartClick?: () => void, orderEnabled?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
 
     if (!callEnabled && !whatsappEnabled && !locationEnabled) return null;
@@ -153,6 +155,23 @@ export default function ContactFab({
                 alignItems: 'center',
                 marginBottom: '8px'
             }}>
+                {/* System Order (Cart) Button */}
+                {orderEnabled && (
+                    <div
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (onCartClick) onCartClick();
+                        }}
+                        style={actionButtonStyle('#F59E0B', '0.3s')} // Amber/Orange for Food Order
+                        title="Sepetim"
+                    >
+                        {isOpen && cartCount > 0 && (
+                            <span style={badgeStyle}>{cartCount}</span>
+                        )}
+                        <i className="fa-solid fa-basket-shopping"></i>
+                    </div>
+                )}
+
                 {whatsappEnabled && whatsappNumber && renderWhatsappButton()}
 
                 {callEnabled && phoneNumber && (

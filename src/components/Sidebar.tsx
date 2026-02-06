@@ -63,6 +63,10 @@ export default function Sidebar() {
                         <span className="nav-icon"><i className="fa-solid fa-chart-pie"></i></span>
                         <span>Panel</span>
                     </Link>
+                    <Link href="/admin/orders" className={`nav-item ${isActive('/admin/orders') ? 'active' : ''}`}>
+                        <span className="nav-icon"><i className="fa-solid fa-bell"></i></span>
+                        <span>Siparişler</span>
+                    </Link>
                     <Link href="/admin/menu" className={`nav-item ${isActive('/admin/menu') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-utensils"></i></span>
                         <span>Menü Yönetimi</span>
