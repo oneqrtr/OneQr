@@ -79,6 +79,30 @@ export default function PublicMenuPage() {
     }
     const [cart, setCart] = useState<CartItem[]>([]);
 
+    // PWA Install State
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [isInstallable, setIsInstallable] = useState(false);
+
+    useEffect(() => {
+        const handler = (e: any) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setIsInstallable(true);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+            setIsInstallable(false);
+        }
+    };
+
     // Modal States
     const [selectedProductForVariant, setSelectedProductForVariant] = useState<Product | null>(null);
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -558,6 +582,38 @@ export default function PublicMenuPage() {
                                 {restaurant.description}
                             </p>
                         )}
+
+                        {isInstallable && (
+                            <button
+                                onClick={handleInstallClick}
+                                style={{
+                                    background: '#111827',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '10px 20px',
+                                    borderRadius: '50px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                    marginBottom: '10px',
+                                    animation: 'pulse 2s infinite'
+                                }}
+                            >
+                                <i className="fa-solid fa-download"></i>
+                                Uygulamayı İndir
+                            </button>
+                        )}
+                        <style jsx>{`
+                            @keyframes pulse {
+                                0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); }
+                                70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
+                                100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+                            }
+                        `}</style>
                     </div>
                 </header>
             </div>
