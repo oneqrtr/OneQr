@@ -141,7 +141,7 @@ export default function PublicMenuPage() {
         isSite: false,
         siteName: '',
         block: '',
-        block: '',
+
         paymentMethod: 'cash' as string, // 'cash', 'credit_card', 'meal_card', 'iban'
         mealCardProvider: '', // If paymentMethod is 'meal_card'
     });
