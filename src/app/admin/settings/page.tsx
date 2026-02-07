@@ -8,7 +8,7 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(false);
     const [businessName, setBusinessName] = useState('');
     const [description, setDescription] = useState('');
-    const [themeColor, setThemeColor] = useState('#000000');
+
 
     // Notification & Printer States
     const [notificationSound, setNotificationSound] = useState('ding');
@@ -60,8 +60,6 @@ export default function SettingsPage() {
             if (rest) {
                 setBusinessName(rest.name);
                 setDescription(rest.description || '');
-                setThemeColor(rest.theme_color || '#000000');
-                setThemeColor(rest.theme_color || '#000000');
                 setPlan(rest.plan || 'freemium');
 
                 // Notification & Printer
@@ -116,7 +114,9 @@ export default function SettingsPage() {
             .update({
                 name: businessName,
                 description: description,
-                theme_color: themeColor,
+                name: businessName,
+                description: description,
+                // theme_color managed in /admin/theme
                 notification_sound: notificationSound,
                 printer_header: printerHeader,
                 printer_footer: printerFooter,
@@ -248,24 +248,7 @@ export default function SettingsPage() {
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Tema Rengi</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <input
-                                    type="color"
-                                    value={themeColor}
-                                    onChange={e => setThemeColor(e.target.value)}
-                                    style={{ width: '60px', height: '40px', padding: '0', border: 'none', background: 'none', cursor: 'pointer' }}
-                                />
-                                <input
-                                    className="form-input"
-                                    value={themeColor}
-                                    onChange={e => setThemeColor(e.target.value)}
-                                    placeholder="#000000"
-                                    style={{ width: '120px' }}
-                                />
-                            </div>
-                        </div>
+
 
 
                         {/* Notification & Printer Section */}

@@ -57,20 +57,28 @@ export default function Sidebar() {
         <>
             <aside className={`sidebar ${isMobileExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
-                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0 20px', gap: '15px' }}>
-                        <img
-                            src={logoUrl || "/favicon.ico"}
-                            alt="Logo"
-                            style={{
-                                height: '100px',
-                                width: '100px',
-                                objectFit: 'contain',
-                                borderRadius: '12px',
-                                background: 'white',
-                                padding: '5px',
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-                            }}
-                        />
+                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', height: '100%' }}>
+                        <div style={{
+                            width: '120px',
+                            height: '120px',
+                            background: 'white',
+                            borderRadius: '16px',
+                            padding: '10px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <img
+                                src={logoUrl || "/favicon.ico"}
+                                alt="Logo"
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    objectFit: 'contain'
+                                }}
+                            />
+                        </div>
                     </Link>
 
                 </div>
