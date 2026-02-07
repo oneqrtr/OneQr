@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         return {
             title: restaurant.name,
             description: restaurant.description || `${restaurant.name} QR Menü`,
-            manifest: '/manifest.json',
+            manifest: `/api/manifest/${params.slug}`,
             icons: {
                 icon: restaurant.logo_url || '/favicon.ico',
                 shortcut: restaurant.logo_url || '/favicon.ico',
