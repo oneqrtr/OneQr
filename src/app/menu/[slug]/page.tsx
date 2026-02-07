@@ -1149,7 +1149,7 @@ export default function PublicMenuPage() {
                                             border: 'none',
                                             fontSize: '1rem',
                                             fontWeight: 700,
-                                            fontWeight: 700,
+
                                             cursor: (customerInfo.fullName && customerInfo.phone &&
                                                 (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
                                                     (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
