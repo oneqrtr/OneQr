@@ -42,6 +42,7 @@ export default function OrdersPage() {
     const [printerHeader, setPrinterHeader] = useState('');
     const [printerFooter, setPrinterFooter] = useState('');
     const [printerCopyCount, setPrinterCopyCount] = useState(1);
+    const [whatsappNumber, setWhatsappNumber] = useState('');
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
@@ -68,7 +69,7 @@ export default function OrdersPage() {
             if (!restId) {
                 const { data: rest, error: restError } = await supabase
                     .from('restaurants')
-                    .select('id, printer_header, printer_footer, printer_copy_count')
+                    .select('id, printer_header, printer_footer, printer_copy_count, whatsapp_number')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -81,7 +82,10 @@ export default function OrdersPage() {
                 setRestaurantId(rest.id);
                 setPrinterHeader(rest.printer_header || '');
                 setPrinterFooter(rest.printer_footer || '');
+                setPrinterHeader(rest.printer_header || '');
+                setPrinterFooter(rest.printer_footer || '');
                 setPrinterCopyCount(rest.printer_copy_count || 1);
+                setWhatsappNumber(rest.whatsapp_number || '');
             }
 
             if (restId) {
@@ -161,6 +165,17 @@ export default function OrdersPage() {
         setTimeout(() => {
             window.print();
         }, 100);
+    };
+
+    const handleSendLocation = (order: Order) => {
+        if (!order.location_lat || !order.location_lng) return;
+
+        const mapsLink = `https://www.google.com/maps/search/?api=1&query=${order.location_lat},${order.location_lng}`;
+        const message = `📍 Sipariş Teslimat Konumu:\n${mapsLink}\n\nMüşteri: ${order.customer_name}\nTel: ${order.customer_phone || '-'}`;
+
+        // Send to self (the restaurant owner's number)
+        const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
     };
 
     const formatDate = (dateString: string) => {
@@ -371,6 +386,19 @@ export default function OrdersPage() {
                                     >
                                         <i className="fa-solid fa-print"></i> Yazdır
                                     </button>
+
+                                    {order.location_lat && order.location_lng && (
+                                        <button
+                                            onClick={() => handleSendLocation(order)}
+                                            style={{
+                                                background: '#25D366', border: 'none', padding: '10px 20px', borderRadius: '8px',
+                                                color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                            }}
+                                        >
+                                            <i className="fa-brands fa-whatsapp"></i> Konum Gönder
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))
