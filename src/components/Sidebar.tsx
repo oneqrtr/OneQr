@@ -56,8 +56,8 @@ export default function Sidebar() {
     return (
         <>
             <aside className={`sidebar ${isMobileExpanded ? 'expanded' : ''}`}>
-                <div className="sidebar-header">
-                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0', height: '100%' }}>
+                <div className="sidebar-header" style={{ height: '260px', padding: 0 }}>
+                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
                         <div style={{
                             width: '120px',
                             height: '120px',
