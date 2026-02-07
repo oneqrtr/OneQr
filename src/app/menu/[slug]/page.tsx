@@ -24,10 +24,24 @@ interface Restaurant {
     whatsapp_number?: string;
     is_call_enabled?: boolean;
     is_whatsapp_enabled?: boolean;
-    // Location
     is_location_enabled?: boolean;
     location_lat?: number;
     location_lng?: number;
+
+    // Payment Settings
+    payment_settings?: {
+        cash: boolean;
+        credit_card: boolean;
+        meal_card: {
+            enabled: boolean;
+            methods: string[];
+        };
+        iban: {
+            enabled: boolean;
+            iban_no: string;
+            account_name: string;
+        };
+    };
 }
 // ... (rest of the file until ContactFab props)
 
@@ -127,7 +141,9 @@ export default function PublicMenuPage() {
         isSite: false,
         siteName: '',
         block: '',
-        paymentMethod: 'cash' as string // 'cash' or 'credit_card'
+        block: '',
+        paymentMethod: 'cash' as string, // 'cash', 'credit_card', 'meal_card', 'iban'
+        mealCardProvider: '', // If paymentMethod is 'meal_card'
     });
 
     useEffect(() => {
@@ -222,9 +238,11 @@ export default function PublicMenuPage() {
 
     const cartTotalCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-    const getPaymentMethodLabel = (method: string) => {
-        if (method === 'cash') return 'Nakit';
-        if (method === 'credit_card') return 'Kredi Kartı';
+    const getPaymentMethodLabel = (method: string, provider?: string) => {
+        if (method === 'cash') return 'Nakit (Kapıda Ödeme)';
+        if (method === 'credit_card') return 'Kredi Kartı (Kapıda Ödeme)';
+        if (method === 'meal_card') return `Yemek Kartı (${provider || 'Belirtilmedi'})`;
+        if (method === 'iban') return 'IBAN / Havale';
         return method;
     };
 
@@ -249,12 +267,12 @@ export default function PublicMenuPage() {
         message += `👤 İsim: ${customerInfo.fullName}\n`;
         message += `📞 Telefon: ${customerInfo.phone}\n`;
 
-        if (customerInfo.addressType === 'location' && customerInfo.locationLat && customerInfo.locationLng) {
+        if (customerInfo.locationLat && customerInfo.locationLng) {
             message += `📍 Konum: https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
         }
 
         message += `🏠 Adres Detayı: ${customerInfo.addressDetail}\n`;
-        message += `💳 Ödeme Yöntemi: ${getPaymentMethodLabel(customerInfo.paymentMethod)}`;
+        message += `💳 Ödeme Yöntemi: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
 
         const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
         saveCustomerInfoToLocal();
@@ -277,7 +295,10 @@ export default function PublicMenuPage() {
             address_detail: customerInfo.addressDetail,
             location_lat: customerInfo.locationLat,
             location_lng: customerInfo.locationLng,
-            payment_method: customerInfo.paymentMethod,
+            location_lng: customerInfo.locationLng,
+            payment_method: customerInfo.paymentMethod === 'meal_card'
+                ? `meal_card_${customerInfo.mealCardProvider}`
+                : customerInfo.paymentMethod,
             items: cart, // Supabase handles JSONB
             total_amount: totalAmount,
             status: 'pending'
@@ -304,13 +325,12 @@ export default function PublicMenuPage() {
         }
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                setCustomerInfo({
-                    ...customerInfo,
-                    addressType: 'location',
+                setCustomerInfo(prev => ({
+                    ...prev,
                     locationLat: position.coords.latitude,
                     locationLng: position.coords.longitude
-                });
-                alert('Konumunuz alındı.');
+                }));
+                alert('Konumunuz eklendi. Kurye tam konumunuzu görebilecek.');
             },
             (error) => {
                 console.error(error);
@@ -990,144 +1010,211 @@ export default function PublicMenuPage() {
 
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Teslimat Adresi</label>
-                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                        <button
-                                            onClick={handleGetLocation}
-                                            style={{
-                                                flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB',
-                                                background: customerInfo.addressType === 'location' ? '#EFF6FF' : 'white',
-                                                color: customerInfo.addressType === 'location' ? '#2563EB' : '#374151',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer'
-                                            }}
-                                        >
-                                            <i className="fa-solid fa-location-crosshairs"></i> Konumumu Kullan
-                                        </button>
-                                        <button
-                                            onClick={() => setCustomerInfo({ ...customerInfo, addressType: 'manual', locationLat: null, locationLng: null })}
-                                            style={{
-                                                flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB',
-                                                background: customerInfo.addressType === 'manual' ? '#EFF6FF' : 'white',
-                                                color: customerInfo.addressType === 'manual' ? '#2563EB' : '#374151',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer'
-                                            }}
-                                        >
-                                            <i className="fa-solid fa-pen"></i> Elle Gir
-                                        </button>
-                                    </div>
 
+                                    {/* Location Button */}
+                                    <button
+                                        onClick={handleGetLocation}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            border: customerInfo.locationLat ? '1px solid #10B981' : '1px solid #D1D5DB',
+                                            background: customerInfo.locationLat ? '#ECFDF5' : 'white',
+                                            color: customerInfo.locationLat ? '#047857' : '#374151',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer',
+                                            marginBottom: '16px',
+                                            fontWeight: 500
+                                        }}
+                                    >
+                                        <i className={`fa-solid ${customerInfo.locationLat ? 'fa-check' : 'fa-location-dot'}`}></i>
+                                        {customerInfo.locationLat ? 'Konum Eklendi (Kurye İçin)' : 'Tam Konum Ekle (Kurye İçin)'}
+                                    </button>
 
+                                    {/* Always show Address Fields */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <input
+                                                className="form-input"
+                                                value={customerInfo.neighborhood}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, neighborhood: e.target.value })}
+                                                placeholder="Mahalle"
+                                                required
+                                            />
+                                            <input
+                                                className="form-input"
+                                                value={customerInfo.street}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, street: e.target.value })}
+                                                placeholder="Sokak / Cadde"
+                                                required
+                                            />
+                                        </div>
 
-                                    {customerInfo.addressType === 'manual' && (
-                                        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <input
+                                                className="form-input"
+                                                value={customerInfo.apartment}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, apartment: e.target.value })}
+                                                placeholder="Apartman Adı / No"
+                                                required
+                                            />
+                                            <div style={{ display: 'flex', gap: '8px' }}>
                                                 <input
                                                     className="form-input"
-                                                    value={customerInfo.neighborhood}
-                                                    onChange={e => setCustomerInfo({ ...customerInfo, neighborhood: e.target.value })}
-                                                    placeholder="Mahalle"
+                                                    value={customerInfo.floor}
+                                                    onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })}
+                                                    placeholder="Kat"
+                                                    style={{ flex: 1 }}
                                                     required
                                                 />
                                                 <input
                                                     className="form-input"
-                                                    value={customerInfo.street}
-                                                    onChange={e => setCustomerInfo({ ...customerInfo, street: e.target.value })}
-                                                    placeholder="Sokak / Cadde"
+                                                    value={customerInfo.doorNumber}
+                                                    onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })}
+                                                    placeholder="Daire"
+                                                    style={{ flex: 1 }}
                                                     required
                                                 />
-                                            </div>
-
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                                <input
-                                                    className="form-input"
-                                                    value={customerInfo.apartment}
-                                                    onChange={e => setCustomerInfo({ ...customerInfo, apartment: e.target.value })}
-                                                    placeholder="Apartman Adı / No"
-                                                    required
-                                                />
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <input
-                                                        className="form-input"
-                                                        value={customerInfo.floor}
-                                                        onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })}
-                                                        placeholder="Kat"
-                                                        style={{ flex: 1 }}
-                                                        required
-                                                    />
-                                                    <input
-                                                        className="form-input"
-                                                        value={customerInfo.doorNumber}
-                                                        onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })}
-                                                        placeholder="Daire"
-                                                        style={{ flex: 1 }}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Sitede mi oturuyorsunuz? Checkbox */}
-                                            <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 500, color: '#374151' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={customerInfo.isSite}
-                                                        onChange={e => setCustomerInfo(({ ...customerInfo, isSite: e.target.checked }))}
-                                                        style={{ width: '18px', height: '18px' }}
-                                                    />
-                                                    Sitede mi oturuyorsunuz?
-                                                </label>
-
-                                                {customerInfo.isSite && (
-                                                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #E5E7EB', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', animation: 'fadeIn 0.3s' }}>
-                                                        <input
-                                                            className="form-input"
-                                                            value={customerInfo.siteName}
-                                                            onChange={e => setCustomerInfo({ ...customerInfo, siteName: e.target.value })}
-                                                            placeholder="Site Adı"
-                                                            required={customerInfo.isSite}
-                                                        />
-                                                        <input
-                                                            className="form-input"
-                                                            value={customerInfo.block}
-                                                            onChange={e => setCustomerInfo({ ...customerInfo, block: e.target.value })}
-                                                            placeholder="Blok"
-                                                            required={customerInfo.isSite}
-                                                        />
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
-                                    )}
+
+                                        {/* Sitede mi oturuyorsunuz? Checkbox */}
+                                        <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 500, color: '#374151' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={customerInfo.isSite}
+                                                    onChange={e => setCustomerInfo(({ ...customerInfo, isSite: e.target.checked }))}
+                                                    style={{ width: '18px', height: '18px' }}
+                                                />
+                                                Sitede mi oturuyorsunuz?
+                                            </label>
+
+                                            {customerInfo.isSite && (
+                                                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #E5E7EB', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', animation: 'fadeIn 0.3s' }}>
+                                                    <input
+                                                        className="form-input"
+                                                        value={customerInfo.siteName}
+                                                        onChange={e => setCustomerInfo({ ...customerInfo, siteName: e.target.value })}
+                                                        placeholder="Site Adı"
+                                                        required={customerInfo.isSite}
+                                                    />
+                                                    <input
+                                                        className="form-input"
+                                                        value={customerInfo.block}
+                                                        onChange={e => setCustomerInfo({ ...customerInfo, block: e.target.value })}
+                                                        placeholder="Blok"
+                                                        required={customerInfo.isSite}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
 
                                     <textarea
                                         value={customerInfo.addressDetail}
                                         onChange={e => setCustomerInfo({ ...customerInfo, addressDetail: e.target.value })}
                                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', marginTop: '16px' }}
-                                        placeholder={customerInfo.addressType === 'location' ? "Daire No, Kat, Zil vb. detayları ekleyin..." : "Adres Tarifi (Örn: Bakkalın yanındaki sarı bina...) / Şehir"}
+                                        placeholder="Adres Tarifi (Örn: Bakkalın yanındaki sarı bina...) / Şehir"
                                         rows={2}
                                     />
                                 </div>
 
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Ödeme Yöntemi</label>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <label style={{ flex: 1, padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'cash' ? '#25D366' : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F0FDF4' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <input type="radio" name="payment" value="cash" checked={customerInfo.paymentMethod === 'cash'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'cash' })} />
-                                            <span>Nakit</span>
-                                        </label>
-                                        <label style={{ flex: 1, padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'credit_card' ? '#25D366' : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F0FDF4' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <input type="radio" name="payment" value="credit_card" checked={customerInfo.paymentMethod === 'credit_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'credit_card' })} />
-                                            <span>Kredi Kartı</span>
-                                        </label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+                                        {/* Cash */}
+                                        {(restaurant.payment_settings?.cash ?? true) && (
+                                            <label style={{ padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'cash' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <input type="radio" name="payment" value="cash" checked={customerInfo.paymentMethod === 'cash'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'cash' })} />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <i className="fa-solid fa-money-bill-wave" style={{ color: '#10B981', width: '20px', textAlign: 'center' }}></i>
+                                                    <span>Nakit (Kapıda Ödeme)</span>
+                                                </div>
+                                            </label>
+                                        )}
+
+                                        {/* Credit Card */}
+                                        {(restaurant.payment_settings?.credit_card) && (
+                                            <label style={{ padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'credit_card' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <input type="radio" name="payment" value="credit_card" checked={customerInfo.paymentMethod === 'credit_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'credit_card' })} />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <i className="fa-regular fa-credit-card" style={{ color: '#3B82F6', width: '20px', textAlign: 'center' }}></i>
+                                                    <span>Kredi Kartı (Kapıda Ödeme)</span>
+                                                </div>
+                                            </label>
+                                        )}
+
+                                        {/* Meal Card */}
+                                        {(restaurant.payment_settings?.meal_card?.enabled) && (
+                                            <div style={{ border: `1px solid ${customerInfo.paymentMethod === 'meal_card' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', overflow: 'hidden' }}>
+                                                <label style={{ padding: '12px', cursor: 'pointer', background: customerInfo.paymentMethod === 'meal_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <input type="radio" name="payment" value="meal_card" checked={customerInfo.paymentMethod === 'meal_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'meal_card', mealCardProvider: restaurant.payment_settings?.meal_card?.methods[0] || '' })} />
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <i className="fa-solid fa-utensils" style={{ color: '#F59E0B', width: '20px', textAlign: 'center' }}></i>
+                                                        <span>Yemek Kartı</span>
+                                                    </div>
+                                                </label>
+
+                                                {customerInfo.paymentMethod === 'meal_card' && restaurant.payment_settings?.meal_card?.methods?.length > 0 && (
+                                                    <div style={{ padding: '0 12px 12px 44px', background: '#F9FAFB' }}>
+                                                        <select
+                                                            className="form-input"
+                                                            value={customerInfo.mealCardProvider}
+                                                            onChange={e => setCustomerInfo({ ...customerInfo, mealCardProvider: e.target.value })}
+                                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '0.9rem' }}
+                                                        >
+                                                            {restaurant.payment_settings.meal_card.methods.map(method => (
+                                                                <option key={method} value={method}>{method}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* IBAN */}
+                                        {(restaurant.payment_settings?.iban?.enabled) && (
+                                            <div style={{ border: `1px solid ${customerInfo.paymentMethod === 'iban' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', overflow: 'hidden' }}>
+                                                <label style={{ padding: '12px', cursor: 'pointer', background: customerInfo.paymentMethod === 'iban' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <input type="radio" name="payment" value="iban" checked={customerInfo.paymentMethod === 'iban'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'iban' })} />
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <i className="fa-solid fa-building-columns" style={{ color: '#6366F1', width: '20px', textAlign: 'center' }}></i>
+                                                        <span>IBAN / Havale</span>
+                                                    </div>
+                                                </label>
+
+                                                {customerInfo.paymentMethod === 'iban' && (
+                                                    <div style={{ padding: '12px', background: '#eef2ff', margin: '0 12px 12px', borderRadius: '8px', border: '1px dashed #6366F1' }}>
+                                                        <div style={{ fontSize: '0.85rem', color: '#4338ca', marginBottom: '4px', fontWeight: 600 }}>{restaurant.payment_settings.iban.account_name}</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                            <code style={{ fontSize: '0.9rem', color: '#1e1b4b', wordBreak: 'break-all' }}>{restaurant.payment_settings.iban.iban_no}</code>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // prevent label click
+                                                                    navigator.clipboard.writeText(restaurant.payment_settings?.iban?.iban_no || '');
+                                                                    alert('IBAN kopyalandı!');
+                                                                }}
+                                                                style={{ border: 'none', background: 'white', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', color: '#6366F1', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                                                            >
+                                                                Kopyala
+                                                            </button>
+                                                        </div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '8px' }}>
+                                                            Lütfen ödeme açıklamanıza sipariş numaranızı veya isminizi yazınız.
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
                                     <button
                                         onClick={submitSystemOrder}
-                                        disabled={!(customerInfo.fullName && customerInfo.phone &&
-                                            (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
-                                                (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
-                                            || isSubmitting}
+                                        disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
                                         style={{
                                             background: '#F59E0B',
                                             color: 'white',
@@ -1137,18 +1224,12 @@ export default function PublicMenuPage() {
                                             fontSize: '1rem',
                                             fontWeight: 700,
 
-                                            cursor: (customerInfo.fullName && customerInfo.phone &&
-                                                (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
-                                                    (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
-                                                && !isSubmitting ? 'pointer' : 'not-allowed',
+                                            cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             gap: '8px',
-                                            opacity: (customerInfo.fullName && customerInfo.phone &&
-                                                (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
-                                                    (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
-                                                && !isSubmitting ? 1 : 0.6,
+                                            opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
                                             width: '100%'
                                         }}
                                     >
@@ -1163,10 +1244,7 @@ export default function PublicMenuPage() {
                                     {restaurant.whatsapp_number && (
                                         <button
                                             onClick={sendWhatsappOrder}
-                                            disabled={!(customerInfo.fullName && customerInfo.phone &&
-                                                (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
-                                                    (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
-                                                || isSubmitting}
+                                            disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
                                             style={{
                                                 background: 'white',
                                                 color: '#25D366',
@@ -1175,18 +1253,12 @@ export default function PublicMenuPage() {
                                                 border: '2px solid #25D366',
                                                 fontSize: '0.95rem',
                                                 fontWeight: 600,
-                                                cursor: (customerInfo.fullName && customerInfo.phone &&
-                                                    (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
-                                                        (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
-                                                    && !isSubmitting ? 'pointer' : 'not-allowed',
+                                                cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 gap: '8px',
-                                                opacity: (customerInfo.fullName && customerInfo.phone &&
-                                                    (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
-                                                        (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
-                                                    && !isSubmitting ? 1 : 0.6,
+                                                opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
                                                 width: '100%'
                                             }}
                                         >

@@ -42,6 +42,22 @@ export default function SettingsPage() {
 
     const [restaurantId, setRestaurantId] = useState<string | null>(null);
     const [plan, setPlan] = useState('freemium');
+
+    // Payment Methods State
+    const [paymentSettings, setPaymentSettings] = useState({
+        cash: true,
+        credit_card: false,
+        meal_card: {
+            enabled: false,
+            methods: [] as string[]
+        },
+        iban: {
+            enabled: false,
+            iban_no: '',
+            account_name: ''
+        }
+    });
+
     const router = useRouter();
 
     const supabase = createClient();
@@ -96,6 +112,16 @@ export default function SettingsPage() {
                 setWifiSsid(rest.wifi_ssid || '');
                 setWifiPassword(rest.wifi_password || '');
 
+                if (rest.payment_settings) {
+                    // Merge with defaults to ensure structure
+                    setPaymentSettings(prev => ({
+                        ...prev,
+                        ...rest.payment_settings,
+                        meal_card: { ...prev.meal_card, ...(rest.payment_settings.meal_card || {}) },
+                        iban: { ...prev.iban, ...(rest.payment_settings.iban || {}) }
+                    }));
+                }
+
                 setRestaurantId(rest.id);
             }
         };
@@ -140,7 +166,9 @@ export default function SettingsPage() {
                 is_google_review_enabled: isEligibleForAdvanced ? isGoogleReviewEnabled : false,
 
                 wifi_ssid: isEligibleForAdvanced ? wifiSsid : null,
-                wifi_password: isEligibleForAdvanced ? wifiPassword : null
+                wifi_password: isEligibleForAdvanced ? wifiPassword : null,
+
+                payment_settings: paymentSettings
             })
             .eq('id', restaurantId);
 
@@ -513,7 +541,136 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
+                        {/* Payment Methods Section */}
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="fa-solid fa-wallet" style={{ color: '#4B5563' }}></i> Ödeme Yöntemleri
+                        </h3>
 
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+
+                            {/* Cash & Credit Card */}
+                            <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Temel Ödemeler</h4>
+
+                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', cursor: 'pointer' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <i className="fa-solid fa-money-bill-wave" style={{ color: '#10B981' }}></i> Nakit (Kapıda Ödeme)
+                                    </span>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={paymentSettings.cash}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, cash: e.target.checked })}
+                                        />
+                                    </div>
+                                </label>
+
+                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <i className="fa-regular fa-credit-card" style={{ color: '#3B82F6' }}></i> Kredi Kartı (Kapıda)
+                                    </span>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={paymentSettings.credit_card}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, credit_card: e.target.checked })}
+                                        />
+                                    </div>
+                                </label>
+                            </div>
+
+                            {/* Meal Cards */}
+                            <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <i className="fa-solid fa-utensils" style={{ color: '#F59E0B' }}></i> Yemek Kartı
+                                    </h4>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={paymentSettings.meal_card.enabled}
+                                            onChange={e => setPaymentSettings({
+                                                ...paymentSettings,
+                                                meal_card: { ...paymentSettings.meal_card, enabled: e.target.checked }
+                                            })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {paymentSettings.meal_card.enabled && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', paddingLeft: '8px', borderLeft: '2px solid #E5E7EB' }}>
+                                        {['Multinet', 'Sodexo', 'Ticket', 'Metropol', 'Setcard'].map(card => (
+                                            <label key={card} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={paymentSettings.meal_card.methods.includes(card)}
+                                                    onChange={e => {
+                                                        const current = paymentSettings.meal_card.methods;
+                                                        const updated = e.target.checked
+                                                            ? [...current, card]
+                                                            : current.filter(c => c !== card);
+                                                        setPaymentSettings({
+                                                            ...paymentSettings,
+                                                            meal_card: { ...paymentSettings.meal_card, methods: updated }
+                                                        });
+                                                    }}
+                                                />
+                                                {card}
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* IBAN / Bank Transfer */}
+                            <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <i className="fa-solid fa-building-columns" style={{ color: '#6366F1' }}></i> IBAN İle Ödeme
+                                    </h4>
+                                    <div className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={paymentSettings.iban.enabled}
+                                            onChange={e => setPaymentSettings({
+                                                ...paymentSettings,
+                                                iban: { ...paymentSettings.iban, enabled: e.target.checked }
+                                            })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {paymentSettings.iban.enabled && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4B5563', marginBottom: '4px', display: 'block' }}>Alıcı Ad Soyad / Ünvan</label>
+                                            <input
+                                                className="form-input"
+                                                value={paymentSettings.iban.account_name}
+                                                onChange={e => setPaymentSettings({
+                                                    ...paymentSettings,
+                                                    iban: { ...paymentSettings.iban, account_name: e.target.value }
+                                                })}
+                                                placeholder="Örn: Ahmet Yılmaz"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4B5563', marginBottom: '4px', display: 'block' }}>IBAN Numarası</label>
+                                            <input
+                                                className="form-input"
+                                                value={paymentSettings.iban.iban_no}
+                                                onChange={e => setPaymentSettings({
+                                                    ...paymentSettings,
+                                                    iban: { ...paymentSettings.iban, iban_no: e.target.value }
+                                                })}
+                                                placeholder="TR..."
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
                         {/* Contact Info */}
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>İletişim Butonları</h3>
                         <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>Bu butonlar menünüzde ve dijital kartvizitinizde görünür.</p>
