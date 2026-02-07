@@ -607,7 +607,7 @@ export default function PublicMenuPage() {
                                 Uygulamayı İndir
                             </button>
                         )}
-                        <style jsx>{`
+                        <style>{`
                             @keyframes pulse {
                                 0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); }
                                 70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
