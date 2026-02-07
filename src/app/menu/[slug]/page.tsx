@@ -115,8 +115,27 @@ export default function PublicMenuPage() {
         locationLat: null as number | null,
         locationLng: null as number | null,
         addressDetail: '',
+        // New Address Fields
+        neighborhood: '',
+        street: '',
+        apartment: '',
+        floor: '',
+        doorNumber: '',
+        isSite: false,
+        siteName: '',
+        block: '',
         paymentMethod: 'cash' as string // 'cash' or 'credit_card'
     });
+
+    useEffect(() => {
+        // Auto-fill address detail if structured fields are populated and addressDetail is empty or just has location data
+        if (customerInfo.addressType === 'manual' &&
+            customerInfo.neighborhood &&
+            customerInfo.street &&
+            !customerInfo.addressDetail) {
+            setCustomerInfo(prev => ({ ...prev, addressDetail: "Muratpaşa, Antalya" }));
+        }
+    }, [customerInfo.neighborhood, customerInfo.street, customerInfo.addressType]);
 
     useEffect(() => {
         const savedInfo = localStorage.getItem('oneqr_customer_info');
@@ -1009,12 +1028,95 @@ export default function PublicMenuPage() {
                                         </button>
                                     </div>
 
+
+
+                                    {customerInfo.addressType === 'manual' && (
+                                        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                                <input
+                                                    className="form-input"
+                                                    value={customerInfo.neighborhood}
+                                                    onChange={e => setCustomerInfo({ ...customerInfo, neighborhood: e.target.value })}
+                                                    placeholder="Mahalle"
+                                                    required
+                                                />
+                                                <input
+                                                    className="form-input"
+                                                    value={customerInfo.street}
+                                                    onChange={e => setCustomerInfo({ ...customerInfo, street: e.target.value })}
+                                                    placeholder="Sokak / Cadde"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                                <input
+                                                    className="form-input"
+                                                    value={customerInfo.apartment}
+                                                    onChange={e => setCustomerInfo({ ...customerInfo, apartment: e.target.value })}
+                                                    placeholder="Apartman Adı / No"
+                                                    required
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <input
+                                                        className="form-input"
+                                                        value={customerInfo.floor}
+                                                        onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })}
+                                                        placeholder="Kat"
+                                                        style={{ flex: 1 }}
+                                                        required
+                                                    />
+                                                    <input
+                                                        className="form-input"
+                                                        value={customerInfo.doorNumber}
+                                                        onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })}
+                                                        placeholder="Daire"
+                                                        style={{ flex: 1 }}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Sitede mi oturuyorsunuz? Checkbox */}
+                                            <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 500, color: '#374151' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={customerInfo.isSite}
+                                                        onChange={e => setCustomerInfo(({ ...customerInfo, isSite: e.target.checked }))}
+                                                        style={{ width: '18px', height: '18px' }}
+                                                    />
+                                                    Sitede mi oturuyorsunuz?
+                                                </label>
+
+                                                {customerInfo.isSite && (
+                                                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #E5E7EB', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', animation: 'fadeIn 0.3s' }}>
+                                                        <input
+                                                            className="form-input"
+                                                            value={customerInfo.siteName}
+                                                            onChange={e => setCustomerInfo({ ...customerInfo, siteName: e.target.value })}
+                                                            placeholder="Site Adı"
+                                                            required={customerInfo.isSite}
+                                                        />
+                                                        <input
+                                                            className="form-input"
+                                                            value={customerInfo.block}
+                                                            onChange={e => setCustomerInfo({ ...customerInfo, block: e.target.value })}
+                                                            placeholder="Blok"
+                                                            required={customerInfo.isSite}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <textarea
                                         value={customerInfo.addressDetail}
                                         onChange={e => setCustomerInfo({ ...customerInfo, addressDetail: e.target.value })}
-                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }}
-                                        placeholder={customerInfo.addressType === 'location' ? "Daire No, Kat, Zil vb. detayları ekleyin..." : "Mahalle, Cadde, Sokak, No, Daire..."}
-                                        rows={3}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', marginTop: '16px' }}
+                                        placeholder={customerInfo.addressType === 'location' ? "Daire No, Kat, Zil vb. detayları ekleyin..." : "Adres Tarifi (Örn: Bakkalın yanındaki sarı bina...) / Şehir"}
+                                        rows={2}
                                     />
                                 </div>
 
@@ -1035,7 +1137,10 @@ export default function PublicMenuPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
                                     <button
                                         onClick={submitSystemOrder}
-                                        disabled={!customerInfo.fullName || !customerInfo.phone || !customerInfo.addressDetail || isSubmitting}
+                                        disabled={!(customerInfo.fullName && customerInfo.phone &&
+                                            (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
+                                                (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
+                                            || isSubmitting}
                                         style={{
                                             background: '#F59E0B',
                                             color: 'white',
@@ -1044,12 +1149,19 @@ export default function PublicMenuPage() {
                                             border: 'none',
                                             fontSize: '1rem',
                                             fontWeight: 700,
-                                            cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 'pointer' : 'not-allowed',
+                                            fontWeight: 700,
+                                            cursor: (customerInfo.fullName && customerInfo.phone &&
+                                                (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
+                                                    (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
+                                                && !isSubmitting ? 'pointer' : 'not-allowed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             gap: '8px',
-                                            opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 1 : 0.6,
+                                            opacity: (customerInfo.fullName && customerInfo.phone &&
+                                                (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
+                                                    (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
+                                                && !isSubmitting ? 1 : 0.6,
                                             width: '100%'
                                         }}
                                     >
@@ -1064,7 +1176,10 @@ export default function PublicMenuPage() {
                                     {restaurant.whatsapp_number && (
                                         <button
                                             onClick={sendWhatsappOrder}
-                                            disabled={!customerInfo.fullName || !customerInfo.phone || !customerInfo.addressDetail || isSubmitting}
+                                            disabled={!(customerInfo.fullName && customerInfo.phone &&
+                                                (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
+                                                    (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
+                                                || isSubmitting}
                                             style={{
                                                 background: 'white',
                                                 color: '#25D366',
@@ -1072,13 +1187,20 @@ export default function PublicMenuPage() {
                                                 borderRadius: '12px',
                                                 border: '2px solid #25D366',
                                                 fontSize: '0.95rem',
+                                                fontSize: '0.95rem',
                                                 fontWeight: 600,
-                                                cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 'pointer' : 'not-allowed',
+                                                cursor: (customerInfo.fullName && customerInfo.phone &&
+                                                    (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
+                                                        (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
+                                                    && !isSubmitting ? 'pointer' : 'not-allowed',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 gap: '8px',
-                                                opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.addressDetail && !isSubmitting) ? 1 : 0.6,
+                                                opacity: (customerInfo.fullName && customerInfo.phone &&
+                                                    (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
+                                                        (customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))))
+                                                    && !isSubmitting ? 1 : 0.6,
                                                 width: '100%'
                                             }}
                                         >
