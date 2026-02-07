@@ -28,6 +28,13 @@ interface Order {
     payment_method: string;
     status: string;
     created_at: string;
+    neighborhood?: string;
+    street?: string;
+    apartment?: string;
+    floor?: string;
+    door_number?: string;
+    block?: string;
+    site_name?: string;
 }
 
 export default function OrdersPage() {
@@ -181,35 +188,30 @@ export default function OrdersPage() {
             return method;
         };
 
-        let message = `📦 *SİPARİŞ #${order.order_number || 'TR' + order.id.toString().slice(0, 4)}*\n`;
-        message += `--------------------------------\n`;
+        let message = `📦 Sipariş #${order.order_number || '?'}\n`;
+        message += `📍 Teslimat Konumu:\n${mapsLink}\n\n`;
 
-        message += `📍 *TESLİMAT KONUMU*\n`;
-        message += `${mapsLink}\n\n`;
+        message += `📝 Adres Detayı:\n`;
+        message += `${order.address_detail || ''}\n`;
 
-        message += `📝 *ADRES DETAYI*\n`;
-        message += `${order.address_detail || 'Adres detayı girilmemiş.'}\n\n`;
+        // Append structured address parts if they exist and aren't already in address_detail
+        const addressParts = [];
+        if (order.neighborhood) addressParts.push(`Mah: ${order.neighborhood}`);
+        if (order.street) addressParts.push(`Sok: ${order.street}`);
+        if (order.apartment) addressParts.push(`Bina: ${order.apartment}`);
+        if (order.floor) addressParts.push(`Kat: ${order.floor}`);
+        if (order.door_number) addressParts.push(`Daire: ${order.door_number}`);
+        if (order.block) addressParts.push(`Blok: ${order.block}`);
+        if (order.site_name) addressParts.push(`Site: ${order.site_name}`);
 
-        message += `👤 *MÜŞTERİ*\n`;
-        message += `${order.customer_name}\n`;
-        message += `📞 ${order.customer_phone || '-'}\n\n`;
-
-        message += `🛒 *SİPARİŞ İÇERİĞİ*\n`;
-        // Parse items if it's a string, otherwise use directly
-        let items: any[] = [];
-        if (typeof order.items === 'string') {
-            try { items = JSON.parse(order.items); } catch (e) { }
-        } else if (Array.isArray(order.items)) {
-            items = order.items;
+        if (addressParts.length > 0) {
+            message += `${addressParts.join(', ')}\n`;
         }
-
-        items.forEach((item) => {
-            message += `▫️ ${item.quantity} x ${item.name} ${item.variantName ? `(${item.variantName})` : ''}\n`;
-        });
-
         message += `\n`;
-        message += `💳 *ÖDEME: ${getPaymentLabel(order.payment_method)}*\n`;
-        message += `💰 *TUTAR: ${order.total_amount} ₺*`;
+
+        message += `👤 Müşteri: ${order.customer_name}\n`;
+        message += `📞 Tel: ${order.customer_phone || '-'}\n`;
+        message += `💳 Ödeme: ${getPaymentLabel(order.payment_method)} (${order.total_amount} ₺)`;
 
         // Send to self (the restaurant owner's number)
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
