@@ -1,5 +1,21 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { createClient } from '@/lib/supabase';
+
+export async function generateViewport({ params }: { params: { slug: string } }): Promise<Viewport> {
+    const supabase = createClient();
+    const { data: restaurant } = await supabase
+        .from('restaurants')
+        .select('theme_color')
+        .eq('slug', params.slug)
+        .single();
+
+    return {
+        themeColor: restaurant?.theme_color || '#ffffff',
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 1,
+    };
+}
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
     const supabase = createClient();
@@ -13,10 +29,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         return {
             title: restaurant.name,
             description: restaurant.description || `${restaurant.name} QR Menü`,
+            manifest: `/api/manifest/${params.slug}`,
             icons: {
                 icon: restaurant.logo_url || '/favicon.ico',
                 shortcut: restaurant.logo_url || '/favicon.ico',
-                apple: restaurant.logo_url || '/favicon.ico', // iOS icon
+                apple: restaurant.logo_url || '/apple-touch-icon.png',
+            },
+            appleWebApp: {
+                title: restaurant.name,
+                statusBarStyle: 'default',
+                capable: true,
             },
             openGraph: {
                 title: restaurant.name,
@@ -28,7 +50,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
     return {
         title: 'OneQR Menü',
-        description: 'En iyi QR menü deneyimi'
+        description: 'En iyi QR menü deneyimi',
+        manifest: '/manifest.json', // Fallback
     };
 }
 
