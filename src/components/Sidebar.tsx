@@ -74,7 +74,8 @@ export default function Sidebar() {
                     </Link>
 
                 </div>
-                <nav className="sidebar-nav">
+
+                <nav className="sidebar-nav" style={{ marginTop: '20px' }}>
                     <Link href="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-chart-pie"></i></span>
                         <span>Panel</span>
