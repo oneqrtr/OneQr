@@ -33,10 +33,18 @@ export function middleware(request: NextRequest) {
         }
     }
 
-    // If a valid subdomain is found (and it's not a reserved one like 'www')
+    // If a valid subdomain is found
     if (subdomain && !['www', 'demo'].includes(subdomain)) {
+        // Special Case: Allow manifest.json to be served on subdomain if needed
+        // But since we use dynamic route /api/manifest/[slug], we might need to handle that.
+        // If the PWA tries to fetch /manifest.json relative to root, we should rewrite it to API.
+        if (url.pathname === '/manifest.json') {
+            url.pathname = `/api/manifest/${subdomain}`;
+            return NextResponse.rewrite(url);
+        }
+
         // Rewrite the URL to the public menu page
-        // e.g., restaurant.oneqr.tr/cart -> /menu/restaurant/cart
+        // e.g. restaurant.oneqr.tr -> /menu/restaurant
         url.pathname = `/menu/${subdomain}${url.pathname}`;
         return NextResponse.rewrite(url);
     }
