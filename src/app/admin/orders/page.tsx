@@ -38,59 +38,10 @@ export default function OrdersPage() {
     const [selectedDate, setSelectedDate] = useState(new Date());
 
     // Settings State
-    const [notificationSound, setNotificationSound] = useState('ding');
+    // Settings State
     const [printerHeader, setPrinterHeader] = useState('');
     const [printerFooter, setPrinterFooter] = useState('');
     const [printerCopyCount, setPrinterCopyCount] = useState(1);
-
-    // Refs for closure access
-    const notificationSoundRef = useRef('ding');
-    const audioContextRef = useRef<AudioContext | null>(null);
-
-    useEffect(() => {
-        notificationSoundRef.current = notificationSound;
-    }, [notificationSound]);
-
-    const playNotificationSound = () => {
-        try {
-            if (!audioContextRef.current) {
-                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-            }
-            const ctx = audioContextRef.current;
-            if (ctx.state === 'suspended') {
-                ctx.resume();
-            }
-
-            const playTone = (freq: number, startTime: number, duration: number, type: 'sine' | 'triangle' = 'sine') => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = type;
-                osc.frequency.value = freq;
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(startTime);
-                gain.gain.setValueAtTime(0.5, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-                osc.stop(startTime + duration);
-            };
-
-            const now = ctx.currentTime;
-            const sound = notificationSoundRef.current;
-
-            if (sound === 'ding') {
-                playTone(600, now, 0.3);
-                setTimeout(() => playTone(800, now + 0.2, 0.4), 200);
-            } else if (sound === 'bell') {
-                playTone(880, now, 0.6, 'triangle');
-            } else if (sound === 'piano') {
-                playTone(440, now, 0.4);
-                setTimeout(() => playTone(554, now + 0.1, 0.4), 100);
-                setTimeout(() => playTone(659, now + 0.2, 0.4), 200);
-            }
-        } catch (e) {
-            console.error("Audio play failed", e);
-        }
-    };
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
@@ -117,7 +68,7 @@ export default function OrdersPage() {
             if (!restId) {
                 const { data: rest, error: restError } = await supabase
                     .from('restaurants')
-                    .select('id, notification_sound, printer_header, printer_footer, printer_copy_count')
+                    .select('id, printer_header, printer_footer, printer_copy_count')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -128,7 +79,6 @@ export default function OrdersPage() {
                 }
                 restId = rest.id;
                 setRestaurantId(rest.id);
-                setNotificationSound(rest.notification_sound || 'ding');
                 setPrinterHeader(rest.printer_header || '');
                 setPrinterFooter(rest.printer_footer || '');
                 setPrinterCopyCount(rest.printer_copy_count || 1);
@@ -177,7 +127,6 @@ export default function OrdersPage() {
                                 // Double check (though DB timezone matches)
                                 if (isSameDay(orderDate, new Date())) {
                                     setOrders(prev => [newOrder, ...prev]);
-                                    playNotificationSound();
                                     handleAutoPrint(newOrder);
                                 }
                             }
@@ -233,7 +182,7 @@ export default function OrdersPage() {
                         left: 0; 
                         top: 0; 
                         width: 100%; 
-                        padding: 20px;
+                        padding: 10px;
                         font-family: monospace;
                         color: black;
                     }
@@ -241,59 +190,59 @@ export default function OrdersPage() {
                 }
             `}</style>
             {Array.from({ length: printerCopyCount }).map((_, i) => (
-                <div key={i} className="receipt-copy" style={{ pageBreakAfter: 'always', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px dashed #000' }}>
+                <div key={i} className="receipt-copy" style={{ pageBreakAfter: 'always', marginBottom: '40px', paddingBottom: '40px', borderBottom: '2px dashed #000' }}>
 
-                    <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '1px dashed black', paddingBottom: '10px' }}>
-                        <h1 style={{ fontSize: '24px', margin: '0 0 10px' }}>OneQR Menü</h1>
-                        {printerHeader && <p style={{ fontSize: '14px', margin: '0 0 5px' }}>{printerHeader}</p>}
-                        <h2 style={{ fontSize: '18px', margin: 0 }}>Sipariş Fişi #{order.order_number || '?'}</h2>
-                        <p style={{ margin: '5px 0' }}>{formatDate(order.created_at)}</p>
+                    <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px dashed black', paddingBottom: '20px' }}>
+                        <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: '0 0 10px' }}>OneQR Menü</h1>
+                        {printerHeader && <p style={{ fontSize: '18px', margin: '0 0 10px', fontWeight: 'bold' }}>{printerHeader}</p>}
+                        <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: '10px 0' }}>Sipariş Fişi #{order.order_number || '?'}</h2>
+                        <p style={{ margin: '5px 0', fontSize: '16px' }}>{formatDate(order.created_at)}</p>
                     </div>
 
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '5px' }}>Müşteri:</div>
-                        <div>{order.customer_name}</div>
+                    <div style={{ marginBottom: '30px', fontSize: '18px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '20px', marginBottom: '5px', textDecoration: 'underline' }}>Müşteri:</div>
+                        <div style={{ fontWeight: 'bold' }}>{order.customer_name}</div>
                         <div>{order.customer_phone}</div>
-                        <div style={{ marginTop: '5px' }}>{order.address_detail}</div>
-                        {order.address_type === 'location' && <div>(Konum Paylaşıldı)</div>}
+                        <div style={{ marginTop: '10px', whiteSpace: 'pre-wrap' }}>{order.address_detail}</div>
+                        {order.address_type === 'location' && <div style={{ fontStyle: 'italic', marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
                     </div>
 
-                    <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+                    <div style={{ borderBottom: '2px dashed black', marginBottom: '20px' }}></div>
 
-                    <table style={{ width: '100%', marginBottom: '20px', fontSize: '14px' }}>
+                    <table style={{ width: '100%', marginBottom: '20px', fontSize: '18px' }}>
                         <thead>
                             <tr style={{ textAlign: 'left' }}>
-                                <th>Adet</th>
-                                <th>Ürün</th>
-                                <th style={{ textAlign: 'right' }}>Tutar</th>
+                                <th style={{ paddingBottom: '10px' }}>Adet</th>
+                                <th style={{ paddingBottom: '10px' }}>Ürün</th>
+                                <th style={{ textAlign: 'right', paddingBottom: '10px' }}>Tutar</th>
                             </tr>
                         </thead>
                         <tbody>
                             {order.items.map((item, idx) => (
                                 <tr key={idx}>
-                                    <td style={{ verticalAlign: 'top', width: '40px' }}>{item.quantity}x</td>
-                                    <td style={{ verticalAlign: 'top' }}>
-                                        {item.name}
-                                        {item.variantName && <div style={{ fontSize: '12px' }}>({item.variantName})</div>}
+                                    <td style={{ verticalAlign: 'top', width: '50px', paddingBottom: '10px', fontWeight: 'bold' }}>{item.quantity}x</td>
+                                    <td style={{ verticalAlign: 'top', paddingBottom: '10px' }}>
+                                        <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                                        {item.variantName && <div style={{ fontSize: '16px', fontStyle: 'italic' }}>({item.variantName})</div>}
                                     </td>
-                                    <td style={{ verticalAlign: 'top', textAlign: 'right' }}>{item.price * item.quantity} ₺</td>
+                                    <td style={{ verticalAlign: 'top', textAlign: 'right', paddingBottom: '10px', fontWeight: 'bold' }}>{item.price * item.quantity} ₺</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
 
-                    <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+                    <div style={{ borderBottom: '2px dashed black', marginBottom: '20px' }}></div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '28px', fontWeight: 'bold', marginBottom: '10px' }}>
                         <span>TOPLAM:</span>
                         <span>{order.total_amount} ₺</span>
                     </div>
-                    <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                    <div style={{ marginTop: '10px', textAlign: 'right', fontSize: '18px', fontWeight: 'bold' }}>
                         Ödeme: {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
                     </div>
 
                     {printerFooter && (
-                        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', borderTop: '1px dashed black', paddingTop: '10px' }}>
+                        <div style={{ textAlign: 'center', marginTop: '30px', fontSize: '16px', fontWeight: 'bold', borderTop: '2px dashed black', paddingTop: '20px' }}>
                             {printerFooter}
                         </div>
                     )}

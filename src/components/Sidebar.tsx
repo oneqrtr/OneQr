@@ -1,6 +1,7 @@
 'use client';
+import { createClient } from '@/lib/supabase'; // Import at top level for cleaner usage
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
@@ -10,16 +11,77 @@ export default function Sidebar() {
     const [userEmail, setUserEmail] = useState('');
     const [plan, setPlan] = useState('trial');
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Notification State
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [notificationSound, setNotificationSound] = useState('ding');
+    const notificationSoundRef = useRef('ding');
+    const audioContextRef = useRef<AudioContext | null>(null);
+
     const pathname = usePathname();
+
+    // Update ref when state changes
+    useEffect(() => {
+        notificationSoundRef.current = notificationSound;
+    }, [notificationSound]);
+
+    // Reset unread count when on orders page
+    useEffect(() => {
+        if (pathname === '/admin/orders') {
+            setUnreadCount(0);
+        }
+    }, [pathname]);
+
+    const playNotificationSound = () => {
+        try {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            }
+            const ctx = audioContextRef.current;
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+
+            const playTone = (freq: number, startTime: number, duration: number, type: 'sine' | 'triangle' = 'sine') => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                gain.gain.setValueAtTime(0.5, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                osc.stop(startTime + duration);
+            };
+
+            const now = ctx.currentTime;
+            const sound = notificationSoundRef.current;
+
+            if (sound === 'ding') {
+                playTone(600, now, 0.3);
+                setTimeout(() => playTone(800, now + 0.2, 0.4), 200);
+            } else if (sound === 'bell') {
+                playTone(880, now, 0.6, 'triangle');
+            } else if (sound === 'piano') {
+                playTone(440, now, 0.4);
+                setTimeout(() => playTone(554, now + 0.1, 0.4), 100);
+                setTimeout(() => playTone(659, now + 0.2, 0.4), 200);
+            }
+        } catch (e) {
+            console.error("Audio play failed", e);
+        }
+    };
 
     useEffect(() => {
         // Try local storage first for speed
         const savedName = localStorage.getItem('oneqr_business_name');
         if (savedName) setBusinessName(savedName);
 
+        let channel: any = null;
+
         // Fetch source of truth
         const fetchName = async () => {
-            const { createClient } = await import('@/lib/supabase');
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
@@ -27,9 +89,8 @@ export default function Sidebar() {
             setUserEmail(user.email || '');
 
             const { data: rest } = await supabase
-
                 .from('restaurants')
-                .select('name, slug, plan, logo_url')
+                .select('id, name, slug, plan, logo_url, notification_sound')
                 .eq('owner_id', user.id)
                 .maybeSingle();
 
@@ -38,10 +99,42 @@ export default function Sidebar() {
                 setBusinessSlug(rest.slug);
                 setLogoUrl(rest.logo_url);
                 setPlan(rest.plan || 'trial');
+                setNotificationSound(rest.notification_sound || 'ding');
                 localStorage.setItem('oneqr_business_name', rest.name);
+
+                // Subscribe to orders
+                channel = supabase
+                    .channel('sidebar-orders-channel')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'orders',
+                            filter: `restaurant_id=eq.${rest.id}`
+                        },
+                        (payload) => {
+                            // Play sound always
+                            playNotificationSound();
+
+                            // Check if valid date (today) - usually valid since it's realtime insert
+                            // Add badge if NOT on orders page
+                            if (window.location.pathname !== '/admin/orders') {
+                                setUnreadCount(prev => prev + 1);
+                            }
+                        }
+                    )
+                    .subscribe();
             }
         };
         fetchName();
+
+        return () => {
+            if (channel) {
+                const supabase = createClient();
+                supabase.removeChannel(channel);
+            }
+        };
     }, []);
 
     const isActive = (path: string) => {
@@ -88,9 +181,26 @@ export default function Sidebar() {
                         <span className="nav-icon"><i className="fa-solid fa-chart-pie"></i></span>
                         <span>Panel</span>
                     </Link>
-                    <Link href="/admin/orders" className={`nav-item ${isActive('/admin/orders') ? 'active' : ''}`}>
+                    <Link href="/admin/orders" className={`nav-item ${isActive('/admin/orders') ? 'active' : ''}`} style={{ position: 'relative' }}>
                         <span className="nav-icon"><i className="fa-solid fa-bell"></i></span>
                         <span>Siparişler</span>
+                        {unreadCount > 0 && (
+                            <span style={{
+                                position: 'absolute',
+                                right: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: '#EF4444',
+                                color: 'white',
+                                borderRadius: '999px',
+                                padding: '2px 8px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                            }}>
+                                {unreadCount}
+                            </span>
+                        )}
                     </Link>
                     <Link href="/admin/menu" className={`nav-item ${isActive('/admin/menu') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-utensils"></i></span>

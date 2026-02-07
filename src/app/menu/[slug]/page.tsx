@@ -1187,7 +1187,6 @@ export default function PublicMenuPage() {
                                                 borderRadius: '12px',
                                                 border: '2px solid #25D366',
                                                 fontSize: '0.95rem',
-                                                fontSize: '0.95rem',
                                                 fontWeight: 600,
                                                 cursor: (customerInfo.fullName && customerInfo.phone &&
                                                     (customerInfo.addressType === 'location' ? customerInfo.addressDetail :
