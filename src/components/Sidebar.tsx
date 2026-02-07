@@ -57,13 +57,13 @@ export default function Sidebar() {
         <>
             <aside className={`sidebar ${isMobileExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
-                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', gap: '15px' }}>
+                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0 20px', gap: '15px' }}>
                         <img
                             src={logoUrl || "/favicon.ico"}
                             alt="Logo"
                             style={{
-                                height: '80px',
-                                width: '80px',
+                                height: '100px',
+                                width: '100px',
                                 objectFit: 'contain',
                                 borderRadius: '12px',
                                 background: 'white',
@@ -71,47 +71,8 @@ export default function Sidebar() {
                                 boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
                             }}
                         />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', padding: '0 10px' }}>
-                            {businessSlug && (
-                                <>
-                                    <Link href={`https://${businessSlug}.oneqr.tr`} target="_blank" className="btn-sidebar-action">
-                                        <i className="fa-solid fa-globe"></i> Siteye Git
-                                    </Link>
-                                    <Link href={`/k/${businessSlug}`} target="_blank" className="btn-sidebar-action">
-                                        <i className="fa-solid fa-address-card"></i> Kartvizit
-                                    </Link>
-                                    <Link href={`/menu/${businessSlug}`} target="_blank" className="btn-sidebar-action">
-                                        <i className="fa-solid fa-utensils"></i> Menü
-                                    </Link>
-                                </>
-                            )}
-                        </div>
-                        <style jsx>{`
-                            .btn-sidebar-action {
-                                display: flex;
-                                align-items: center;
-                                gap: 10px;
-                                padding: 8px 12px;
-                                background: #f3f4f6;
-                                border-radius: 8px;
-                                color: #374151;
-                                font-size: 0.85rem;
-                                font-weight: 500;
-                                text-decoration: none;
-                                transition: all 0.2s;
-                                border: 1px solid #e5e7eb;
-                            }
-                            .btn-sidebar-action:hover {
-                                background: #e5e7eb;
-                                color: #111827;
-                            }
-                            .btn-sidebar-action i {
-                                width: 16px;
-                                text-align: center;
-                                color: #6b7280;
-                            }
-                        `}</style>
                     </Link>
+
                 </div>
                 <nav className="sidebar-nav">
                     <Link href="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
@@ -310,25 +271,27 @@ export default function Sidebar() {
                 >
                     <i className={`fa-solid fa-chevron-${isMobileExpanded ? 'left' : 'right'}`} style={{ fontSize: '0.8rem', color: '#6B7280' }}></i>
                 </button>
-            </aside>
+            </aside >
 
             {/* Backdrop for mobile expanded */}
-            {isMobileExpanded && (
-                <div
-                    onClick={() => setIsMobileExpanded(false)}
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(0,0,0,0.3)',
-                        zIndex: 40,
-                        display: 'none' // Default hidden
-                    }}
-                    className="mobile-backdrop"
-                />
-            )}
+            {
+                isMobileExpanded && (
+                    <div
+                        onClick={() => setIsMobileExpanded(false)}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0,0,0,0.3)',
+                            zIndex: 40,
+                            display: 'none' // Default hidden
+                        }}
+                        className="mobile-backdrop"
+                    />
+                )
+            }
         </>
     );
 }
