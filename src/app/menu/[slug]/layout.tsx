@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { createClient } from '@/lib/supabase';
 
-export async function generateViewport({ params }: { params: { slug: string } }): Promise<Viewport> {
+export async function generateViewport(props: { params: Promise<{ slug: string }> }): Promise<Viewport> {
+    const params = await props.params;
     const supabase = createClient();
     const { data: restaurant } = await supabase
         .from('restaurants')
@@ -17,7 +18,8 @@ export async function generateViewport({ params }: { params: { slug: string } })
     };
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const params = await props.params;
     const supabase = createClient();
     const { data: restaurant } = await supabase
         .from('restaurants')
