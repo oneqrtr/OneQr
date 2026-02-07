@@ -114,8 +114,7 @@ export default function SettingsPage() {
             .update({
                 name: businessName,
                 description: description,
-                name: businessName,
-                description: description,
+
                 // theme_color managed in /admin/theme
                 notification_sound: notificationSound,
                 printer_header: printerHeader,
