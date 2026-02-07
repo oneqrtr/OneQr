@@ -295,7 +295,7 @@ export default function PublicMenuPage() {
             address_detail: customerInfo.addressDetail,
             location_lat: customerInfo.locationLat,
             location_lng: customerInfo.locationLng,
-            location_lng: customerInfo.locationLng,
+
             payment_method: customerInfo.paymentMethod === 'meal_card'
                 ? `meal_card_${customerInfo.mealCardProvider}`
                 : customerInfo.paymentMethod,
