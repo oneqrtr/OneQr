@@ -252,27 +252,41 @@ export default function PublicMenuPage() {
     const sendWhatsappOrder = () => {
         if (!restaurant || !restaurant.whatsapp_number) return;
 
-        let message = `Merhabalar, *${restaurant.name}* üzerinden sipariş vermek istiyorum:\n\n`;
+        let message = `🍽️ *SİPARİŞ DETAYI*\n\n`;
+        message += `*${restaurant.name}*\n`;
+        message += `--------------------------------\n`;
+
+        message += `👤 *Müşteri Bilgileri*\n`;
+        message += `İsim: ${customerInfo.fullName}\n`;
+        message += `Tel: ${customerInfo.phone}\n\n`;
+
+        message += `📍 *Teslimat Adresi*\n`;
+        if (customerInfo.addressType === 'location' && customerInfo.locationLat && customerInfo.locationLng) {
+            message += `Konum Linki: https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
+        }
+        message += `${customerInfo.addressDetail}\n`;
+        if (customerInfo.neighborhood) message += `Mahalle: ${customerInfo.neighborhood}\n`;
+        if (customerInfo.street) message += `Sokak: ${customerInfo.street}\n`;
+        if (customerInfo.apartment) message += `Bina No: ${customerInfo.apartment}\n`;
+        if (customerInfo.floor) message += `Kat: ${customerInfo.floor}\n`;
+        if (customerInfo.doorNumber) message += `Daire No: ${customerInfo.doorNumber}\n`;
+        if (customerInfo.block) message += `Blok: ${customerInfo.block}\n`;
+        if (customerInfo.siteName) message += `Site Adı: ${customerInfo.siteName}\n`;
+        message += `\n`;
+
+        message += `🛒 *Sipariş İçeriği*\n`;
         let totalAmount = 0;
 
         cart.forEach(item => {
             const itemTotal = item.price * item.quantity;
             totalAmount += itemTotal;
-            message += `${item.quantity}x ${item.name}${item.variantName ? ` (${item.variantName})` : ''}: ${itemTotal} ${restaurant.currency}\n`;
+            message += `▫️ ${item.quantity} x ${item.name}${item.variantName ? ` (${item.variantName})` : ''}\n`;
+            message += `   Birim: ${item.price} ${restaurant.currency} | Toplam: ${itemTotal} ${restaurant.currency}\n`;
         });
 
-        message += `\n*Toplam Tutar: ${totalAmount} ${restaurant.currency}*\n`;
         message += `--------------------------------\n`;
-        message += `*Müşteri Bilgileri:*\n`;
-        message += `👤 İsim: ${customerInfo.fullName}\n`;
-        message += `📞 Telefon: ${customerInfo.phone}\n`;
-
-        if (customerInfo.locationLat && customerInfo.locationLng) {
-            message += `📍 Konum: https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
-        }
-
-        message += `🏠 Adres Detayı: ${customerInfo.addressDetail}\n`;
-        message += `💳 Ödeme Yöntemi: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
+        message += `💳 *Ödeme Yöntemi:* ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}\n`;
+        message += `💰 *GENEL TOPLAM: ${totalAmount} ${restaurant.currency}*`;
 
         const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
         saveCustomerInfoToLocal();

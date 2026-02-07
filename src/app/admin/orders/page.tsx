@@ -181,7 +181,35 @@ export default function OrdersPage() {
             return method;
         };
 
-        const message = `📦 Sipariş #${order.order_number || '?'}\n\n📍 Teslimat Konumu:\n${mapsLink}\n\n📝 Adres Detayı:\n${order.address_detail || '-'}\n\n👤 Müşteri: ${order.customer_name}\n📞 Tel: ${order.customer_phone || '-'}\n💳 Ödeme: ${getPaymentLabel(order.payment_method)} (${order.total_amount} ₺)`;
+        let message = `📦 *SİPARİŞ #${order.order_number || 'TR' + order.id.toString().slice(0, 4)}*\n`;
+        message += `--------------------------------\n`;
+
+        message += `📍 *TESLİMAT KONUMU*\n`;
+        message += `${mapsLink}\n\n`;
+
+        message += `📝 *ADRES DETAYI*\n`;
+        message += `${order.address_detail || 'Adres detayı girilmemiş.'}\n\n`;
+
+        message += `👤 *MÜŞTERİ*\n`;
+        message += `${order.customer_name}\n`;
+        message += `📞 ${order.customer_phone || '-'}\n\n`;
+
+        message += `🛒 *SİPARİŞ İÇERİĞİ*\n`;
+        // Parse items if it's a string, otherwise use directly
+        let items: any[] = [];
+        if (typeof order.items === 'string') {
+            try { items = JSON.parse(order.items); } catch (e) { }
+        } else if (Array.isArray(order.items)) {
+            items = order.items;
+        }
+
+        items.forEach((item) => {
+            message += `▫️ ${item.quantity} x ${item.name} ${item.variantName ? `(${item.variantName})` : ''}\n`;
+        });
+
+        message += `\n`;
+        message += `💳 *ÖDEME: ${getPaymentLabel(order.payment_method)}*\n`;
+        message += `💰 *TUTAR: ${order.total_amount} ₺*`;
 
         // Send to self (the restaurant owner's number)
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
