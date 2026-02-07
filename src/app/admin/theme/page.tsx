@@ -46,7 +46,7 @@ export default function ThemePage() {
 
             const { data: rest } = await supabase
                 .from('restaurants')
-                .select('id, name, description, logo_url, hero_image_url, primary_color')
+                .select('id, name, description, logo_url, hero_image_url, primary_color, theme_color')
                 .eq('owner_id', user.id)
                 .single();
 
@@ -55,7 +55,8 @@ export default function ThemePage() {
                 setLogoUrl(rest.logo_url || '');
                 setDescription(rest.description || '');
                 setHeroUrl(rest.hero_image_url || '');
-                setPrimaryColor(rest.primary_color || '#2563EB');
+                // Prefer theme_color, fall back to primary_color, then default
+                setPrimaryColor(rest.theme_color || rest.primary_color || '#2563EB');
                 setRestaurantId(rest.id);
             }
         };
@@ -72,7 +73,8 @@ export default function ThemePage() {
             .update({
                 logo_url: logoUrl,
                 hero_image_url: heroUrl,
-                primary_color: primaryColor,
+                primary_color: primaryColor, // Keep for legacy
+                theme_color: primaryColor,   // Update the one used by Menu/PWA
             })
             .eq('id', restaurantId);
 
