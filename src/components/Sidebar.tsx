@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 export default function Sidebar() {
     const [businessName, setBusinessName] = useState('');
     const [businessSlug, setBusinessSlug] = useState('');
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [userEmail, setUserEmail] = useState('');
     const [plan, setPlan] = useState('trial');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,14 +27,16 @@ export default function Sidebar() {
             setUserEmail(user.email || '');
 
             const { data: rest } = await supabase
+
                 .from('restaurants')
-                .select('name, slug, plan')
+                .select('name, slug, plan, logo_url')
                 .eq('owner_id', user.id)
                 .maybeSingle();
 
             if (rest) {
                 setBusinessName(rest.name);
                 setBusinessSlug(rest.slug);
+                setLogoUrl(rest.logo_url);
                 setPlan(rest.plan || 'trial');
                 localStorage.setItem('oneqr_business_name', rest.name);
             }
@@ -54,8 +57,60 @@ export default function Sidebar() {
         <>
             <aside className={`sidebar ${isMobileExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
-                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
-                        <img src="/logoblack.png" alt="OneQR" style={{ height: '90px' }} />
+                    <Link href="/admin" className="sidebar-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', gap: '15px' }}>
+                        <img
+                            src={logoUrl || "/favicon.ico"}
+                            alt="Logo"
+                            style={{
+                                height: '80px',
+                                width: '80px',
+                                objectFit: 'contain',
+                                borderRadius: '12px',
+                                background: 'white',
+                                padding: '5px',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                            }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', padding: '0 10px' }}>
+                            {businessSlug && (
+                                <>
+                                    <Link href={`https://${businessSlug}.oneqr.tr`} target="_blank" className="btn-sidebar-action">
+                                        <i className="fa-solid fa-globe"></i> Siteye Git
+                                    </Link>
+                                    <Link href={`/k/${businessSlug}`} target="_blank" className="btn-sidebar-action">
+                                        <i className="fa-solid fa-address-card"></i> Kartvizit
+                                    </Link>
+                                    <Link href={`/menu/${businessSlug}`} target="_blank" className="btn-sidebar-action">
+                                        <i className="fa-solid fa-utensils"></i> Menü
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                        <style jsx>{`
+                            .btn-sidebar-action {
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                padding: 8px 12px;
+                                background: #f3f4f6;
+                                border-radius: 8px;
+                                color: #374151;
+                                font-size: 0.85rem;
+                                font-weight: 500;
+                                text-decoration: none;
+                                transition: all 0.2s;
+                                border: 1px solid #e5e7eb;
+                            }
+                            .btn-sidebar-action:hover {
+                                background: #e5e7eb;
+                                color: #111827;
+                            }
+                            .btn-sidebar-action i {
+                                width: 16px;
+                                text-align: center;
+                                color: #6b7280;
+                            }
+                        `}</style>
                     </Link>
                 </div>
                 <nav className="sidebar-nav">
