@@ -94,7 +94,10 @@ export default function PublicMenuPage() {
     }, []);
 
     const handleInstallClick = async () => {
-        if (!deferredPrompt) return;
+        if (!deferredPrompt) {
+            alert("Uygulamayı yüklemek için tarayıcınızın menüsünden 'Ana Ekrana Ekle' veya 'Uygulamayı Yükle' seçeneğini kullanabilirsiniz.");
+            return;
+        }
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
@@ -574,58 +577,42 @@ export default function PublicMenuPage() {
                     </div>
 
                     <div style={{ padding: '0 24px 24px' }}>
-                        <div style={{
-                            width: '100px',
-                            height: '100px',
-                            background: 'white',
-                            borderRadius: '50%',
-                            margin: '-50px auto 12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: restaurant.theme_color,
-                            fontSize: '2rem',
-                            fontWeight: 'bold',
-                            border: '4px solid white',
-                            position: 'relative',
-                            zIndex: 11,
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}>
+                        <div
+                            onClick={handleInstallClick}
+                            style={{
+                                width: '100px',
+                                height: '100px',
+                                background: 'white',
+                                borderRadius: '50%',
+                                margin: '-50px auto 12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: restaurant.theme_color,
+                                fontSize: '2rem',
+                                fontWeight: 'bold',
+                                border: '4px solid white',
+                                position: 'relative',
+                                zIndex: 11,
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                cursor: 'pointer',
+                                animation: isInstallable ? 'pulse-logo 2s infinite' : 'none'
+                            }}>
                             {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : restaurant.name.substring(0, 1)}
                         </div>
 
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>{restaurant.name}</h1>
 
                         {restaurant.description && (
-                            <p style={{ color: '#6B7280', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto 16px', lineHeight: '1.5' }}>
+                            <p style={{ color: '#6B7280', fontSize: '0.95rem', maxWidth: '500px', margin: '0 auto 8px', lineHeight: '1.5' }}>
                                 {restaurant.description}
                             </p>
                         )}
 
-                        {isInstallable && (
-                            <button
-                                onClick={handleInstallClick}
-                                style={{
-                                    background: '#111827',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '10px 20px',
-                                    borderRadius: '50px',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                    marginBottom: '10px',
-                                    animation: 'pulse 2s infinite'
-                                }}
-                            >
-                                <i className="fa-solid fa-download"></i>
-                                Uygulamayı İndir
-                            </button>
-                        )}
+                        <div style={{ fontSize: '0.8rem', color: '#3B82F6', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '10px' }}>
+                            <i className="fa-solid fa-arrow-up"></i>
+                            Logoya tıklayarak uygulamayı indirebilirsiniz
+                        </div>
                         <style>{`
                             @keyframes pulse {
                                 0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); }
