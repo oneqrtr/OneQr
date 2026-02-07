@@ -171,7 +171,17 @@ export default function OrdersPage() {
         if (!order.location_lat || !order.location_lng) return;
 
         const mapsLink = `https://www.google.com/maps/search/?api=1&query=${order.location_lat},${order.location_lng}`;
-        const message = `📍 Sipariş Teslimat Konumu:\n${mapsLink}\n\nMüşteri: ${order.customer_name}\nTel: ${order.customer_phone || '-'}`;
+
+        // Helper to format payment method
+        const getPaymentLabel = (method: string) => {
+            if (method === 'cash') return 'Nakit';
+            if (method === 'credit_card') return 'Kredi Kartı';
+            if (method.startsWith('meal_card')) return `Yemek Kartı (${method.replace('meal_card_', '')})`;
+            if (method === 'iban') return 'IBAN / Havale';
+            return method;
+        };
+
+        const message = `📦 Sipariş #${order.order_number || '?'}\n\n📍 Teslimat Konumu:\n${mapsLink}\n\n📝 Adres Detayı:\n${order.address_detail || '-'}\n\n👤 Müşteri: ${order.customer_name}\n📞 Tel: ${order.customer_phone || '-'}\n💳 Ödeme: ${getPaymentLabel(order.payment_method)} (${order.total_amount} ₺)`;
 
         // Send to self (the restaurant owner's number)
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
