@@ -37,8 +37,19 @@ export default function OrdersPage() {
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    // Audio context ref for sound
+    // Settings State
+    const [notificationSound, setNotificationSound] = useState('ding');
+    const [printerHeader, setPrinterHeader] = useState('');
+    const [printerFooter, setPrinterFooter] = useState('');
+    const [printerCopyCount, setPrinterCopyCount] = useState(1);
+
+    // Refs for closure access
+    const notificationSoundRef = useRef('ding');
     const audioContextRef = useRef<AudioContext | null>(null);
+
+    useEffect(() => {
+        notificationSoundRef.current = notificationSound;
+    }, [notificationSound]);
 
     const playNotificationSound = () => {
         try {
@@ -50,15 +61,13 @@ export default function OrdersPage() {
                 ctx.resume();
             }
 
-            // "Din Din" pattern
-            const playTone = (freq: number, startTime: number, duration: number) => {
+            const playTone = (freq: number, startTime: number, duration: number, type: 'sine' | 'triangle' = 'sine') => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                osc.type = 'sine';
+                osc.type = type;
                 osc.frequency.value = freq;
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-
                 osc.start(startTime);
                 gain.gain.setValueAtTime(0.5, startTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
@@ -66,9 +75,18 @@ export default function OrdersPage() {
             };
 
             const now = ctx.currentTime;
-            playTone(600, now, 0.3);
-            setTimeout(() => playTone(800, now + 0.2, 0.4), 200);
+            const sound = notificationSoundRef.current;
 
+            if (sound === 'ding') {
+                playTone(600, now, 0.3);
+                setTimeout(() => playTone(800, now + 0.2, 0.4), 200);
+            } else if (sound === 'bell') {
+                playTone(880, now, 0.6, 'triangle');
+            } else if (sound === 'piano') {
+                playTone(440, now, 0.4);
+                setTimeout(() => playTone(554, now + 0.1, 0.4), 100);
+                setTimeout(() => playTone(659, now + 0.2, 0.4), 200);
+            }
         } catch (e) {
             console.error("Audio play failed", e);
         }
@@ -99,7 +117,7 @@ export default function OrdersPage() {
             if (!restId) {
                 const { data: rest, error: restError } = await supabase
                     .from('restaurants')
-                    .select('id')
+                    .select('id, notification_sound, printer_header, printer_footer, printer_copy_count')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -110,6 +128,10 @@ export default function OrdersPage() {
                 }
                 restId = rest.id;
                 setRestaurantId(rest.id);
+                setNotificationSound(rest.notification_sound || 'ding');
+                setPrinterHeader(rest.printer_header || '');
+                setPrinterFooter(rest.printer_footer || '');
+                setPrinterCopyCount(rest.printer_copy_count || 1);
             }
 
             if (restId) {
@@ -218,53 +240,65 @@ export default function OrdersPage() {
                     .no-print { display: none; }
                 }
             `}</style>
-            <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '1px dashed black', paddingBottom: '10px' }}>
-                <h1 style={{ fontSize: '24px', margin: '0 0 10px' }}>OneQR Menü</h1>
-                <h2 style={{ fontSize: '18px', margin: 0 }}>Sipariş Fişi #{order.order_number || '?'}</h2>
-                <p style={{ margin: '5px 0' }}>{formatDate(order.created_at)}</p>
-            </div>
+            {Array.from({ length: printerCopyCount }).map((_, i) => (
+                <div key={i} className="receipt-copy" style={{ pageBreakAfter: 'always', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px dashed #000' }}>
 
-            <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '5px' }}>Müşteri:</div>
-                <div>{order.customer_name}</div>
-                <div>{order.customer_phone}</div>
-                <div style={{ marginTop: '5px' }}>{order.address_detail}</div>
-                {order.address_type === 'location' && <div>(Konum Paylaşıldı)</div>}
-            </div>
+                    <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '1px dashed black', paddingBottom: '10px' }}>
+                        <h1 style={{ fontSize: '24px', margin: '0 0 10px' }}>OneQR Menü</h1>
+                        {printerHeader && <p style={{ fontSize: '14px', margin: '0 0 5px' }}>{printerHeader}</p>}
+                        <h2 style={{ fontSize: '18px', margin: 0 }}>Sipariş Fişi #{order.order_number || '?'}</h2>
+                        <p style={{ margin: '5px 0' }}>{formatDate(order.created_at)}</p>
+                    </div>
 
-            <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+                    <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '5px' }}>Müşteri:</div>
+                        <div>{order.customer_name}</div>
+                        <div>{order.customer_phone}</div>
+                        <div style={{ marginTop: '5px' }}>{order.address_detail}</div>
+                        {order.address_type === 'location' && <div>(Konum Paylaşıldı)</div>}
+                    </div>
 
-            <table style={{ width: '100%', marginBottom: '20px', fontSize: '14px' }}>
-                <thead>
-                    <tr style={{ textAlign: 'left' }}>
-                        <th>Adet</th>
-                        <th>Ürün</th>
-                        <th style={{ textAlign: 'right' }}>Tutar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {order.items.map((item, idx) => (
-                        <tr key={idx}>
-                            <td style={{ verticalAlign: 'top', width: '40px' }}>{item.quantity}x</td>
-                            <td style={{ verticalAlign: 'top' }}>
-                                {item.name}
-                                {item.variantName && <div style={{ fontSize: '12px' }}>({item.variantName})</div>}
-                            </td>
-                            <td style={{ verticalAlign: 'top', textAlign: 'right' }}>{item.price * item.quantity} ₺</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                    <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
 
-            <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+                    <table style={{ width: '100%', marginBottom: '20px', fontSize: '14px' }}>
+                        <thead>
+                            <tr style={{ textAlign: 'left' }}>
+                                <th>Adet</th>
+                                <th>Ürün</th>
+                                <th style={{ textAlign: 'right' }}>Tutar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {order.items.map((item, idx) => (
+                                <tr key={idx}>
+                                    <td style={{ verticalAlign: 'top', width: '40px' }}>{item.quantity}x</td>
+                                    <td style={{ verticalAlign: 'top' }}>
+                                        {item.name}
+                                        {item.variantName && <div style={{ fontSize: '12px' }}>({item.variantName})</div>}
+                                    </td>
+                                    <td style={{ verticalAlign: 'top', textAlign: 'right' }}>{item.price * item.quantity} ₺</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold' }}>
-                <span>TOPLAM:</span>
-                <span>{order.total_amount} ₺</span>
-            </div>
-            <div style={{ marginTop: '10px', textAlign: 'right' }}>
-                Ödeme: {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
-            </div>
+                    <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold' }}>
+                        <span>TOPLAM:</span>
+                        <span>{order.total_amount} ₺</span>
+                    </div>
+                    <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                        Ödeme: {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
+                    </div>
+
+                    {printerFooter && (
+                        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', borderTop: '1px dashed black', paddingTop: '10px' }}>
+                            {printerFooter}
+                        </div>
+                    )}
+                </div>
+            ))}
         </div>
     );
 

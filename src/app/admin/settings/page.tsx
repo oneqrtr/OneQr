@@ -8,6 +8,13 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(false);
     const [businessName, setBusinessName] = useState('');
     const [description, setDescription] = useState('');
+    const [themeColor, setThemeColor] = useState('#000000');
+
+    // Notification & Printer States
+    const [notificationSound, setNotificationSound] = useState('ding');
+    const [printerHeader, setPrinterHeader] = useState('');
+    const [printerFooter, setPrinterFooter] = useState('');
+    const [printerCopyCount, setPrinterCopyCount] = useState(1);
 
     // Contact Info States
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -53,7 +60,15 @@ export default function SettingsPage() {
             if (rest) {
                 setBusinessName(rest.name);
                 setDescription(rest.description || '');
+                setThemeColor(rest.theme_color || '#000000');
+                setThemeColor(rest.theme_color || '#000000');
                 setPlan(rest.plan || 'freemium');
+
+                // Notification & Printer
+                setNotificationSound(rest.notification_sound || 'ding');
+                setPrinterHeader(rest.printer_header || '');
+                setPrinterFooter(rest.printer_footer || '');
+                setPrinterCopyCount(rest.printer_copy_count || 1);
 
                 // Contact info
                 setPhoneNumber(rest.phone_number || '');
@@ -101,6 +116,11 @@ export default function SettingsPage() {
             .update({
                 name: businessName,
                 description: description,
+                theme_color: themeColor,
+                notification_sound: notificationSound,
+                printer_header: printerHeader,
+                printer_footer: printerFooter,
+                printer_copy_count: printerCopyCount,
                 phone_number: phoneNumber,
                 whatsapp_number: whatsappNumber,
                 is_call_enabled: isCallEnabled,
@@ -156,6 +176,47 @@ export default function SettingsPage() {
         );
     };
 
+    // Test Sound Logic
+    const playTestSound = () => {
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            const ctx = new AudioContext();
+            const playTone = (freq: number, startTime: number, duration: number, type: 'sine' | 'triangle' = 'sine') => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                gain.gain.setValueAtTime(0.5, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                osc.stop(startTime + duration);
+            };
+
+            const now = ctx.currentTime;
+
+            if (notificationSound === 'ding') {
+                playTone(600, now, 0.3);
+                setTimeout(() => playTone(800, now + 0.2, 0.4), 200);
+            } else if (notificationSound === 'bell') {
+                playTone(880, now, 0.6, 'triangle');
+            } else if (notificationSound === 'piano') {
+                playTone(440, now, 0.4);
+                setTimeout(() => playTone(554, now + 0.1, 0.4), 100);
+                setTimeout(() => playTone(659, now + 0.2, 0.4), 200);
+            }
+        } catch (e) {
+            console.error("Audio play failed", e);
+            alert("Ses çalınamadı. Tarayıcı izinlerini kontrol edin.");
+        }
+    };
+
+    // Test Print Logic
+    const handleTestPrint = () => {
+        window.print();
+    };
+
     return (
         <>
             <Topbar title="İşletme Ayarları" />
@@ -185,6 +246,138 @@ export default function SettingsPage() {
                                 rows={3}
                                 style={{ resize: 'vertical' }}
                             />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Tema Rengi</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <input
+                                    type="color"
+                                    value={themeColor}
+                                    onChange={e => setThemeColor(e.target.value)}
+                                    style={{ width: '60px', height: '40px', padding: '0', border: 'none', background: 'none', cursor: 'pointer' }}
+                                />
+                                <input
+                                    className="form-input"
+                                    value={themeColor}
+                                    onChange={e => setThemeColor(e.target.value)}
+                                    placeholder="#000000"
+                                    style={{ width: '120px' }}
+                                />
+                            </div>
+                        </div>
+
+
+                        {/* Notification & Printer Section */}
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>Bildirim ve Yazıcı</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <label className="form-label">Bildirim Sesi</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <select
+                                        className="form-input"
+                                        value={notificationSound}
+                                        onChange={(e) => setNotificationSound(e.target.value)}
+                                    >
+                                        <option value="ding">Ding (Klasik)</option>
+                                        <option value="bell">Zil Sesi</option>
+                                        <option value="piano">Piyano Akoru</option>
+                                    </select>
+                                    <button
+                                        type="button"
+                                        onClick={playTestSound}
+                                        className="btn btn-outline"
+                                        style={{ whiteSpace: 'nowrap' }}
+                                    >
+                                        <i className="fa-solid fa-play"></i> Test
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Yazdırılacak Nüsha Adeti</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="5"
+                                    className="form-input"
+                                    value={printerCopyCount}
+                                    onChange={e => setPrinterCopyCount(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
+                                />
+                                <div style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>Tek seferde kaç adet fiş basılsın? (Mutfak, Kasa vb.)</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <label className="form-label">Fiş Başlığı</label>
+                                <input
+                                    className="form-input"
+                                    value={printerHeader}
+                                    onChange={e => setPrinterHeader(e.target.value)}
+                                    placeholder="Örn: Hoşgeldiniz"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Fiş Alt Yazısı</label>
+                                <input
+                                    className="form-input"
+                                    value={printerFooter}
+                                    onChange={e => setPrinterFooter(e.target.value)}
+                                    placeholder="Örn: Wifi: 1234 / Afiyet Olsun"
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '24px', textAlign: 'right' }}>
+                            <button
+                                type="button"
+                                onClick={handleTestPrint}
+                                className="btn btn-outline"
+                                style={{ fontSize: '0.9rem' }}
+                            >
+                                <i className="fa-solid fa-print"></i> Test Çıktısı Al
+                            </button>
+                        </div>
+
+                        {/* Hidden Print Area for Testing */}
+                        <div id="print-area" style={{ display: 'none' }}>
+                            <style>{`
+                                @media print {
+                                    body * { visibility: hidden; }
+                                    #print-area, #print-area * { visibility: visible; }
+                                    #print-area { 
+                                        display: block !important; 
+                                        position: absolute; 
+                                        left: 0; 
+                                        top: 0; 
+                                        width: 100%; 
+                                    }
+                                    .receipt-copy {
+                                        page-break-after: always;
+                                        border-bottom: 1px dashed #000;
+                                        padding-bottom: 20px;
+                                        margin-bottom: 20px;
+                                    }
+                                    .receipt-copy:last-child {
+                                        page-break-after: auto;
+                                        border-bottom: none;
+                                    }
+                                }
+                            `}</style>
+                            {Array.from({ length: printerCopyCount }).map((_, i) => (
+                                <div key={i} className="receipt-copy" style={{ padding: '20px', fontFamily: 'monospace', textAlign: 'center' }}>
+                                    <h1 style={{ fontSize: '24px', margin: '0 0 10px' }}>{businessName || 'İşletme Adı'}</h1>
+                                    {printerHeader && <div style={{ fontSize: '16px', marginBottom: '10px' }}>{printerHeader}</div>}
+                                    <h2 style={{ fontSize: '18px', borderBottom: '1px dashed black', paddingBottom: '10px', margin: '0 0 20px' }}>TEST FİŞİ #{i + 1}</h2>
+                                    <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+                                        <div>Tarih: {new Date().toLocaleDateString('tr-TR')}</div>
+                                        <div>Bu bir deneme çıktısıdır.</div>
+                                    </div>
+                                    <div style={{ borderBottom: '1px dashed black', marginBottom: '20px' }}></div>
+                                    {printerFooter && <div style={{ fontSize: '14px', marginTop: '20px' }}>{printerFooter}</div>}
+                                </div>
+                            ))}
                         </div>
 
                         {/* Social & Wifi Section */}
@@ -446,8 +639,8 @@ export default function SettingsPage() {
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
+                </div >
+            </div >
         </>
     );
 }
