@@ -151,6 +151,20 @@ export default function PublicMenuPage() {
     // Order Summary Modal State
     const [showOrderSummary, setShowOrderSummary] = useState(false);
 
+    // Order Submission States
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState(false);
+
+    useEffect(() => {
+        // Auto-fill address detail if structured fields are populated and addressDetail is empty or just has location data
+        if (customerInfo.addressType === 'manual' &&
+            customerInfo.neighborhood &&
+            customerInfo.street &&
+            !customerInfo.addressDetail) {
+            setCustomerInfo(prev => ({ ...prev, addressDetail: "Muratpaşa, Antalya" }));
+        }
+    }, [customerInfo.neighborhood, customerInfo.street, customerInfo.addressType]);
+
     useEffect(() => {
         const savedInfo = localStorage.getItem('oneqr_customer_info');
         if (savedInfo) {
@@ -247,7 +261,114 @@ export default function PublicMenuPage() {
         );
     };
 
-    // ... (keep logic like addToCart, etc. same until submit)
+    const isOrderEnabled = true; // Always true for now (or check plan)
+
+    const addToCart = (product: Product, variant?: Variant) => {
+        if (!isOrderEnabled) return;
+        setCart(prev => {
+            const existingItem = prev.find(item => item.id === product.id && item.variantName === variant?.name);
+            if (existingItem) {
+                return prev.map(item =>
+                    (item.id === product.id && item.variantName === variant?.name)
+                        ? { ...item, quantity: item.quantity + 1 }
+                        : item
+                );
+            } else {
+                return [...prev, {
+                    id: product.id,
+                    name: product.name,
+                    price: variant ? (product.price + variant.price) : product.price,
+                    quantity: 1,
+                    variantName: variant?.name
+                }];
+            }
+        });
+        setSelectedProductForVariant(null);
+    };
+
+    const updateCartItemQuantity = (productId: string, variantName: string | undefined, delta: number) => {
+        setCart(prev => {
+            return prev.map(item => {
+                if (item.id === productId && item.variantName === variantName) {
+                    const newQuantity = Math.max(0, item.quantity + delta);
+                    return { ...item, quantity: newQuantity };
+                }
+                return item;
+            }).filter(item => item.quantity > 0);
+        });
+    };
+
+    const handleProductClick = (product: Product) => {
+        if (!isOrderEnabled) return;
+        const productVariants = variants.filter(v => v.product_id === product.id);
+        if (productVariants.length > 0) {
+            setSelectedProductForVariant(product);
+        } else {
+            addToCart(product);
+        }
+    };
+
+    const cartTotalCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+    const getPaymentMethodLabel = (method: string, provider?: string) => {
+        if (method === 'cash') return 'Nakit (Kapıda Ödeme)';
+        if (method === 'credit_card') return 'Kredi Kartı (Kapıda Ödeme)';
+        if (method === 'meal_card') return `Yemek Kartı (${provider || 'Belirtilmedi'})`;
+        if (method === 'iban') return 'IBAN / Havale';
+        return method;
+    };
+
+    const submitSystemOrder = async () => {
+        if (!restaurant) return;
+        setIsSubmitting(true);
+
+        const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        // Construct full address for DB
+        let fullAddress = `${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.`;
+        if (customerInfo.isSite) {
+            fullAddress += ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`;
+        }
+        fullAddress += ` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`;
+        if (customerInfo.apartmentName) {
+            fullAddress += ` (${customerInfo.apartmentName} Apt.)`;
+        }
+        if (customerInfo.addressDetail) {
+            fullAddress += `\nTarif: ${customerInfo.addressDetail}`;
+        }
+
+        const supabase = createClient();
+        const { error } = await supabase.from('orders').insert({
+            restaurant_id: restaurant.id,
+            customer_name: customerInfo.fullName,
+            customer_phone: customerInfo.phone,
+            address_type: customerInfo.addressType,
+            address_detail: fullAddress, // Saved constructed address
+            location_lat: customerInfo.locationLat,
+            location_lng: customerInfo.locationLng,
+
+            payment_method: customerInfo.paymentMethod === 'meal_card'
+                ? `meal_card_${customerInfo.mealCardProvider}`
+                : customerInfo.paymentMethod,
+            items: cart, // Supabase handles JSONB
+            total_amount: totalAmount,
+            status: 'pending'
+        });
+
+        setIsSubmitting(false);
+        saveCustomerInfoToLocal();
+
+        if (error) {
+            console.error('Sipariş hatası:', error);
+            alert('Sipariş oluşturulurken bir hata oluştu. Lütfen tekrar deneyiniz.');
+        } else {
+            // Success flow
+            setOrderSuccess(true);
+            setCart([]);
+            setShowOrderSummary(false); // Close summary modal
+            setIsCheckoutModalOpen(true); // Ensure main modal is open to show success screen
+        }
+    };
 
     const handleSubmitClick = () => {
         // Validation
@@ -1432,7 +1553,7 @@ export default function PublicMenuPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
                                     <button
                                         onClick={submitSystemOrder}
-                                        disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
+                                        disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
                                         style={{
                                             background: '#F59E0B',
                                             color: 'white',
@@ -1442,12 +1563,12 @@ export default function PublicMenuPage() {
                                             fontSize: '1rem',
                                             fontWeight: 700,
 
-                                            cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
+                                            cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             gap: '8px',
-                                            opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
+                                            opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
                                             width: '100%'
                                         }}
                                     >
@@ -1462,7 +1583,7 @@ export default function PublicMenuPage() {
                                     {restaurant.whatsapp_number && (
                                         <button
                                             onClick={sendWhatsappOrder}
-                                            disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
+                                            disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
                                             style={{
                                                 background: 'white',
                                                 color: '#25D366',
@@ -1471,12 +1592,12 @@ export default function PublicMenuPage() {
                                                 border: '2px solid #25D366',
                                                 fontSize: '0.95rem',
                                                 fontWeight: 600,
-                                                cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
+                                                cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 gap: '8px',
-                                                opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.apartment && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
+                                                opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
                                                 width: '100%'
                                             }}
                                         >
