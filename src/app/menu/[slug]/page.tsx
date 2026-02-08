@@ -594,7 +594,7 @@ export default function PublicMenuPage() {
                         {/* Summary Content for Print */}
                         <div id="order-summary-content">
                             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{restaurant.name}</h3>
+                                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{restaurant?.name}</h3>
                                 <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Sipariş Detayı</div>
                             </div>
 
@@ -658,12 +658,12 @@ export default function PublicMenuPage() {
                         <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                             <i className="fa-solid fa-print"></i> Yazdır
                         </button>
-                        {restaurant.whatsapp_number && (
+                        {restaurant?.whatsapp_number && (
                             <button onClick={sendWhatsappOrder} style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <i className="fa-brands fa-whatsapp"></i> Whatsapp
                             </button>
                         )}
-                        <button onClick={confirmOrder} style={{ flex: 1, background: restaurant.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                        <button onClick={confirmOrder} style={{ flex: 1, background: restaurant?.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
                             Tamamla
                         </button>
                     </div>
