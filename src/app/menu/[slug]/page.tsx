@@ -1391,29 +1391,34 @@ export default function PublicMenuPage() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                             <input
                                                 className="form-input"
-                                                value={customerInfo.apartment}
-                                                onChange={e => setCustomerInfo({ ...customerInfo, apartment: e.target.value })}
-                                                placeholder="Apartman Adı / No"
+                                                value={customerInfo.apartmentName}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, apartmentName: e.target.value })}
+                                                placeholder="Apartman Adı"
+                                            />
+                                            <input
+                                                className="form-input"
+                                                value={customerInfo.buildingNumber}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, buildingNumber: e.target.value })}
+                                                placeholder="Bina No"
                                                 required
                                             />
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <input
-                                                    className="form-input"
-                                                    value={customerInfo.floor}
-                                                    onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })}
-                                                    placeholder="Kat"
-                                                    style={{ flex: 1 }}
-                                                    required
-                                                />
-                                                <input
-                                                    className="form-input"
-                                                    value={customerInfo.doorNumber}
-                                                    onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })}
-                                                    placeholder="Daire"
-                                                    style={{ flex: 1 }}
-                                                    required
-                                                />
-                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <input
+                                                className="form-input"
+                                                value={customerInfo.floor}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })}
+                                                placeholder="Kat"
+                                                required
+                                            />
+                                            <input
+                                                className="form-input"
+                                                value={customerInfo.doorNumber}
+                                                onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })}
+                                                placeholder="Daire No"
+                                                required
+                                            />
                                         </div>
 
                                         {/* Sitede mi oturuyorsunuz? Checkbox */}
