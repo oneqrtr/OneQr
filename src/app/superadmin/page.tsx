@@ -466,9 +466,14 @@ export default function SuperAdminPage() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <button onClick={() => handleDelete(rest.id, rest.name)} style={{ background: '#FEE2E2', color: '#EF4444', border: 'none', padding: '8px', borderRadius: '4px' }}>
-                                                <i className="fa-solid fa-trash"></i>
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={() => setSelectedRestaurant(rest)} style={{ background: '#EFF6FF', color: '#1E40AF', border: 'none', padding: '8px', borderRadius: '4px' }}>
+                                                    <i className="fa-solid fa-pen"></i>
+                                                </button>
+                                                <button onClick={() => handleDelete(rest.id, rest.name)} style={{ background: '#FEE2E2', color: '#EF4444', border: 'none', padding: '8px', borderRadius: '4px' }}>
+                                                    <i className="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Contact Info in Mobile */}
@@ -516,57 +521,112 @@ export default function SuperAdminPage() {
                             {paymentNotifications.length === 0 ? (
                                 <p style={{ textAlign: 'center', padding: '32px', color: '#6B7280' }}>Bekleyen ödeme bildirimi yok.</p>
                             ) : (
-                                <div className="desktop-view" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                        <thead style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                                            <tr>
-                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>RESTORAN</th>
-                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>GONDEREN</th>
-                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>PAKET</th>
-                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>TUTAR</th>
-                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>TARIH</th>
-                                                <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280', textAlign: 'right' }}>ISLEMLER</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {paymentNotifications.map(p => (
-                                                <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                                                    <td style={{ padding: '16px', fontWeight: 500 }}>{p.restaurant_name}</td>
-                                                    <td style={{ padding: '16px' }}>{p.sender_name}</td>
-                                                    <td style={{ padding: '16px' }}>
-                                                        <span style={{
-                                                            padding: '2px 8px',
-                                                            borderRadius: '4px',
-                                                            fontSize: '0.85rem',
-                                                            fontWeight: 600,
-                                                            background: p.plan_type.includes('yearly') ? '#FEF3C7' : '#EFF6FF',
-                                                            color: p.plan_type.includes('yearly') ? '#92400E' : '#1E40AF',
-                                                            textTransform: 'capitalize'
-                                                        }}>
-                                                            {p.plan_type.replace('_', ' ')}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '16px', fontWeight: 600 }}>{p.amount} ₺</td>
-                                                    <td style={{ padding: '16px', color: '#6B7280', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</td>
-                                                    <td style={{ padding: '16px', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                                        <button
-                                                            onClick={() => handlePaymentAction(p.id, 'approve')}
-                                                            style={{ background: '#DEF7EC', color: '#03543F', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
-                                                        >
-                                                            Onayla
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handlePaymentAction(p.id, 'reject')}
-                                                            style={{ background: '#FDE8E8', color: '#9B1C1C', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
-                                                        >
-                                                            Reddet
-                                                        </button>
-                                                    </td>
+                                <>
+                                    <div className="desktop-view" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                            <thead style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                                                <tr>
+                                                    <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>RESTORAN</th>
+                                                    <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>GONDEREN</th>
+                                                    <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>PAKET</th>
+                                                    <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>TUTAR</th>
+                                                    <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280' }}>TARIH</th>
+                                                    <th style={{ padding: '16px', fontSize: '0.85rem', color: '#6B7280', textAlign: 'right' }}>ISLEMLER</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody>
+                                                {paymentNotifications.map(p => (
+                                                    <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                                                        <td style={{ padding: '16px', fontWeight: 500 }}>{p.restaurant_name}</td>
+                                                        <td style={{ padding: '16px' }}>{p.sender_name}</td>
+                                                        <td style={{ padding: '16px' }}>
+                                                            <span style={{
+                                                                padding: '2px 8px',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 600,
+                                                                background: p.plan_type.includes('yearly') ? '#FEF3C7' : '#EFF6FF',
+                                                                color: p.plan_type.includes('yearly') ? '#92400E' : '#1E40AF',
+                                                                textTransform: 'capitalize'
+                                                            }}>
+                                                                {p.plan_type.replace('_', ' ')}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '16px', fontWeight: 600 }}>{p.amount} ₺</td>
+                                                        <td style={{ padding: '16px', color: '#6B7280', fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                                                        <td style={{ padding: '16px', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                            <button
+                                                                onClick={() => handlePaymentAction(p.id, 'approve')}
+                                                                style={{ background: '#DEF7EC', color: '#03543F', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                                                            >
+                                                                Onayla
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handlePaymentAction(p.id, 'reject')}
+                                                                style={{ background: '#FDE8E8', color: '#9B1C1C', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                                                            >
+                                                                Reddet
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="mobile-view">
+                                        {paymentNotifications.map(p => (
+                                            <div key={p.id} style={{ background: 'white', borderRadius: '12px', padding: '16px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                    <h3 style={{ fontWeight: 600, fontSize: '1rem' }}>{p.restaurant_name}</h3>
+                                                    <span style={{ fontSize: '0.85rem', color: '#6B7280' }}>{new Date(p.created_at).toLocaleDateString()}</span>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                                    <div style={{ background: '#F9FAFB', padding: '8px', borderRadius: '6px' }}>
+                                                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Gönderen</div>
+                                                        <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>{p.sender_name}</div>
+                                                    </div>
+                                                    <div style={{ background: '#F9FAFB', padding: '8px', borderRadius: '6px' }}>
+                                                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>Tutar</div>
+                                                        <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827' }}>{p.amount} ₺</div>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ marginBottom: '16px' }}>
+                                                    <span style={{
+                                                        padding: '4px 10px',
+                                                        borderRadius: '6px',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 600,
+                                                        background: p.plan_type.includes('yearly') ? '#FEF3C7' : '#EFF6FF',
+                                                        color: p.plan_type.includes('yearly') ? '#92400E' : '#1E40AF',
+                                                        textTransform: 'capitalize',
+                                                        display: 'inline-block',
+                                                        width: '100%',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {p.plan_type.replace('_', ' ')} Paketi
+                                                    </span>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                                    <button
+                                                        onClick={() => handlePaymentAction(p.id, 'reject')}
+                                                        style={{ background: '#FDE8E8', color: '#9B1C1C', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                                                    >
+                                                        Reddet
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handlePaymentAction(p.id, 'approve')}
+                                                        style={{ background: '#DEF7EC', color: '#03543F', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                                                    >
+                                                        Onayla
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </>
                     )}

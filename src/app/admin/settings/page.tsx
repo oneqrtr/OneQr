@@ -281,7 +281,7 @@ export default function SettingsPage() {
                         {/* Notification & Printer Section */}
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>Bildirim ve Yazıcı</h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
                             <div className="form-group">
                                 <label className="form-label">Bildirim Sesi</label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -318,7 +318,7 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
                             <div className="form-group">
                                 <label className="form-label">Fiş Başlığı</label>
                                 <input
@@ -396,7 +396,7 @@ export default function SettingsPage() {
                             {!isEligibleForAdvanced && <span style={{ fontSize: '0.7rem', background: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '4px' }}><i className="fa-solid fa-lock"></i> Plusimum</span>}
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
                             {/* Instagram */}
                             <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6, background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -518,7 +518,7 @@ export default function SettingsPage() {
                             Wifi Bilgileri (Müşterileriniz için)
                             {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
                             <div className="form-group">
                                 <label className="form-label">Wifi Adı (SSID)</label>
                                 <input

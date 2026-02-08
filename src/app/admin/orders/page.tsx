@@ -188,30 +188,49 @@ export default function OrdersPage() {
             return method;
         };
 
-        let message = `📦 Sipariş #${order.order_number || '?'}\n`;
-        message += `📍 Teslimat Konumu:\n${mapsLink}\n\n`;
+        let message = `Müşteri:\n`;
+        message += `${order.customer_name}\n`;
+        message += `${order.customer_phone || ''}\n`;
 
-        message += `📝 Adres Detayı:\n`;
-        message += `${order.address_detail || ''}\n`;
+        // Address Lines
+        let addressLine1 = '';
+        if (order.neighborhood) addressLine1 += `${order.neighborhood} `;
+        if (order.street) addressLine1 += `${order.street}`;
+        if (addressLine1.trim()) message += `${addressLine1.trim()}\n`;
 
-        // Append structured address parts if they exist and aren't already in address_detail
-        const addressParts = [];
-        if (order.neighborhood) addressParts.push(`Mah: ${order.neighborhood}`);
-        if (order.street) addressParts.push(`Sok: ${order.street}`);
-        if (order.apartment) addressParts.push(`Bina: ${order.apartment}`);
-        if (order.floor) addressParts.push(`Kat: ${order.floor}`);
-        if (order.door_number) addressParts.push(`Daire: ${order.door_number}`);
-        if (order.block) addressParts.push(`Blok: ${order.block}`);
-        if (order.site_name) addressParts.push(`Site: ${order.site_name}`);
+        let addressLine2 = '';
+        if (order.site_name) addressLine2 += `${order.site_name} `;
+        if (order.block) addressLine2 += `${order.block} `;
+        if (order.apartment) addressLine2 += `${order.apartment} `;
+        if (order.floor) addressLine2 += `Kat:${order.floor} `;
+        if (order.door_number) addressLine2 += `No:${order.door_number}`;
+        if (addressLine2.trim()) message += `${addressLine2.trim()}\n`;
 
-        if (addressParts.length > 0) {
-            message += `${addressParts.join(', ')}\n`;
+        // Fallback or extra detail
+        if (order.address_detail && !addressLine1 && !addressLine2) {
+            message += `${order.address_detail}\n`;
         }
-        message += `\n`;
 
-        message += `👤 Müşteri: ${order.customer_name}\n`;
-        message += `📞 Tel: ${order.customer_phone || '-'}\n`;
-        message += `💳 Ödeme: ${getPaymentLabel(order.payment_method)} (${order.total_amount} ₺)`;
+        if (order.location_lat && order.location_lng) {
+            message += `(Konum Paylaşıldı)\n`;
+            message += `${mapsLink}\n`;
+        }
+
+        message += `Adet Ürün Tutar\n`;
+
+        let items: any[] = [];
+        if (typeof order.items === 'string') {
+            try { items = JSON.parse(order.items); } catch (e) { }
+        } else if (Array.isArray(order.items)) {
+            items = order.items;
+        }
+
+        items.forEach((item) => {
+            message += `${item.quantity}x ${item.name} ${item.variantName ? `(${item.variantName})` : ''} ${item.price * item.quantity} ₺\n`;
+        });
+
+        message += `TOPLAM: ${order.total_amount} ₺\n`;
+        message += `Ödeme: ${getPaymentLabel(order.payment_method)}`;
 
         // Send to self (the restaurant owner's number)
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -225,9 +244,25 @@ export default function OrdersPage() {
     };
 
     // Print Template Component inside
-    const PrintTemplate = ({ order }: { order: Order }) => (
-        <div id="print-area" style={{ display: 'none' }}>
-            <style>{`
+    const PrintTemplate = ({ order }: { order: Order }) => {
+        let items: any[] = [];
+        if (typeof order.items === 'string') {
+            try { items = JSON.parse(order.items); } catch (e) { }
+        } else if (Array.isArray(order.items)) {
+            items = order.items;
+        }
+
+        const getPaymentLabel = (method: string) => {
+            if (method === 'cash') return 'Nakit';
+            if (method === 'credit_card') return 'Kredi Kartı';
+            if (method.startsWith('meal_card')) return `Yemek Kartı (${method.replace('meal_card_', '')})`;
+            if (method === 'iban') return 'IBAN';
+            return method;
+        };
+
+        return (
+            <div id="print-area" style={{ display: 'none' }}>
+                <style>{`
                 @media print {
                     body * { visibility: hidden; }
                     #print-area, #print-area * { visibility: visible; }
@@ -237,76 +272,74 @@ export default function OrdersPage() {
                         left: 0; 
                         top: 0; 
                         width: 100%; 
-                        padding: 10px;
+                        padding: 0;
+                        margin: 0;
                         font-family: monospace;
+                        font-size: 14px;
                         color: black;
+                        line-height: 1.2;
                     }
-                    .no-print { display: none; }
+                    .receipt-copy { 
+                        page-break-after: always; 
+                        padding: 0px 0px 20px 0px; 
+                        width: 100%;
+                    }
+                    .receipt-copy:last-child { page-break-after: auto; }
+                    .bold { font-weight: bold; }
+                    .section { margin-bottom: 10px; }
                 }
             `}</style>
-            {Array.from({ length: printerCopyCount }).map((_, i) => (
-                <div key={i} className="receipt-copy" style={{ pageBreakAfter: 'always', marginBottom: '40px', paddingBottom: '40px', borderBottom: '2px dashed #000' }}>
+                {Array.from({ length: printerCopyCount }).map((_, i) => (
+                    <div key={i} className="receipt-copy">
+                        <div className="section">
+                            <div className="bold">Müşteri:</div>
+                            <div>{order.customer_name}</div>
+                            <div>{order.customer_phone || ''}</div>
 
-                    <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '2px dashed black', paddingBottom: '20px' }}>
-                        <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: '0 0 10px' }}>OneQR Menü</h1>
-                        {printerHeader && <p style={{ fontSize: '18px', margin: '0 0 10px', fontWeight: 'bold' }}>{printerHeader}</p>}
-                        <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: '10px 0' }}>Sipariş Fişi #{order.order_number || '?'}</h2>
-                        <p style={{ margin: '5px 0', fontSize: '16px' }}>{formatDate(order.created_at)}</p>
-                    </div>
+                            {/* Address Construction for Print */}
+                            {(() => {
+                                let lines = [];
+                                let line1 = '';
+                                if (order.neighborhood) line1 += order.neighborhood + ' ';
+                                if (order.street) line1 += order.street;
+                                if (line1.trim()) lines.push(line1.trim());
 
-                    <div style={{ marginBottom: '30px', fontSize: '18px' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '20px', marginBottom: '5px', textDecoration: 'underline' }}>Müşteri:</div>
-                        <div style={{ fontWeight: 'bold' }}>{order.customer_name}</div>
-                        <div>{order.customer_phone}</div>
-                        <div style={{ marginTop: '10px', whiteSpace: 'pre-wrap' }}>{order.address_detail}</div>
-                        {order.address_type === 'location' && <div style={{ fontStyle: 'italic', marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
-                    </div>
+                                let line2 = '';
+                                if (order.site_name) line2 += order.site_name + ' ';
+                                if (order.block) line2 += order.block + ' ';
+                                if (order.apartment) line2 += order.apartment + ' ';
+                                if (order.floor) line2 += 'Kat:' + order.floor + ' ';
+                                if (order.door_number) line2 += 'No:' + order.door_number;
+                                if (line2.trim()) lines.push(line2.trim());
 
-                    <div style={{ borderBottom: '2px dashed black', marginBottom: '20px' }}></div>
+                                // Address Detail separate line if strictly needed or if line1/2 empty
+                                if (order.address_detail && !line1 && !line2) lines.push(order.address_detail);
+                                else if (order.address_detail) lines.push(order.address_detail); // Append anyway as it might have instructions
 
-                    <table style={{ width: '100%', marginBottom: '20px', fontSize: '18px' }}>
-                        <thead>
-                            <tr style={{ textAlign: 'left' }}>
-                                <th style={{ paddingBottom: '10px' }}>Adet</th>
-                                <th style={{ paddingBottom: '10px' }}>Ürün</th>
-                                <th style={{ textAlign: 'right', paddingBottom: '10px' }}>Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {order.items.map((item, idx) => (
-                                <tr key={idx}>
-                                    <td style={{ verticalAlign: 'top', width: '50px', paddingBottom: '10px', fontWeight: 'bold' }}>{item.quantity}x</td>
-                                    <td style={{ verticalAlign: 'top', paddingBottom: '10px' }}>
-                                        <div style={{ fontWeight: 'bold' }}>{item.name}</div>
-                                        {item.variantName && <div style={{ fontSize: '16px', fontStyle: 'italic' }}>({item.variantName})</div>}
-                                    </td>
-                                    <td style={{ verticalAlign: 'top', textAlign: 'right', paddingBottom: '10px', fontWeight: 'bold' }}>{item.price * item.quantity} ₺</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                if (order.location_lat && order.location_lng) lines.push('(Konum Paylaşıldı)');
 
-                    <div style={{ borderBottom: '2px dashed black', marginBottom: '20px' }}></div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '28px', fontWeight: 'bold', marginBottom: '10px' }}>
-                        <span>TOPLAM:</span>
-                        <span>{order.total_amount} ₺</span>
-                    </div>
-                    <div style={{ marginTop: '10px', textAlign: 'right', fontSize: '18px', fontWeight: 'bold' }}>
-                        Ödeme: {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
-                    </div>
-
-                    {printerFooter && (
-                        <div style={{ textAlign: 'center', marginTop: '30px', fontSize: '16px', fontWeight: 'bold', borderTop: '2px dashed black', paddingTop: '20px' }}>
-                            {printerFooter}
+                                return lines.map((l, idx) => <div key={idx}>{l}</div>);
+                            })()}
                         </div>
-                    )}
-                </div>
-            ))}
-        </div>
-    );
 
-    return (
+                        <div className="section">
+                            <div className="bold">Adet Ürün Tutar</div>
+                            {items.map((item, idx) => (
+                                <div key={idx}>
+                                    {item.quantity}x {item.name} {item.variantName ? `(${item.variantName})` : ''} {item.price * item.quantity} ₺
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="section">
+                            <div className="bold">TOPLAM: {order.total_amount} ₺</div>
+                            <div>Ödeme: {getPaymentLabel(order.payment_method)}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }; return (
         <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -343,7 +376,7 @@ export default function OrdersPage() {
             {loading ? (
                 <div>Yükleniyor...</div>
             ) : (
-                <div style={{ display: 'grid', gap: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                     {orders.length === 0 ? (
                         <div style={{ padding: '40px', textAlign: 'center', background: 'white', borderRadius: '12px', color: '#6B7280' }}>
                             Henüz sipariş bulunmuyor.

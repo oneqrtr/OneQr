@@ -31,27 +31,38 @@ export default function AdminLayout({
                 const now = new Date();
 
                 // Calculate days left for trial
-                // Assuming trial is 14 days from creation if plan is freemium/trial
-                let type: 'trial' | 'expired' | 'premium' | 'plusimum' = 'trial';
+                // Trial is now 30 days
+                let type: 'trial' | 'expired' | 'premium' | 'plusimum' | 'freemium' = 'trial';
                 let daysLeft = 0;
 
-                if (plan === 'freemium' || plan === 'trial') {
+                if (plan === 'trial') {
                     const diffTime = Math.abs(now.getTime() - createdDate.getTime());
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    daysLeft = 14 - diffDays;
+                    daysLeft = 30 - diffDays;
 
                     if (daysLeft < 0) {
                         type = 'expired';
                     } else {
                         type = 'trial';
                     }
+                } else if (plan === 'freemium') {
+                    type = 'freemium';
+                    // Freemium has no expiry, treats as full access (plusimum features handled in components)
                 } else if (plan === 'premium') {
                     type = 'premium';
-                } else {
+                } else if (plan === 'plusimum') {
                     type = 'plusimum';
+                } else if (plan === 'expired') {
+                    type = 'expired';
                 }
 
-                setStatus({ type, daysLeft });
+                // If expired, redirect to home page as requested
+                if (type === 'expired' || plan === 'expired') {
+                    window.location.href = 'https://oneqr.tr';
+                    return;
+                }
+
+                setStatus({ type: type as any, daysLeft });
             }
             setLoading(false);
         };

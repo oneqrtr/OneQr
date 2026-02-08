@@ -252,41 +252,45 @@ export default function PublicMenuPage() {
     const sendWhatsappOrder = () => {
         if (!restaurant || !restaurant.whatsapp_number) return;
 
-        let message = `🍽️ *SİPARİŞ DETAYI*\n\n`;
-        message += `*${restaurant.name}*\n`;
-        message += `--------------------------------\n`;
+        let message = `Müşteri:\n`;
+        message += `${customerInfo.fullName}\n`;
+        message += `${customerInfo.phone}\n`;
 
-        message += `👤 *Müşteri Bilgileri*\n`;
-        message += `İsim: ${customerInfo.fullName}\n`;
-        message += `Tel: ${customerInfo.phone}\n\n`;
+        let addressLine1 = '';
+        if (customerInfo.neighborhood) addressLine1 += `${customerInfo.neighborhood} `;
+        if (customerInfo.street) addressLine1 += `${customerInfo.street}`;
+        if (addressLine1.trim()) message += `${addressLine1.trim()}\n`;
 
-        message += `📍 *Teslimat Adresi*\n`;
+        let addressLine2 = '';
+        if (customerInfo.siteName) addressLine2 += `${customerInfo.siteName} `;
+        if (customerInfo.block) addressLine2 += `${customerInfo.block} `;
+        if (customerInfo.apartment) addressLine2 += `${customerInfo.apartment} `;
+        if (customerInfo.floor) addressLine2 += `Kat:${customerInfo.floor} `;
+        if (customerInfo.doorNumber) addressLine2 += `No:${customerInfo.doorNumber}`;
+        if (addressLine2.trim()) message += `${addressLine2.trim()}\n`;
+
+        // Separate location link
         if (customerInfo.addressType === 'location' && customerInfo.locationLat && customerInfo.locationLng) {
-            message += `Konum Linki: https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
+            message += `(Konum Paylaşıldı)\n`;
+            message += `https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
         }
-        message += `${customerInfo.addressDetail}\n`;
-        if (customerInfo.neighborhood) message += `Mahalle: ${customerInfo.neighborhood}\n`;
-        if (customerInfo.street) message += `Sokak: ${customerInfo.street}\n`;
-        if (customerInfo.apartment) message += `Bina No: ${customerInfo.apartment}\n`;
-        if (customerInfo.floor) message += `Kat: ${customerInfo.floor}\n`;
-        if (customerInfo.doorNumber) message += `Daire No: ${customerInfo.doorNumber}\n`;
-        if (customerInfo.block) message += `Blok: ${customerInfo.block}\n`;
-        if (customerInfo.siteName) message += `Site Adı: ${customerInfo.siteName}\n`;
-        message += `\n`;
 
-        message += `🛒 *Sipariş İçeriği*\n`;
+        // Just in case addressDetail has info not covered above
+        if (customerInfo.addressDetail && !addressLine1 && !addressLine2) {
+            message += `${customerInfo.addressDetail}\n`;
+        }
+
+        message += `Adet Ürün Tutar\n`;
+
         let totalAmount = 0;
-
         cart.forEach(item => {
             const itemTotal = item.price * item.quantity;
             totalAmount += itemTotal;
-            message += `▫️ ${item.quantity} x ${item.name}${item.variantName ? ` (${item.variantName})` : ''}\n`;
-            message += `   Birim: ${item.price} ${restaurant.currency} | Toplam: ${itemTotal} ${restaurant.currency}\n`;
+            message += `${item.quantity}x ${item.name}${item.variantName ? ` (${item.variantName})` : ''} ${itemTotal} ₺\n`;
         });
 
-        message += `--------------------------------\n`;
-        message += `💳 *Ödeme Yöntemi:* ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}\n`;
-        message += `💰 *GENEL TOPLAM: ${totalAmount} ${restaurant.currency}*`;
+        message += `TOPLAM: ${totalAmount} ₺\n`;
+        message += `Ödeme: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
 
         const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
         saveCustomerInfoToLocal();
@@ -390,7 +394,8 @@ export default function PublicMenuPage() {
                 if (isSubdomain) {
                     let allowed = false;
                     if (plan === 'plusimum') allowed = true;
-                    else if (plan === 'freemium' && isTrialActive) allowed = true;
+                    else if (plan === 'freemium') allowed = true; // Freemium allows subdomain too? User request said "Plusimum ile aynı özelliklere" so likely yes.
+                    else if (plan === 'trial' && isTrialActive) allowed = true;
                     // premium is never allowed on subdomain
 
                     if (!allowed) {
@@ -399,6 +404,11 @@ export default function PublicMenuPage() {
                         window.location.href = rootUrl;
                         return;
                     }
+                }
+
+                if (plan === 'expired') {
+                    window.location.href = 'https://oneqr.tr';
+                    return;
                 }
 
                 setRestaurant(restData);

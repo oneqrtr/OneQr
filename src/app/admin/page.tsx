@@ -157,9 +157,10 @@ export default function AdminDashboard() {
                                             subscription?.plan === 'plusimum' ? 'Plusimum' :
                                                 subscription?.plan === 'trial' ? 'Deneme Sürümü' : 'Abonelik'}
                                 </div>
-                                <div className={`stat-value ${getRemainingDays() < 3 ? 'text-red-500' : 'highlight-orange'}`}>
+                                <div className={`stat-value ${getRemainingDays() < 3 && subscription?.plan !== 'freemium' ? 'text-red-500' : 'highlight-orange'}`}>
                                     {subscription?.status === 'passive' ? 'Pasif' :
-                                        getRemainingDays() > 0 ? `${getRemainingDays()} Gün Kaldı` : 'Süresi Doldu'}
+                                        subscription?.plan === 'freemium' ? 'Sınırsız' :
+                                            getRemainingDays() > 0 ? `${getRemainingDays()} Gün Kaldı` : 'Süresi Doldu'}
                                 </div>
                                 <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#6B7280' }}>
                                     {subscription?.plan === 'trial' || subscription?.plan === 'expired' ? (
