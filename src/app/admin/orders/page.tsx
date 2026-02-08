@@ -161,10 +161,11 @@ export default function OrdersPage() {
             }
         };
     }, [selectedDate]); // Refetch when date changes
+    const printFrameRef = useRef<HTMLIFrameElement>(null);
 
     const printOrder = (order: Order) => {
-        const w = window.open('', '_blank');
-        if (!w) return;
+        const iframe = printFrameRef.current;
+        if (!iframe) return;
 
         const dateStr = new Date(order.created_at).toLocaleString('tr-TR');
 
@@ -196,19 +197,14 @@ export default function OrdersPage() {
         let buildingLine = '';
         if (order.building_number) buildingLine += `No:${order.building_number} `; // Note: check field mapping, usually it's building_number but interface says apartment for name maybe? DB schema: apartment -> apartment name, building_number -> No?
         // In the interface defined at top: apartment, door_number, floor.
-        // Let's rely on what we have:
-        // apartment = Apartman Adı
-        // But wait, the user just split them in the MENU page. The ADMIN page might need interface update to match DB if columns changed.
-        // Assuming 'apartment' in DB is now 'apartment_name' and valid? Or did we just update the UI?
-        // The previous file content shows `apartment` field in interface. 
-        // Let's stick to the interface properties: apartment, door_number, floor. 
-        // If the user entered "Apartman Adı" into `apartment` and "Bina No" elsewhere... 
+        // Let's stick to the interface properties: apartment, door_number, floor.
+        // If the user entered "Apartman Adı" into `apartment` and "Bina No" elsewhere...
         // Let's look at the Order interface again in file...
         // It has `apartment`, `door_number`, `floor`.
         // The menu page sends: `fullAddress` string to `address_detail`.
         // AND it sends structured data if the columns exist in DB.
         // If the admin page relies on `address_detail` it's safest for now.
-        // The USER said "Müşteri: ... Şirinyalı ... (1. Çınar Apt.) ...". 
+        // The USER said "Müşteri: ... Şirinyalı ... (1. Çınar Apt.) ...".
         // Let's prefer `address_detail` if available because it is the constructed full string from the menu page.
 
         // Actually, let's use the structured fields if possible, but fallback to address_detail which is guaranteed to be full.
@@ -216,7 +212,11 @@ export default function OrdersPage() {
         // So `address_detail` column HAS the full formatted address.
         // The admin page shows `order.address_detail`.
 
-        w.document.write(`
+        const doc = iframe.contentWindow?.document;
+        if (!doc) return;
+
+        doc.open();
+        doc.write(`
             <html>
             <head>
                 <title>Sipariş Fişi</title>
@@ -312,17 +312,15 @@ export default function OrdersPage() {
                     <div class="footer-text">oneqr.tr ile oluşturuldu</div>
                     <div class="footer-text">${dateStr}</div>
                 </div>
-                 
-                <script>
-                   setTimeout(() => {
-                       window.print();
-                       window.close();
-                   }, 500); 
-                </script>
             </body>
             </html>
         `);
-        w.document.close();
+        doc.close();
+
+        // Slight delay to ensure content loading/rendering before print (especially images)
+        setTimeout(() => {
+            iframe.contentWindow?.print();
+        }, 500);
     };
 
     const handleAutoPrint = (order: Order) => {
@@ -543,6 +541,7 @@ export default function OrdersPage() {
             )}
 
             {/* Print functionality is handled via direct window.print() */}
+            <iframe ref={printFrameRef} style={{ width: '0', height: '0', position: 'absolute', border: 'none', visibility: 'hidden' }} />
         </div>
     );
 }
