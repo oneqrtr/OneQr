@@ -446,14 +446,32 @@ export default function PublicMenuPage() {
                 <head>
                     <title>Sipariş Detayı</title>
                     <style>
-                        body { font-family: sans-serif; padding: 20px; }
-                        h1 { font-size: 18px; text-align: center; border-bottom: 1px dashed black; padding-bottom: 10px; }
-                        .section { margin-bottom: 15px; }
-                        .label { font-weight: bold; font-size: 12px; }
-                        .value { font-size: 14px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        th, td { text-align: left; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #eee; }
-                        .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 10px; border-top: 1px dashed black; paddingTop: 10px; }
+                        @page { size: 80mm auto; margin: 0; }
+                        body { 
+                            font-family: 'Courier New', Courier, monospace; 
+                            padding: 10px; 
+                            width: 80mm; 
+                            margin: 0 auto;
+                            color: black;
+                        }
+                        h3 { font-size: 20px; text-align: center; margin: 0 0 5px 0; text-transform: uppercase; }
+                        .subtitle { text-align: center; font-size: 14px; margin-bottom: 10px; border-bottom: 2px dashed black; padding-bottom: 10px; }
+                        
+                        .section { margin-bottom: 15px; border-bottom: 1px dashed black; padding-bottom: 10px; }
+                        .section-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; text-transform: uppercase; }
+                        .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 16px; }
+                        .val { font-weight: bold; text-align: right; max-width: 60%; }
+                        
+                        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+                        th { text-align: left; font-size: 14px; border-bottom: 1px solid black; padding-bottom: 5px; }
+                        td { font-size: 16px; padding: 5px 0; vertical-align: top; }
+                        .qty { width: 30px; text-align: center; font-weight: bold; }
+                        .price { text-align: right; }
+                        
+                        .total-section { margin-top: 10px; border-top: 2px dashed black; padding-top: 10px; }
+                        .grand-total { font-size: 22px; font-weight: 900; text-align: right; margin-top: 5px; }
+                        
+                        .footer { text-align: center; font-size: 12px; margin-top: 20px; }
                     </style>
                 </head>
                 <body>
@@ -593,65 +611,82 @@ export default function PublicMenuPage() {
 
                         {/* Summary Content for Print */}
                         <div id="order-summary-content">
-                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{restaurant?.name}</h3>
-                                <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Sipariş Detayı</div>
+                            {/* Header */}
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, textAlign: 'center', margin: '0 0 4px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
+                            <div style={{ fontSize: '0.9rem', color: '#6B7280', textAlign: 'center', marginBottom: '16px', borderBottom: '1px dashed #ccc', paddingBottom: '10px' }} className="subtitle">Online Sipariş Fişi</div>
+
+                            {/* Info Section */}
+                            <div className="section" style={{ marginBottom: '16px', borderBottom: '1px dashed #E5E7EB', paddingBottom: '12px' }}>
+                                <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }} className="section-title">MÜŞTERİ BİLGİLERİ</div>
+                                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span>Ad Soyad:</span>
+                                    <span className="val" style={{ fontWeight: 600 }}>{customerInfo.fullName}</span>
+                                </div>
+                                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span>Telefon:</span>
+                                    <span className="val" style={{ fontWeight: 600 }}>{customerInfo.phone}</span>
+                                </div>
+                                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span>Ödeme Tipi:</span>
+                                    <span className="val" style={{ fontWeight: 600 }}>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
+                                </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                                <div>
-                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600 }}>MÜŞTERİ</div>
-                                    <div style={{ fontWeight: 600 }}>{customerInfo.fullName}</div>
-                                    <div>{customerInfo.phone}</div>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600 }}>ÖDEME</div>
-                                    <div>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</div>
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: '20px', padding: '12px', background: '#F9FAFB', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, marginBottom: '4px' }}>TESLİMAT ADRESİ</div>
-                                <div>
+                            {/* Address Section */}
+                            <div className="section" style={{ marginBottom: '16px', borderBottom: '1px dashed #E5E7EB', paddingBottom: '12px' }}>
+                                <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }} className="section-title">TESLİMAT ADRESİ</div>
+                                <div style={{ fontSize: '1rem', lineHeight: '1.4' }}>
                                     {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
+                                    {customerInfo.isSite && <><br />{customerInfo.siteName} Sit. {customerInfo.block} Blok</>}
                                     <br />
-                                    {customerInfo.isSite && `${customerInfo.siteName} Sit. ${customerInfo.block} Blok `}
                                     No:{customerInfo.buildingNumber} Daire:{customerInfo.doorNumber} Kat:{customerInfo.floor}
                                     {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
                                 </div>
-                                {customerInfo.addressDetail && <div style={{ fontSize: '0.9rem', fontStyle: 'italic', marginTop: '4px' }}>"{customerInfo.addressDetail}"</div>}
+                                {customerInfo.addressDetail && (
+                                    <div style={{ marginTop: '8px', fontStyle: 'italic', background: '#F3F4F6', padding: '8px', borderRadius: '4px' }}>
+                                        Not: {customerInfo.addressDetail}
+                                    </div>
+                                )}
                             </div>
 
-                            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
-                                        <th style={{ textAlign: 'left', padding: '8px' }}>Ürün</th>
-                                        <th style={{ textAlign: 'center', padding: '8px' }}>Adet</th>
-                                        <th style={{ textAlign: 'right', padding: '8px' }}>Tutar</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cart.map(item => (
-                                        <tr key={item.id + item.variantName} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                                            <td style={{ padding: '8px' }}>
-                                                {item.name}
-                                                {item.variantName && <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>({item.variantName})</div>}
-                                            </td>
-                                            <td style={{ padding: '8px', textAlign: 'center' }}>{item.quantity}</td>
-                                            <td style={{ padding: '8px', textAlign: 'right' }}>{item.price * item.quantity} ₺</td>
+                            {/* Items Section */}
+                            <div className="section">
+                                <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }} className="section-title">SİPARİŞ İÇERİĞİ</div>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid #000' }}>
+                                            <th style={{ textAlign: 'left', padding: '4px 0' }}>Ürün</th>
+                                            <th style={{ textAlign: 'center', padding: '4px 0' }}>Adet</th>
+                                            <th style={{ textAlign: 'right', padding: '4px 0' }}>Tutar</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colSpan={2} style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700 }}>TOPLAM</td>
-                                        <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 800, fontSize: '1.1rem' }}>
-                                            {cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} ₺
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {cart.map(item => (
+                                            <tr key={item.id + item.variantName} style={{ borderBottom: '1px dashed #E5E7EB' }}>
+                                                <td style={{ padding: '8px 0' }}>
+                                                    <div style={{ fontWeight: 600 }}>{item.name}</div>
+                                                    {item.variantName && <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>({item.variantName})</div>}
+                                                </td>
+                                                <td style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold' }} className="qty">{item.quantity}</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right' }} className="price">{item.price * item.quantity} ₺</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Total Section */}
+                            <div className="total-section" style={{ marginTop: '16px', borderTop: '2px dashed #000', paddingTop: '12px', display: 'flex', justifyContent: 'flex-end', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 900 }} className="grand-total">
+                                    TOPLAM: {cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} ₺
+                                </div>
+                            </div>
+
+                            <div className="footer" style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: '#9CA3AF' }}>
+                                {new Date().toLocaleString('tr-TR')}
+                            </div>
                         </div>
+
                     </div>
 
                     <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
