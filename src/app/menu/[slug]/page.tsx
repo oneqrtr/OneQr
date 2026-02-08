@@ -442,6 +442,9 @@ export default function PublicMenuPage() {
         const dateStr = new Date().toLocaleString('tr-TR');
         const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
+        // Helper specifically for dash lines to ensure they don't break
+        const dashLine = "------------------------------------------------";
+
         w.document.write(`
             <html>
             <head>
@@ -452,59 +455,69 @@ export default function PublicMenuPage() {
                         width: 80mm;
                         margin: 0 auto;
                         padding: 5px;
-                        font-family: 'Courier New', Courier, monospace;
+                        font-family: 'Courier New', Courier, monospace; /* Monospace is key for receipt look */
                         font-weight: bold;
                         color: black;
                         font-size: 16px;
                     }
                     .center { text-align: center; }
+                    .left { text-align: left; }
+                    .right { text-align: right; }
+                    
                     .bold { font-weight: 900; }
-                    .dashed-line { border-bottom: 2px dashed black; margin: 15px 0; }
                     
-                    .header-title { font-size: 14px; margin-bottom: 10px; font-weight: bold; }
-                    .rest-name { font-size: 28px; font-weight: 900; text-transform: uppercase; margin: 15px 0; line-height: 1.2; }
+                    /* Use a pre-wrap to respect text layout */
+                    .separator { 
+                        white-space: pre; 
+                        overflow: hidden; 
+                        margin: 5px 0;
+                        font-weight: normal;
+                    }
                     
-                    .customer-block { font-size: 20px; font-weight: bold; line-height: 1.3; text-align: left; }
+                    .header-title { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
+                    .rest-name { font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 10px 0; line-height: 1.2; }
+                    
+                    .customer-block { font-size: 18px; font-weight: bold; line-height: 1.3; text-align: left; }
                     .customer-label { font-size: 16px; text-decoration: underline; margin-bottom: 5px; display: block; }
                     
-                    /* Table Layout using Flex for spacing control */
-                    .product-row { display: flex; font-size: 20px; font-weight: bold; margin-bottom: 8px; }
-                    .col-qty { width: 15%; text-align: left; }
-                    .col-name { width: 60%; text-align: left; }
+                    /* Flex table layout */
+                    .product-row { display: flex; font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+                    .col-qty { width: 10%; text-align: left; }
+                    .col-name { width: 65%; text-align: left; }
                     .col-price { width: 25%; text-align: right; }
                     
-                    .total-row { display: flex; justify-content: space-between; font-size: 28px; font-weight: 900; margin-top: 30px; }
-                    .payment-row { display: flex; justify-content: space-between; font-size: 22px; font-weight: bold; margin-top: 15px; }
+                    .total-row { display: flex; justify-content: space-between; font-size: 26px; font-weight: 900; margin-top: 10px; }
+                    .payment-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-top: 5px; }
                     
-                    .footer { margin-top: 40px; text-align: center; }
+                    .footer { margin-top: 20px; text-align: center; }
                     .qr-code { width: 120px; height: 120px; margin: 10px auto; display: block; }
-                    .footer-text { font-size: 12px; margin-top: 5px; font-weight: normal; }
+                    .footer-text { font-size: 12px; margin-top: 2px; font-weight: normal; }
                 </style>
             </head>
             <body>
                 <div class="center header-title">OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
-                <div class="dashed-line"></div>
+                <div class="center separator">${dashLine}</div>
                 
                 <div class="center rest-name">${restaurant?.name || 'Restoran Adı'}</div>
+                <div class="center separator">${dashLine}</div>
                 
                 <div class="customer-block">
                     <span class="customer-label">Müşteri:</span>
                     <div>${customerInfo.fullName}</div>
                     <div>${customerInfo.phone}</div>
-                    <div style="margin-top: 5px; font-size: 18px; font-weight: normal;">
+                    <div style="margin-top: 5px; font-size: 16px; font-weight: normal;">
                         ${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.
                         ${customerInfo.isSite ? `${customerInfo.siteName} Sit. ${customerInfo.block} Blok` : ''}
                         No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}
                         ${customerInfo.apartmentName ? ` (${customerInfo.apartmentName} Apt.)` : ''}
                     </div>
-                    ${customerInfo.addressDetail ? `<div style="font-size: 16px; font-style: italic; margin-top: 2px;">(${customerInfo.addressDetail})</div>` : ''}
+                    ${customerInfo.addressDetail ? `<div style="font-size: 14px; font-style: italic; margin-top: 2px;">(${customerInfo.addressDetail})</div>` : ''}
                     ${customerInfo.locationLat ? '<div style="margin-top: 5px; font-size: 14px;">(Konum Paylaşıldı)</div>' : ''}
                 </div>
                 
-                <div class="dashed-line"></div>
+                <div class="center separator">${dashLine}</div>
                 
-                <!-- Table Header -->
-                <div class="product-row" style="border-bottom: 1px solid black; padding-bottom: 5px; margin-bottom: 15px; font-size: 16px;">
+                <div class="product-row" style="font-size: 16px; border-bottom: 1px solid black; padding-bottom: 2px;">
                     <div class="col-qty">Adet</div>
                     <div class="col-name">Ürün</div>
                     <div class="col-price">Tutar</div>
@@ -522,6 +535,8 @@ export default function PublicMenuPage() {
                     </div>
                 `).join('')}
                 
+                <div class="center separator">${dashLine}</div>
+                
                 <div class="total-row">
                     <span>TOPLAM:</span>
                     <span>${totalAmount} ₺</span>
@@ -532,19 +547,19 @@ export default function PublicMenuPage() {
                     <span>${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}</span>
                 </div>
                 
+                <div class="center separator">${dashLine}</div>
+                
                 <div class="footer">
-                    <div style="font-size: 20px; font-weight: 900;">OneQR.tr</div>
-                    <!-- Generates a QR code pointing to https://oneqr.tr -->
+                    <div style="font-size: 18px; font-weight: 900;">OneQR.tr</div>
+                    <!-- Generates a QR code pointing to https://oneqr.tr. The intermediate API ensures an image for print reliability. -->
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://oneqr.tr" class="qr-code" alt="QR Code" />
                     <div class="footer-text">oneqr.tr ile oluşturuldu</div>
                     <div class="footer-text">${dateStr}</div>
                 </div>
                 
                 <script>
-                   // Automatically print when loaded
                    setTimeout(() => {
                        window.print();
-                       // window.close(); // Optional: close after print
                    }, 500); 
                 </script>
             </body>

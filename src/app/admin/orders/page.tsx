@@ -23,6 +23,7 @@ interface Order {
     location_lng?: number;
     order_number?: number;
     customer_order_count?: number;
+    building_number?: string;
     items: OrderItem[];
     total_amount: number;
     payment_method: string;
@@ -50,6 +51,7 @@ export default function OrdersPage() {
     const [printerFooter, setPrinterFooter] = useState('');
     const [printerCopyCount, setPrinterCopyCount] = useState(1);
     const [whatsappNumber, setWhatsappNumber] = useState('');
+    const [restaurantName, setRestaurantName] = useState('');
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
@@ -76,7 +78,7 @@ export default function OrdersPage() {
             if (!restId) {
                 const { data: rest, error: restError } = await supabase
                     .from('restaurants')
-                    .select('id, printer_header, printer_footer, printer_copy_count, whatsapp_number')
+                    .select('id, name, printer_header, printer_footer, printer_copy_count, whatsapp_number')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -87,6 +89,7 @@ export default function OrdersPage() {
                 }
                 restId = rest.id;
                 setRestaurantId(rest.id);
+                setRestaurantName(rest.name || '');
                 setPrinterHeader(rest.printer_header || '');
                 setPrinterFooter(rest.printer_footer || '');
                 setPrinterHeader(rest.printer_header || '');
@@ -159,19 +162,174 @@ export default function OrdersPage() {
         };
     }, [selectedDate]); // Refetch when date changes
 
+    const printOrder = (order: Order) => {
+        const w = window.open('', '_blank');
+        if (!w) return;
+
+        const dateStr = new Date(order.created_at).toLocaleString('tr-TR');
+
+        let items: any[] = [];
+        if (typeof order.items === 'string') {
+            try { items = JSON.parse(order.items); } catch (e) { }
+        } else if (Array.isArray(order.items)) {
+            items = order.items;
+        }
+
+        const dashLine = "------------------------------------------------";
+
+        // Payment Method Label Helper
+        const getPaymentLabel = (method: string) => {
+            if (method === 'cash') return 'Nakit';
+            if (method === 'credit_card') return 'Kredi Kartı';
+            if (method.startsWith('meal_card')) return `Yemek Kartı (${method.replace('meal_card_', '')})`;
+            if (method === 'iban') return 'IBAN';
+            return method;
+        };
+
+        // Address Construction
+        let addressBlock = '';
+        const addLine = (text: string) => { if (text) addressBlock += `<div>${text}</div>`; };
+
+        addLine(`${order.neighborhood || ''} Mah. ${order.street || ''} Sok.`);
+        if (order.site_name || order.block) addLine(`${order.site_name || ''} Sit. ${order.block || ''} Blok`);
+
+        let buildingLine = '';
+        if (order.building_number) buildingLine += `No:${order.building_number} `; // Note: check field mapping, usually it's building_number but interface says apartment for name maybe? DB schema: apartment -> apartment name, building_number -> No?
+        // In the interface defined at top: apartment, door_number, floor.
+        // Let's rely on what we have:
+        // apartment = Apartman Adı
+        // But wait, the user just split them in the MENU page. The ADMIN page might need interface update to match DB if columns changed.
+        // Assuming 'apartment' in DB is now 'apartment_name' and valid? Or did we just update the UI?
+        // The previous file content shows `apartment` field in interface. 
+        // Let's stick to the interface properties: apartment, door_number, floor. 
+        // If the user entered "Apartman Adı" into `apartment` and "Bina No" elsewhere... 
+        // Let's look at the Order interface again in file...
+        // It has `apartment`, `door_number`, `floor`.
+        // The menu page sends: `fullAddress` string to `address_detail`.
+        // AND it sends structured data if the columns exist in DB.
+        // If the admin page relies on `address_detail` it's safest for now.
+        // The USER said "Müşteri: ... Şirinyalı ... (1. Çınar Apt.) ...". 
+        // Let's prefer `address_detail` if available because it is the constructed full string from the menu page.
+
+        // Actually, let's use the structured fields if possible, but fallback to address_detail which is guaranteed to be full.
+        // Menu page code: `address_detail: fullAddress`
+        // So `address_detail` column HAS the full formatted address.
+        // The admin page shows `order.address_detail`.
+
+        w.document.write(`
+            <html>
+            <head>
+                <title>Sipariş Fişi</title>
+                <style>
+                    @page { size: 80mm auto; margin: 0mm; }
+                    body {
+                        width: 80mm;
+                        margin: 0 auto;
+                        padding: 5px;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-weight: bold;
+                        color: black;
+                        font-size: 16px;
+                    }
+                    .center { text-align: center; }
+                    .left { text-align: left; }
+                    .right { text-align: right; }
+                    .bold { font-weight: 900; }
+                    .separator { white-space: pre; overflow: hidden; margin: 5px 0; font-weight: normal; }
+                    
+                    .header-title { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
+                    .rest-name { font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 10px 0; line-height: 1.2; }
+                    
+                    .customer-block { font-size: 18px; font-weight: bold; line-height: 1.3; text-align: left; }
+                    .customer-label { font-size: 16px; text-decoration: underline; margin-bottom: 5px; display: block; }
+                    
+                    .product-row { display: flex; font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+                    .col-qty { width: 10%; text-align: left; }
+                    .col-name { width: 65%; text-align: left; }
+                    .col-price { width: 25%; text-align: right; }
+                    
+                    .total-row { display: flex; justify-content: space-between; font-size: 26px; font-weight: 900; margin-top: 10px; }
+                    .payment-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-top: 5px; }
+                    
+                    .footer { margin-top: 20px; text-align: center; }
+                    .qr-code { width: 120px; height: 120px; margin: 10px auto; display: block; }
+                    .footer-text { font-size: 12px; margin-top: 2px; font-weight: normal; }
+                </style>
+            </head>
+            <body>
+                 <div class="center header-title">OneQR - Menü Sistemleri</div>
+                 <div class="center separator">${dashLine}</div>
+                 
+                 <div class="center rest-name">${restaurantName || 'RESTORAN ADI'}</div>
+                 
+                 <div class="center separator">${dashLine}</div>
+                 
+                 <div class="customer-block">
+                    <span class="customer-label">MÜŞTERİ BİLGİLERİ</span>
+                    <div>${order.customer_name}</div>
+                    <div>Tel: ${order.customer_phone || '-'}</div>
+                    <div style="margin-top: 5px; font-weight: normal;">
+                        ${order.address_detail || 'Adres detayı yok'}
+                    </div>
+                 </div>
+                 
+                 <div class="center separator">${dashLine}</div>
+                 
+                 <div class="product-row" style="font-size: 16px; border-bottom: 1px solid black; padding-bottom: 2px;">
+                    <div class="col-qty">Adet</div>
+                    <div class="col-name">Ürün</div>
+                    <div class="col-price">Tutar</div>
+                </div>
+                
+                ${items.map(item => `
+                    <div class="product-row">
+                        <div class="col-qty">${item.quantity}</div>
+                        <div class="col-name">
+                            ${item.name}
+                            ${item.variantName ? `<div style="font-size: 14px; font-weight: normal; font-style: italic;">(${item.variantName})</div>` : ''}
+                        </div>
+                        <div class="col-price">${item.price * item.quantity} ₺</div>
+                    </div>
+                `).join('')}
+                
+                <div class="center separator">${dashLine}</div>
+                
+                <div class="total-row">
+                    <span>TOPLAM</span>
+                    <span>${order.total_amount} ₺</span>
+                </div>
+                
+                <div class="center separator">${dashLine}</div>
+                
+                <div class="payment-row">
+                    <span>ÖDEME: ${getPaymentLabel(order.payment_method).toUpperCase()}</span>
+                </div>
+                <div class="center separator">${dashLine}</div>
+                
+                <div class="footer">
+                    <div style="font-size: 18px; font-weight: 900;">OneQR.tr</div>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://oneqr.tr" class="qr-code" alt="QR Code" />
+                    <div class="footer-text">oneqr.tr ile oluşturuldu</div>
+                    <div class="footer-text">${dateStr}</div>
+                </div>
+                 
+                <script>
+                   setTimeout(() => {
+                       window.print();
+                   }, 500); 
+                </script>
+            </body>
+            </html>
+        `);
+        w.document.close();
+    };
+
     const handleAutoPrint = (order: Order) => {
-        setPrintingOrder(order);
-        // Small delay to allow state update then print
-        setTimeout(() => {
-            window.print();
-        }, 500);
+        printOrder(order);
     };
 
     const handlePrintClick = (order: Order) => {
-        setPrintingOrder(order);
-        setTimeout(() => {
-            window.print();
-        }, 100);
+        printOrder(order);
     };
 
     const handleSendLocation = (order: Order) => {
@@ -243,103 +401,7 @@ export default function OrdersPage() {
         });
     };
 
-    // Print Template Component inside
-    const PrintTemplate = ({ order }: { order: Order }) => {
-        let items: any[] = [];
-        if (typeof order.items === 'string') {
-            try { items = JSON.parse(order.items); } catch (e) { }
-        } else if (Array.isArray(order.items)) {
-            items = order.items;
-        }
-
-        const getPaymentLabel = (method: string) => {
-            if (method === 'cash') return 'Nakit';
-            if (method === 'credit_card') return 'Kredi Kartı';
-            if (method.startsWith('meal_card')) return `Yemek Kartı (${method.replace('meal_card_', '')})`;
-            if (method === 'iban') return 'IBAN';
-            return method;
-        };
-
-        return (
-            <div id="print-area" style={{ display: 'none' }}>
-                <style>{`
-                @media print {
-                    body * { visibility: hidden; }
-                    #print-area, #print-area * { visibility: visible; }
-                    #print-area { 
-                        display: block !important; 
-                        position: absolute; 
-                        left: 0; 
-                        top: 0; 
-                        width: 100%; 
-                        padding: 0;
-                        margin: 0;
-                        font-family: monospace;
-                        font-size: 14px;
-                        color: black;
-                        line-height: 1.2;
-                    }
-                    .receipt-copy { 
-                        page-break-after: always; 
-                        padding: 0px 0px 20px 0px; 
-                        width: 100%;
-                    }
-                    .receipt-copy:last-child { page-break-after: auto; }
-                    .bold { font-weight: bold; }
-                    .section { margin-bottom: 10px; }
-                }
-            `}</style>
-                {Array.from({ length: printerCopyCount }).map((_, i) => (
-                    <div key={i} className="receipt-copy">
-                        <div className="section">
-                            <div className="bold">Müşteri:</div>
-                            <div>{order.customer_name}</div>
-                            <div>{order.customer_phone || ''}</div>
-
-                            {/* Address Construction for Print */}
-                            {(() => {
-                                let lines = [];
-                                let line1 = '';
-                                if (order.neighborhood) line1 += order.neighborhood + ' ';
-                                if (order.street) line1 += order.street;
-                                if (line1.trim()) lines.push(line1.trim());
-
-                                let line2 = '';
-                                if (order.site_name) line2 += order.site_name + ' ';
-                                if (order.block) line2 += order.block + ' ';
-                                if (order.apartment) line2 += order.apartment + ' ';
-                                if (order.floor) line2 += 'Kat:' + order.floor + ' ';
-                                if (order.door_number) line2 += 'No:' + order.door_number;
-                                if (line2.trim()) lines.push(line2.trim());
-
-                                // Address Detail separate line if strictly needed or if line1/2 empty
-                                if (order.address_detail && !line1 && !line2) lines.push(order.address_detail);
-                                else if (order.address_detail) lines.push(order.address_detail); // Append anyway as it might have instructions
-
-                                if (order.location_lat && order.location_lng) lines.push('(Konum Paylaşıldı)');
-
-                                return lines.map((l, idx) => <div key={idx}>{l}</div>);
-                            })()}
-                        </div>
-
-                        <div className="section">
-                            <div className="bold">Adet Ürün Tutar</div>
-                            {items.map((item, idx) => (
-                                <div key={idx}>
-                                    {item.quantity}x {item.name} {item.variantName ? `(${item.variantName})` : ''} {item.price * item.quantity} ₺
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="section">
-                            <div className="bold">TOPLAM: {order.total_amount} ₺</div>
-                            <div>Ödeme: {getPaymentLabel(order.payment_method)}</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }; return (
+    return (
         <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -479,8 +541,7 @@ export default function OrdersPage() {
                 </div>
             )}
 
-            {/* Configured for printing */}
-            {printingOrder && <PrintTemplate order={printingOrder} />}
+            {/* Print functionality is handled via direct window.print() */}
         </div>
     );
 }
