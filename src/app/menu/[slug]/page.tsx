@@ -434,55 +434,123 @@ export default function PublicMenuPage() {
     };
 
     // Print Function
+    // Print Function
     const handlePrint = () => {
-        // Create a temporary print area
-        const printContent = document.getElementById('order-summary-content');
-        if (!printContent) return;
-
         const w = window.open('', '_blank');
-        if (w) {
-            w.document.write(`
-                <html>
-                <head>
-                    <title>Sipariş Detayı</title>
-                    <style>
-                        @page { size: 80mm auto; margin: 0; }
-                        body { 
-                            font-family: 'Courier New', Courier, monospace; 
-                            padding: 10px; 
-                            width: 80mm; 
-                            margin: 0 auto;
-                            color: black;
-                        }
-                        h3 { font-size: 20px; text-align: center; margin: 0 0 5px 0; text-transform: uppercase; }
-                        .subtitle { text-align: center; font-size: 14px; margin-bottom: 10px; border-bottom: 2px dashed black; padding-bottom: 10px; }
-                        
-                        .section { margin-bottom: 15px; border-bottom: 1px dashed black; padding-bottom: 10px; }
-                        .section-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; text-transform: uppercase; }
-                        .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 16px; }
-                        .val { font-weight: bold; text-align: right; max-width: 60%; }
-                        
-                        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-                        th { text-align: left; font-size: 14px; border-bottom: 1px solid black; padding-bottom: 5px; }
-                        td { font-size: 16px; padding: 5px 0; vertical-align: top; }
-                        .qty { width: 30px; text-align: center; font-weight: bold; }
-                        .price { text-align: right; }
-                        
-                        .total-section { margin-top: 10px; border-top: 2px dashed black; padding-top: 10px; }
-                        .grand-total { font-size: 22px; font-weight: 900; text-align: right; margin-top: 5px; }
-                        
-                        .footer { text-align: center; font-size: 12px; margin-top: 20px; }
-                    </style>
-                </head>
-                <body>
-                    ${printContent.innerHTML}
-                </body>
-                </html>
-             `);
-            w.document.close();
-            w.print();
-            // w.close(); // Optional, better to let user close
-        }
+        if (!w) return;
+
+        const dateStr = new Date().toLocaleString('tr-TR');
+        const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+        w.document.write(`
+            <html>
+            <head>
+                <title>Sipariş Fişi</title>
+                <style>
+                    @page { size: 80mm auto; margin: 0mm; }
+                    body {
+                        width: 80mm;
+                        margin: 0 auto;
+                        padding: 5px;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-weight: bold;
+                        color: black;
+                        font-size: 16px;
+                    }
+                    .center { text-align: center; }
+                    .bold { font-weight: 900; }
+                    .dashed-line { border-bottom: 2px dashed black; margin: 15px 0; }
+                    
+                    .header-title { font-size: 14px; margin-bottom: 10px; font-weight: bold; }
+                    .rest-name { font-size: 28px; font-weight: 900; text-transform: uppercase; margin: 15px 0; line-height: 1.2; }
+                    
+                    .customer-block { font-size: 20px; font-weight: bold; line-height: 1.3; text-align: left; }
+                    .customer-label { font-size: 16px; text-decoration: underline; margin-bottom: 5px; display: block; }
+                    
+                    /* Table Layout using Flex for spacing control */
+                    .product-row { display: flex; font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+                    .col-qty { width: 15%; text-align: left; }
+                    .col-name { width: 60%; text-align: left; }
+                    .col-price { width: 25%; text-align: right; }
+                    
+                    .total-row { display: flex; justify-content: space-between; font-size: 28px; font-weight: 900; margin-top: 30px; }
+                    .payment-row { display: flex; justify-content: space-between; font-size: 22px; font-weight: bold; margin-top: 15px; }
+                    
+                    .footer { margin-top: 40px; text-align: center; }
+                    .qr-code { width: 120px; height: 120px; margin: 10px auto; display: block; }
+                    .footer-text { font-size: 12px; margin-top: 5px; font-weight: normal; }
+                </style>
+            </head>
+            <body>
+                <div class="center header-title">OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
+                <div class="dashed-line"></div>
+                
+                <div class="center rest-name">${restaurant?.name || 'Restoran Adı'}</div>
+                
+                <div class="customer-block">
+                    <span class="customer-label">Müşteri:</span>
+                    <div>${customerInfo.fullName}</div>
+                    <div>${customerInfo.phone}</div>
+                    <div style="margin-top: 5px; font-size: 18px; font-weight: normal;">
+                        ${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.
+                        ${customerInfo.isSite ? `${customerInfo.siteName} Sit. ${customerInfo.block} Blok` : ''}
+                        No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}
+                        ${customerInfo.apartmentName ? ` (${customerInfo.apartmentName} Apt.)` : ''}
+                    </div>
+                    ${customerInfo.addressDetail ? `<div style="font-size: 16px; font-style: italic; margin-top: 2px;">(${customerInfo.addressDetail})</div>` : ''}
+                    ${customerInfo.locationLat ? '<div style="margin-top: 5px; font-size: 14px;">(Konum Paylaşıldı)</div>' : ''}
+                </div>
+                
+                <div class="dashed-line"></div>
+                
+                <!-- Table Header -->
+                <div class="product-row" style="border-bottom: 1px solid black; padding-bottom: 5px; margin-bottom: 15px; font-size: 16px;">
+                    <div class="col-qty">Adet</div>
+                    <div class="col-name">Ürün</div>
+                    <div class="col-price">Tutar</div>
+                </div>
+                
+                <!-- Items -->
+                ${cart.map(item => `
+                    <div class="product-row">
+                        <div class="col-qty">${item.quantity}x</div>
+                        <div class="col-name">
+                            ${item.name}
+                            ${item.variantName ? `<div style="font-size: 14px; font-weight: normal; font-style: italic;">(${item.variantName})</div>` : ''}
+                        </div>
+                        <div class="col-price">${item.price * item.quantity} ₺</div>
+                    </div>
+                `).join('')}
+                
+                <div class="total-row">
+                    <span>TOPLAM:</span>
+                    <span>${totalAmount} ₺</span>
+                </div>
+                
+                <div class="payment-row">
+                    <span>Ödeme:</span>
+                    <span>${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}</span>
+                </div>
+                
+                <div class="footer">
+                    <div style="font-size: 20px; font-weight: 900;">OneQR.tr</div>
+                    <!-- Generates a QR code pointing to https://oneqr.tr -->
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://oneqr.tr" class="qr-code" alt="QR Code" />
+                    <div class="footer-text">oneqr.tr ile oluşturuldu</div>
+                    <div class="footer-text">${dateStr}</div>
+                </div>
+                
+                <script>
+                   // Automatically print when loaded
+                   setTimeout(() => {
+                       window.print();
+                       // window.close(); // Optional: close after print
+                   }, 500); 
+                </script>
+            </body>
+            </html>
+         `);
+        w.document.close();
     };
 
 
