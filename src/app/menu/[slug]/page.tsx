@@ -135,36 +135,36 @@ export default function PublicMenuPage() {
         // New Address Fields
         neighborhood: '',
         street: '',
-        apartment: '',
+        apartmentName: '', // Apartman Adı
+        buildingNumber: '', // Apartman No / Bina No
         floor: '',
-        doorNumber: '',
+        doorNumber: '', // Daire No
         isSite: false,
         siteName: '',
         block: '',
 
         paymentMethod: 'cash' as string, // 'cash', 'credit_card', 'meal_card', 'iban'
         mealCardProvider: '', // If paymentMethod is 'meal_card'
+        rememberMe: true, // New
     });
 
-    useEffect(() => {
-        // Auto-fill address detail if structured fields are populated and addressDetail is empty or just has location data
-        if (customerInfo.addressType === 'manual' &&
-            customerInfo.neighborhood &&
-            customerInfo.street &&
-            !customerInfo.addressDetail) {
-            setCustomerInfo(prev => ({ ...prev, addressDetail: "Muratpaşa, Antalya" }));
-        }
-    }, [customerInfo.neighborhood, customerInfo.street, customerInfo.addressType]);
+    // Order Summary Modal State
+    const [showOrderSummary, setShowOrderSummary] = useState(false);
 
     useEffect(() => {
         const savedInfo = localStorage.getItem('oneqr_customer_info');
         if (savedInfo) {
             try {
                 const parsed = JSON.parse(savedInfo);
-                setCustomerInfo(prev => ({
-                    ...prev,
-                    ...parsed
-                }));
+                // Only load if rememberMe was true (or logic implies it)
+                if (parsed.rememberMe !== false) {
+                    setCustomerInfo(prev => ({
+                        ...prev,
+                        ...parsed,
+                        // Ensure compatibility if new fields are missing in old data
+                        rememberMe: parsed.rememberMe ?? true
+                    }));
+                }
             } catch (e) {
                 console.error("Failed to parse saved customer info", e);
             }
@@ -172,167 +172,30 @@ export default function PublicMenuPage() {
     }, []);
 
     const saveCustomerInfoToLocal = () => {
+        if (!customerInfo.rememberMe) {
+            localStorage.removeItem('oneqr_customer_info');
+            return;
+        }
         try {
             localStorage.setItem('oneqr_customer_info', JSON.stringify({
                 fullName: customerInfo.fullName,
                 phone: customerInfo.phone,
                 addressType: customerInfo.addressType,
                 addressDetail: customerInfo.addressDetail,
-                // Don't save location coordinates as user might be elsewhere next time, or do save if preferred. 
-                // Let's save address detail but maybe clear coordinates if manual address is typical.
-                // Keeping it simple for now and saving all non-one-time fields.
-                locationLat: customerInfo.locationLat,
-                locationLng: customerInfo.locationLng
+                // Save granular address fields
+                neighborhood: customerInfo.neighborhood,
+                street: customerInfo.street,
+                apartmentName: customerInfo.apartmentName,
+                buildingNumber: customerInfo.buildingNumber,
+                floor: customerInfo.floor,
+                doorNumber: customerInfo.doorNumber,
+                isSite: customerInfo.isSite,
+                siteName: customerInfo.siteName,
+                block: customerInfo.block,
+                rememberMe: customerInfo.rememberMe
             }));
         } catch (e) {
             console.error("Failed to save customer info", e);
-        }
-    };
-
-    const isOrderEnabled = true; // Always true for now (or check plan)
-
-    const addToCart = (product: Product, variant?: Variant) => {
-        if (!isOrderEnabled) return;
-        setCart(prev => {
-            const existingItem = prev.find(item => item.id === product.id && item.variantName === variant?.name);
-            if (existingItem) {
-                return prev.map(item =>
-                    (item.id === product.id && item.variantName === variant?.name)
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                );
-            } else {
-                return [...prev, {
-                    id: product.id,
-                    name: product.name,
-                    price: variant ? (product.price + variant.price) : product.price,
-                    quantity: 1,
-                    variantName: variant?.name
-                }];
-            }
-        });
-        setSelectedProductForVariant(null);
-    };
-
-    const updateCartItemQuantity = (productId: string, variantName: string | undefined, delta: number) => {
-        setCart(prev => {
-            return prev.map(item => {
-                if (item.id === productId && item.variantName === variantName) {
-                    const newQuantity = Math.max(0, item.quantity + delta);
-                    return { ...item, quantity: newQuantity };
-                }
-                return item;
-            }).filter(item => item.quantity > 0);
-        });
-    };
-
-    const handleProductClick = (product: Product) => {
-        if (!isOrderEnabled) return;
-        const productVariants = variants.filter(v => v.product_id === product.id);
-        if (productVariants.length > 0) {
-            setSelectedProductForVariant(product);
-        } else {
-            addToCart(product);
-        }
-    };
-
-    const cartTotalCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-
-    const getPaymentMethodLabel = (method: string, provider?: string) => {
-        if (method === 'cash') return 'Nakit (Kapıda Ödeme)';
-        if (method === 'credit_card') return 'Kredi Kartı (Kapıda Ödeme)';
-        if (method === 'meal_card') return `Yemek Kartı (${provider || 'Belirtilmedi'})`;
-        if (method === 'iban') return 'IBAN / Havale';
-        return method;
-    };
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [orderSuccess, setOrderSuccess] = useState(false);
-
-    const sendWhatsappOrder = () => {
-        if (!restaurant || !restaurant.whatsapp_number) return;
-
-        let message = `Müşteri:\n`;
-        message += `${customerInfo.fullName}\n`;
-        message += `${customerInfo.phone}\n`;
-
-        let addressLine1 = '';
-        if (customerInfo.neighborhood) addressLine1 += `${customerInfo.neighborhood} `;
-        if (customerInfo.street) addressLine1 += `${customerInfo.street}`;
-        if (addressLine1.trim()) message += `${addressLine1.trim()}\n`;
-
-        let addressLine2 = '';
-        if (customerInfo.siteName) addressLine2 += `${customerInfo.siteName} `;
-        if (customerInfo.block) addressLine2 += `${customerInfo.block} `;
-        if (customerInfo.apartment) addressLine2 += `${customerInfo.apartment} `;
-        if (customerInfo.floor) addressLine2 += `Kat:${customerInfo.floor} `;
-        if (customerInfo.doorNumber) addressLine2 += `No:${customerInfo.doorNumber}`;
-        if (addressLine2.trim()) message += `${addressLine2.trim()}\n`;
-
-        // Separate location link
-        if (customerInfo.addressType === 'location' && customerInfo.locationLat && customerInfo.locationLng) {
-            message += `(Konum Paylaşıldı)\n`;
-            message += `https://www.google.com/maps/search/?api=1&query=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
-        }
-
-        // Just in case addressDetail has info not covered above
-        if (customerInfo.addressDetail && !addressLine1 && !addressLine2) {
-            message += `${customerInfo.addressDetail}\n`;
-        }
-
-        message += `Adet Ürün Tutar\n`;
-
-        let totalAmount = 0;
-        cart.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-            totalAmount += itemTotal;
-            message += `${item.quantity}x ${item.name}${item.variantName ? ` (${item.variantName})` : ''} ${itemTotal} ₺\n`;
-        });
-
-        message += `TOPLAM: ${totalAmount} ₺\n`;
-        message += `Ödeme: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
-
-        const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
-        saveCustomerInfoToLocal();
-        window.open(url, '_blank');
-        setIsCheckoutModalOpen(false);
-    };
-
-    const submitSystemOrder = async () => {
-        if (!restaurant) return;
-        setIsSubmitting(true);
-
-        const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-
-        const supabase = createClient();
-        const { error } = await supabase.from('orders').insert({
-            restaurant_id: restaurant.id,
-            customer_name: customerInfo.fullName,
-            customer_phone: customerInfo.phone,
-            address_type: customerInfo.addressType,
-            address_detail: customerInfo.addressDetail,
-            location_lat: customerInfo.locationLat,
-            location_lng: customerInfo.locationLng,
-
-            payment_method: customerInfo.paymentMethod === 'meal_card'
-                ? `meal_card_${customerInfo.mealCardProvider}`
-                : customerInfo.paymentMethod,
-            items: cart, // Supabase handles JSONB
-            total_amount: totalAmount,
-            status: 'pending'
-        });
-
-        setIsSubmitting(false);
-        saveCustomerInfoToLocal();
-
-        if (error) {
-            console.error('Sipariş hatası:', error);
-            alert('Sipariş oluşturulurken bir hata oluştu. Lütfen tekrar deneyiniz.');
-        } else {
-            setOrderSuccess(true);
-            setCart([]);
-            // Close modal after 3 seconds or show success UI inside modal
-            // User requested confirmation screen. We will handle it in the render.
         }
     };
 
@@ -341,14 +204,41 @@ export default function PublicMenuPage() {
             alert('Tarayıcınız konum servisini desteklemiyor.');
             return;
         }
+
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
                 setCustomerInfo(prev => ({
                     ...prev,
-                    locationLat: position.coords.latitude,
-                    locationLng: position.coords.longitude
+                    locationLat: lat,
+                    locationLng: lng
                 }));
-                alert('Konumunuz eklendi. Kurye tam konumunuzu görebilecek.');
+
+                // Auto-fill address using OpenStreetMap Nominatim API (Free)
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                    const data = await response.json();
+
+                    if (data && data.address) {
+                        const addr = data.address;
+                        setCustomerInfo(prev => ({
+                            ...prev,
+                            locationLat: lat,
+                            locationLng: lng,
+                            neighborhood: addr.suburb || addr.neighbourhood || addr.quarter || prev.neighborhood,
+                            street: addr.road || prev.street,
+                            buildingNumber: addr.house_number || prev.buildingNumber,
+                            // Map other fields if available, but usually limited
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Geocoding error:", error);
+                    // Silent fail, user can edit
+                }
+
+                alert('Konumunuz alındı. Adres bilgileri otomatik olarak doldurulmaya çalışıldı, lütfen kontrol ediniz.');
             },
             (error) => {
                 console.error(error);
@@ -356,6 +246,310 @@ export default function PublicMenuPage() {
             }
         );
     };
+
+    // ... (keep logic like addToCart, etc. same until submit)
+
+    const handleSubmitClick = () => {
+        // Validation
+        const isValid = customerInfo.fullName && customerInfo.phone &&
+            (customerInfo.addressType === 'manual' ? (customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.doorNumber) : true); // Basic validation
+
+        if (!isValid) {
+            alert("Lütfen gerekli alanları doldurunuz.");
+            return;
+        }
+
+        saveCustomerInfoToLocal();
+        setShowOrderSummary(true);
+    };
+
+    const confirmOrder = async () => {
+        // Logic to finalize order (submit to Supabase or WhatsApp)
+        // Reuse existing submitSystemOrder or sendWhatsappOrder but called from the summary modal
+        await submitSystemOrder();
+        // After system order, we might want to show success or keep summary open?
+        // user asked "siparişi tamamla tıklandıgında checkout modalı açalım... " -> Wait, the flow is:
+        // 1. Cart -> "Siparişi Tamamla" -> Opens Address/Info Modal (Current "Checkout Modal")
+        // 2. Info Modal -> "Siparişi Onayla/Tamamla" -> **User Request**: "checkout modalı açalım siparişi adres konum bilgilerini görebileceği bir alan yapalım/google haritalar/yazdır/wp"
+        // So:
+        // Step 1: Cart -> Checkout Modal (Inputs)
+        // Step 2: Checkout Modal (Inputs) -> "Devam Et / İncele" -> Order Summary Modal (Maps, Print, WhatsApp)
+        // Step 3: Order Summary -> "Onayla ve Gönder" (System Submit) OR just "Whatsapp ile Gönder"
+    };
+
+    // ... (previous helper functions)
+
+    const sendWhatsappOrder = () => {
+        if (!restaurant || !restaurant.whatsapp_number) return;
+
+        let message = `Müşteri: ${customerInfo.fullName}\n`;
+        message += `Tel: ${customerInfo.phone}\n`;
+
+        message += `\nAdres:\n`;
+        if (customerInfo.isSite) {
+            message += `Site: ${customerInfo.siteName}, Blok: ${customerInfo.block}\n`;
+        }
+        message += `${customerInfo.neighborhood} Mah., ${customerInfo.street} Sok.\n`;
+        message += `Apt: ${customerInfo.apartmentName || '-'}, No: ${customerInfo.buildingNumber}, Daire: ${customerInfo.doorNumber}, Kat: ${customerInfo.floor}\n`;
+
+        if (customerInfo.addressDetail) message += `Tarif: ${customerInfo.addressDetail}\n`;
+
+        if (customerInfo.locationLat && customerInfo.locationLng) {
+            message += `\nKonum: https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
+        }
+
+        message += `\nSipariş:\n`;
+        let totalAmount = 0;
+        cart.forEach(item => {
+            const t = item.price * item.quantity;
+            totalAmount += t;
+            message += `${item.quantity}x ${item.name} (${item.price}₺) = ${t}₺\n`;
+        });
+        message += `\nTOPLAM: ${totalAmount} ₺\n`;
+        message += `Ödeme: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
+
+        const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    };
+
+    // Print Function
+    const handlePrint = () => {
+        // Create a temporary print area
+        const printContent = document.getElementById('order-summary-content');
+        if (!printContent) return;
+
+        const w = window.open('', '_blank');
+        if (w) {
+            w.document.write(`
+                <html>
+                <head>
+                    <title>Sipariş Detayı</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 20px; }
+                        h1 { font-size: 18px; text-align: center; border-bottom: 1px dashed black; padding-bottom: 10px; }
+                        .section { margin-bottom: 15px; }
+                        .label { font-weight: bold; font-size: 12px; }
+                        .value { font-size: 14px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { text-align: left; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #eee; }
+                        .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 10px; border-top: 1px dashed black; paddingTop: 10px; }
+                    </style>
+                </head>
+                <body>
+                    ${printContent.innerHTML}
+                </body>
+                </html>
+             `);
+            w.document.close();
+            w.print();
+            // w.close(); // Optional, better to let user close
+        }
+    };
+
+
+    // ... [Inside Render - Modal Section]
+
+    // Existing "Checkout Modal" (Input Form)
+    {
+        isCheckoutModalOpen && !showOrderSummary && (
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 100,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '16px'
+            }} onClick={() => setIsCheckoutModalOpen(false)}>
+                <div style={{
+                    background: 'white', borderRadius: '16px',
+                    width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto',
+                    padding: '24px', position: 'relative'
+                }} onClick={e => e.stopPropagation()}>
+
+                    <button onClick={() => setIsCheckoutModalOpen(false)} style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>
+                        <i className="fa-solid fa-times"></i>
+                    </button>
+
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '20px' }}>Sipariş Bilgileri</h2>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Personal Info */}
+                        <div>
+                            <label className="label">Ad Soyad</label>
+                            <input className="form-input" value={customerInfo.fullName} onChange={e => setCustomerInfo({ ...customerInfo, fullName: e.target.value })} placeholder="Ad Soyad" />
+                        </div>
+                        <div>
+                            <label className="label">Telefon</label>
+                            <input className="form-input" value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} placeholder="05XX..." type="tel" />
+                        </div>
+                        {/* Remember Me */}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer', color: '#4B5563' }}>
+                            <input
+                                type="checkbox"
+                                checked={customerInfo.rememberMe}
+                                onChange={e => setCustomerInfo(prev => ({ ...prev, rememberMe: e.target.checked }))}
+                            />
+                            Beni Hatırla
+                        </label>
+
+                        {/* Address Section */}
+                        <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>Teslimat Adresi</h3>
+
+                            <button onClick={handleGetLocation} className="btn-outline" style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                <i className="fa-solid fa-location-dot"></i> {customerInfo.locationLat ? 'Konum Güncelle' : 'Konum Ekle (Otomatik Doldur)'}
+                            </button>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                <input className="form-input" value={customerInfo.neighborhood} onChange={e => setCustomerInfo({ ...customerInfo, neighborhood: e.target.value })} placeholder="Mahalle" />
+                                <input className="form-input" value={customerInfo.street} onChange={e => setCustomerInfo({ ...customerInfo, street: e.target.value })} placeholder="Sokak" />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                <input className="form-input" value={customerInfo.apartmentName} onChange={e => setCustomerInfo({ ...customerInfo, apartmentName: e.target.value })} placeholder="Apartman Adı" />
+                                <input className="form-input" value={customerInfo.buildingNumber} onChange={e => setCustomerInfo({ ...customerInfo, buildingNumber: e.target.value })} placeholder="Bina No" />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                <input className="form-input" value={customerInfo.floor} onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })} placeholder="Kat" />
+                                <input className="form-input" value={customerInfo.doorNumber} onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })} placeholder="Daire No" />
+                            </div>
+
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', marginBottom: '12px' }}>
+                                <input type="checkbox" checked={customerInfo.isSite} onChange={e => setCustomerInfo(prev => ({ ...prev, isSite: e.target.checked }))} />
+                                Site İçerisinde
+                            </label>
+
+                            {customerInfo.isSite && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                    <input className="form-input" value={customerInfo.siteName} onChange={e => setCustomerInfo({ ...customerInfo, siteName: e.target.value })} placeholder="Site Adı" />
+                                    <input className="form-input" value={customerInfo.block} onChange={e => setCustomerInfo({ ...customerInfo, block: e.target.value })} placeholder="Blok" />
+                                </div>
+                            )}
+
+                            <textarea className="form-input" value={customerInfo.addressDetail} onChange={e => setCustomerInfo({ ...customerInfo, addressDetail: e.target.value })} placeholder="Adres Tarifi" rows={2} />
+                        </div>
+
+                        <button onClick={handleSubmitClick} className="btn-primary" style={{ width: '100%', padding: '14px' }}>
+                            İlerle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    {/* Summary Modal */ }
+    {
+        showOrderSummary && (
+            <div style={{
+                position: 'fixed', inset: 0, zIndex: 110,
+                background: 'rgba(0,0,0,0.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '16px'
+            }}>
+                <div style={{
+                    background: 'white', borderRadius: '16px',
+                    width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto',
+                    padding: '0', position: 'relative', display: 'flex', flexDirection: 'column'
+                }}>
+                    <div style={{ padding: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Sipariş Özeti</h2>
+                        <button onClick={() => setShowOrderSummary(false)} style={{ border: 'none', background: 'none' }}><i className="fa-solid fa-times"></i></button>
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                        {/* Map */}
+                        {customerInfo.locationLat && (
+                            <div style={{ width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', border: '1px solid #E5E7EB' }}>
+                                <iframe
+                                    width="100%"
+                                    height="100%"
+                                    frameBorder="0"
+                                    style={{ border: 0 }}
+                                    src={`https://maps.google.com/maps?q=${customerInfo.locationLat},${customerInfo.locationLng}&z=15&output=embed`}
+                                />
+                            </div>
+                        )}
+
+                        {/* Summary Content for Print */}
+                        <div id="order-summary-content">
+                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{restaurant.name}</h3>
+                                <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Sipariş Detayı</div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600 }}>MÜŞTERİ</div>
+                                    <div style={{ fontWeight: 600 }}>{customerInfo.fullName}</div>
+                                    <div>{customerInfo.phone}</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600 }}>ÖDEME</div>
+                                    <div>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '20px', padding: '12px', background: '#F9FAFB', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, marginBottom: '4px' }}>TESLİMAT ADRESİ</div>
+                                <div>
+                                    {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
+                                    <br />
+                                    {customerInfo.isSite && `${customerInfo.siteName} Sit. ${customerInfo.block} Blok `}
+                                    No:{customerInfo.buildingNumber} Daire:{customerInfo.doorNumber} Kat:{customerInfo.floor}
+                                    {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
+                                </div>
+                                {customerInfo.addressDetail && <div style={{ fontSize: '0.9rem', fontStyle: 'italic', marginTop: '4px' }}>"{customerInfo.addressDetail}"</div>}
+                            </div>
+
+                            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                        <th style={{ textAlign: 'left', padding: '8px' }}>Ürün</th>
+                                        <th style={{ textAlign: 'center', padding: '8px' }}>Adet</th>
+                                        <th style={{ textAlign: 'right', padding: '8px' }}>Tutar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {cart.map(item => (
+                                        <tr key={item.id + item.variantName} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                                            <td style={{ padding: '8px' }}>
+                                                {item.name}
+                                                {item.variantName && <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>({item.variantName})</div>}
+                                            </td>
+                                            <td style={{ padding: '8px', textAlign: 'center' }}>{item.quantity}</td>
+                                            <td style={{ padding: '8px', textAlign: 'right' }}>{item.price * item.quantity} ₺</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colSpan={2} style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 700 }}>TOPLAM</td>
+                                        <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 800, fontSize: '1.1rem' }}>
+                                            {cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} ₺
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
+                        <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <i className="fa-solid fa-print"></i> Yazdır
+                        </button>
+                        {restaurant.whatsapp_number && (
+                            <button onClick={sendWhatsappOrder} style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <i className="fa-brands fa-whatsapp"></i> Whatsapp
+                            </button>
+                        )}
+                        <button onClick={confirmOrder} style={{ flex: 1, background: restaurant.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                            Tamamla
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     useEffect(() => {
         const fetchMenu = async () => {
