@@ -611,79 +611,72 @@ export default function PublicMenuPage() {
 
                         {/* Summary Content for Print */}
                         <div id="order-summary-content">
-                            {/* Header */}
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, textAlign: 'center', margin: '0 0 4px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
-                            <div style={{ fontSize: '0.9rem', color: '#6B7280', textAlign: 'center', marginBottom: '16px', borderBottom: '1px dashed #ccc', paddingBottom: '10px' }} className="subtitle">Online Sipariş Fişi</div>
+                            {/* Header - OneQR Branding */}
+                            <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
+                            <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
 
-                            {/* Info Section */}
-                            <div className="section" style={{ marginBottom: '16px', borderBottom: '1px dashed #E5E7EB', paddingBottom: '12px' }}>
-                                <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }} className="section-title">MÜŞTERİ BİLGİLERİ</div>
-                                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <span>Ad Soyad:</span>
-                                    <span className="val" style={{ fontWeight: 600 }}>{customerInfo.fullName}</span>
-                                </div>
-                                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <span>Telefon:</span>
-                                    <span className="val" style={{ fontWeight: 600 }}>{customerInfo.phone}</span>
-                                </div>
-                                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <span>Ödeme Tipi:</span>
-                                    <span className="val" style={{ fontWeight: 600 }}>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
-                                </div>
-                            </div>
+                            {/* Restaurant Name */}
+                            <h3 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', margin: '15px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
 
-                            {/* Address Section */}
-                            <div className="section" style={{ marginBottom: '16px', borderBottom: '1px dashed #E5E7EB', paddingBottom: '12px' }}>
-                                <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }} className="section-title">TESLİMAT ADRESİ</div>
-                                <div style={{ fontSize: '1rem', lineHeight: '1.4' }}>
+                            {/* Customer Info Block */}
+                            <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
+                                Müşteri:<br />
+                                {customerInfo.fullName}<br />
+                                {customerInfo.phone}<br />
+                                <div style={{ marginTop: '5px', fontWeight: 'normal' }}>
                                     {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
-                                    {customerInfo.isSite && <><br />{customerInfo.siteName} Sit. {customerInfo.block} Blok</>}
-                                    <br />
-                                    No:{customerInfo.buildingNumber} Daire:{customerInfo.doorNumber} Kat:{customerInfo.floor}
+                                    {customerInfo.isSite && ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`}
+                                    {` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`}
                                     {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
                                 </div>
-                                {customerInfo.addressDetail && (
-                                    <div style={{ marginTop: '8px', fontStyle: 'italic', background: '#F3F4F6', padding: '8px', borderRadius: '4px' }}>
-                                        Not: {customerInfo.addressDetail}
-                                    </div>
-                                )}
+                                {customerInfo.addressDetail && <div style={{ fontStyle: 'italic', marginTop: '2px' }}>({customerInfo.addressDetail})</div>}
+                                {customerInfo.locationLat && <div style={{ marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
                             </div>
 
-                            {/* Items Section */}
-                            <div className="section">
-                                <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }} className="section-title">SİPARİŞ İÇERİĞİ</div>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr style={{ borderBottom: '1px solid #000' }}>
-                                            <th style={{ textAlign: 'left', padding: '4px 0' }}>Ürün</th>
-                                            <th style={{ textAlign: 'center', padding: '4px 0' }}>Adet</th>
-                                            <th style={{ textAlign: 'right', padding: '4px 0' }}>Tutar</th>
+                            <div style={{ borderBottom: '1px dashed black', marginBottom: '15px' }}></div>
+
+                            {/* Items Table */}
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ textAlign: 'left', width: '15%' }}>Adet</th>
+                                        <th style={{ textAlign: 'left', width: '60%' }}>Ürün</th>
+                                        <th style={{ textAlign: 'right', width: '25%' }}>Tutar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {cart.map(item => (
+                                        <tr key={item.id + item.variantName}>
+                                            <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>{item.quantity}x</td>
+                                            <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>
+                                                {item.name}
+                                                {item.variantName && <div style={{ fontSize: '14px', fontStyle: 'italic' }}>({item.variantName})</div>}
+                                            </td>
+                                            <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '5px' }}>{item.price * item.quantity} ₺</td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {cart.map(item => (
-                                            <tr key={item.id + item.variantName} style={{ borderBottom: '1px dashed #E5E7EB' }}>
-                                                <td style={{ padding: '8px 0' }}>
-                                                    <div style={{ fontWeight: 600 }}>{item.name}</div>
-                                                    {item.variantName && <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>({item.variantName})</div>}
-                                                </td>
-                                                <td style={{ padding: '8px 0', textAlign: 'center', fontWeight: 'bold' }} className="qty">{item.quantity}</td>
-                                                <td style={{ padding: '8px 0', textAlign: 'right' }} className="price">{item.price * item.quantity} ₺</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
 
                             {/* Total Section */}
-                            <div className="total-section" style={{ marginTop: '16px', borderTop: '2px dashed #000', paddingTop: '12px', display: 'flex', justifyContent: 'flex-end', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 900 }} className="grand-total">
-                                    TOPLAM: {cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} ₺
-                                </div>
+                            <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '24px', fontWeight: 900 }}>
+                                <span>TOPLAM:</span>
+                                <span>{cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} ₺</span>
                             </div>
 
-                            <div className="footer" style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: '#9CA3AF' }}>
-                                {new Date().toLocaleString('tr-TR')}
+                            {/* Payment Method */}
+                            <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                                <span>Ödeme:</span>
+                                <span>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
+                            </div>
+
+                            {/* Footer - OneQR Branding */}
+                            <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '16px' }}>OneQR.tr</div>
+                                {/* Center Logo Placeholder - using the QR code SVG for print if possible or img */}
+                                <img src="/logo-qr.png" alt="OneQR" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                                <div style={{ fontSize: '10px' }}>oneqr.tr ile oluşturuldu</div>
+                                <div style={{ fontSize: '10px' }}>{new Date().toLocaleString('tr-TR')}</div>
                             </div>
                         </div>
 
