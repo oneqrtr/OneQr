@@ -482,8 +482,8 @@ export default function PublicMenuPage() {
                     
                     /* Flex table layout */
                     .product-row { display: flex; font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-                    .col-qty { width: 10%; text-align: left; }
-                    .col-name { width: 65%; text-align: left; }
+                    .col-qty { width: 20%; text-align: left; }
+                    .col-name { width: 55%; text-align: left; }
                     .col-price { width: 25%; text-align: right; }
                     
                     .total-row { display: flex; justify-content: space-between; font-size: 26px; font-weight: 900; margin-top: 10px; }
