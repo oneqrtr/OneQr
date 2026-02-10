@@ -26,7 +26,6 @@ interface Restaurant {
     is_whatsapp_enabled?: boolean;
     is_location_enabled?: boolean;
     location_lat?: number;
-    location_lat?: number;
     location_lng?: number;
     is_order_enabled?: boolean;
 
