@@ -26,7 +26,9 @@ interface Restaurant {
     is_whatsapp_enabled?: boolean;
     is_location_enabled?: boolean;
     location_lat?: number;
+    location_lat?: number;
     location_lng?: number;
+    is_order_enabled?: boolean;
 
     // Payment Settings
     payment_settings?: {
@@ -261,7 +263,8 @@ export default function PublicMenuPage() {
         );
     };
 
-    const isOrderEnabled = true; // Always true for now (or check plan)
+    // Check if orders are enabled in restaurant settings
+    const isOrderEnabled = restaurant?.is_order_enabled ?? true;
 
     const addToCart = (product: Product, variant?: Variant) => {
         if (!isOrderEnabled) return;
@@ -1267,28 +1270,30 @@ export default function PublicMenuPage() {
                                                         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: restaurant.theme_color }}>
                                                             {product.price} {restaurant.currency}
                                                         </div>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleProductClick(product);
-                                                            }}
-                                                            style={{
-                                                                width: '32px',
-                                                                height: '32px',
-                                                                borderRadius: '50%',
-                                                                border: 'none',
-                                                                background: restaurant.theme_color,
-                                                                color: 'white',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                cursor: 'pointer',
-                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                                                fontSize: '1.2rem'
-                                                            }}
-                                                        >
-                                                            <i className="fa-solid fa-plus"></i>
-                                                        </button>
+                                                        {isOrderEnabled && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleProductClick(product);
+                                                                }}
+                                                                style={{
+                                                                    width: '32px',
+                                                                    height: '32px',
+                                                                    borderRadius: '50%',
+                                                                    border: 'none',
+                                                                    background: restaurant.theme_color,
+                                                                    color: 'white',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    cursor: 'pointer',
+                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                                    fontSize: '1.2rem'
+                                                                }}
+                                                            >
+                                                                <i className="fa-solid fa-plus"></i>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 {product.image_url && (
@@ -1812,7 +1817,7 @@ export default function PublicMenuPage() {
                 cartCount={cartTotalCount}
                 onWhatsappClick={() => setIsCheckoutModalOpen(true)}
                 onCartClick={() => setIsCheckoutModalOpen(true)}
-                orderEnabled={true}
+                orderEnabled={isOrderEnabled}
             />
 
         </div>
