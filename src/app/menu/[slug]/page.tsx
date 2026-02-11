@@ -771,7 +771,7 @@ useEffect(() => {
         // Simple check to avoid counting the owner/admin as a visitor usually requires checking auth state,
         // but for now we count all page loads or just check local storage to dedup session.
         // Using a simple session storage flag to dedup views per session
-        const sessionKey = `viewed_${ restaurant.id } `;
+        const sessionKey = 'viewed_' + restaurant.id;
         if (sessionStorage.getItem(sessionKey)) return;
 
         const supabase = createClient();
