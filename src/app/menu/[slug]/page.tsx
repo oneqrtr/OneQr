@@ -686,7 +686,7 @@ useEffect(() => {
             const hostname = window.location.hostname;
             const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1');
             const rootDomain = isLocal ? 'localhost' : 'oneqr.tr';
-            const isSubdomain = hostname !== rootDomain && hostname !== `www.${ rootDomain } `;
+            const isSubdomain = hostname !== rootDomain && hostname !== 'www.' + rootDomain;
 
             // Rule: Premium cannot use subdomain
             // Rule: Freemium can use subdomain only during trial
