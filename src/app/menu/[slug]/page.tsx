@@ -701,7 +701,7 @@ useEffect(() => {
 
                 if (!allowed) {
                     // Redirect to root path variant
-                    const rootUrl = isLocal ? `http://localhost:3000/menu/${slug}` : `https://oneqr.tr/menu/${slug}`;
+                    const rootUrl = isLocal ? 'http://localhost:3000/menu/' + slug : 'https://oneqr.tr/menu/' + slug;
     window.location.href = rootUrl;
     return;
 }
@@ -771,7 +771,7 @@ useEffect(() => {
         // Simple check to avoid counting the owner/admin as a visitor usually requires checking auth state,
         // but for now we count all page loads or just check local storage to dedup session.
         // Using a simple session storage flag to dedup views per session
-        const sessionKey = `viewed_${restaurant.id}`;
+        const sessionKey = `viewed_${ restaurant.id } `;
         if (sessionStorage.getItem(sessionKey)) return;
 
         const supabase = createClient();
@@ -789,7 +789,7 @@ if (loading) {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '16px' }}>
             <div className="spinner" style={{ width: '40px', height: '40px', border: '3px solid #f3f3f3', borderTop: '3px solid #3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-            <style jsx>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <style jsx>{`@keyframes spin { 0 % { transform: rotate(0deg); } 100 % { transform: rotate(360deg); } } `}</style>
             <p style={{ color: '#6b7280' }}>Menü yükleniyor...</p>
         </div>
     );
@@ -851,62 +851,62 @@ return (
 
         {/* Responsive Styles */}
         <style jsx global>{`
-                /* Default Mobile View */
-                .mobile-only { display: block; }
-                .desktop-only { display: none; }
-                .main-layout { display: block; }
-                .content-area { padding: 20px; max-width: 600px; margin: 0 auto; }
+        /* Default Mobile View */
+        .mobile - only { display: block; }
+                .desktop - only { display: none; }
+                .main - layout { display: block; }
+                .content - area { padding: 20px; max - width: 600px; margin: 0 auto; }
 
-                /* Desktop View (min-width: 768px) */
-                @media (min-width: 768px) {
-                    .mobile-only { display: none !important; }
-                    .desktop-only { display: block !important; }
+    /* Desktop View (min-width: 768px) */
+    @media(min - width: 768px) {
+                    .mobile - only { display: none!important; }
+                    .desktop - only { display: block!important; }
                     
-                    .main-layout { 
-                        display: flex !important; 
-                        max-width: 1200px;
-                        margin: 0 auto;
-                        padding: 40px 20px;
-                        gap: 40px;
-                        align-items: flex-start;
-                    }
+                    .main - layout {
+            display: flex!important;
+            max - width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            gap: 40px;
+            align - items: flex - start;
+        }
                     
-                    .desktop-sidebar {
-                        width: 280px;
-                        position: sticky;
-                        top: 20px;
-                        background: white;
-                        padding: 24px;
-                        border-radius: 16px;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                        border: 1px solid #E5E7EB;
-                        flex-shrink: 0;
-                        max-height: calc(100vh - 40px);
-                        overflow-y: auto;
-                    }
+                    .desktop - sidebar {
+            width: 280px;
+            position: sticky;
+            top: 20px;
+            background: white;
+            padding: 24px;
+            border - radius: 16px;
+            box - shadow: 0 4px 6px - 1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #E5E7EB;
+            flex - shrink: 0;
+            max - height: calc(100vh - 40px);
+            overflow - y: auto;
+        }
 
-                    .content-area {
-                        flex: 1;
-                        padding: 0 !important;
-                        max-width: none !important;
-                        margin: 0 !important;
-                    }
+                    .content - area {
+            flex: 1;
+            padding: 0!important;
+            max - width: none!important;
+            margin: 0!important;
+        }
 
-                    .cat-nav-btn {
-                        display: block;
-                        width: 100%;
-                        text-align: left;
-                        padding: 12px 16px !important;
-                        margin-bottom: 8px;
-                        border-radius: 8px !important;
-                        font-size: 1rem !important;
-                    }
+                    .cat - nav - btn {
+            display: block;
+            width: 100 %;
+            text - align: left;
+            padding: 12px 16px!important;
+            margin - bottom: 8px;
+            border - radius: 8px!important;
+            font - size: 1rem!important;
+        }
 
-                    .cat-nav-btn:hover {
-                        background-color: #F3F4F6 !important;
-                    }
-                }
-            `}</style>
+                    .cat - nav - btn:hover {
+            background - color: #F3F4F6!important;
+        }
+    }
+    `}</style>
 
         {/* Header / Cover (Mobile Only used for hero image logic, but re-used/hidden via CSS) */}
         <div className="mobile-only">
@@ -959,12 +959,14 @@ return (
                         Logoya tıklayarak uygulamayı indirebilirsiniz
                     </div>
                     <style>{`
-                            @keyframes pulse {
-                                0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); }
-                                70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
-                                100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+    @keyframes pulse {
+        0 % { box- shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
+    }
+    70 % { box- shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+}
+100 % { box- shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
                             }
-                        `}</style>
+`}</style>
                 </div>
             </header>
         </div>
@@ -992,7 +994,7 @@ return (
                     <button
                         key={cat.id}
                         onClick={() => {
-                            const element = document.getElementById(`cat-${cat.id}`);
+                            const element = document.getElementById(`cat - ${ cat.id } `);
                             if (element) {
                                 const headerOffset = 70;
                                 const elementPosition = element.getBoundingClientRect().top;
@@ -1046,7 +1048,7 @@ return (
                             key={cat.id}
                             className="cat-nav-btn"
                             onClick={() => {
-                                const element = document.getElementById(`cat-${cat.id}`);
+                                const element = document.getElementById(`cat - ${ cat.id } `);
                                 if (element) {
                                     const headerOffset = 40;
                                     const elementPosition = element.getBoundingClientRect().top;
@@ -1061,7 +1063,7 @@ return (
                                 color: activeCategory === cat.id ? restaurant.theme_color : '#374151',
                                 fontWeight: activeCategory === cat.id ? 600 : 500,
                                 cursor: 'pointer',
-                                borderLeft: activeCategory === cat.id ? `3px solid ${restaurant.theme_color}` : '3px solid transparent'
+                                borderLeft: activeCategory === cat.id ? `3px solid ${ restaurant.theme_color } ` : '3px solid transparent'
                             }}
                         >
                             {cat.name}
@@ -1087,8 +1089,8 @@ return (
                     if (catProducts.length === 0) return null;
 
                     return (
-                        <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom: '32px', scrollMarginTop: '20px' }}>
-                            <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${restaurant.theme_color}` }}>
+                        <div key={cat.id} id={`cat - ${ cat.id } `} style={{ marginBottom: '32px', scrollMarginTop: '20px' }}>
+                            <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${ restaurant.theme_color } ` }}>
                                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>
                                     {cat.name}
                                 </h2>
@@ -1132,7 +1134,7 @@ return (
                                                                 alignItems: 'center'
                                                             }}>
                                                                 <strong style={{ fontWeight: 600, marginRight: '4px' }}>{variant.name}</strong>
-                                                                {variant.price > 0 ? `+${variant.price} ${restaurant.currency}` : ''}
+                                                                {variant.price > 0 ? `+ ${ variant.price } ${ restaurant.currency } ` : ''}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -1241,7 +1243,7 @@ return (
                                     const isSelected = tempSelectedVariants.some(v => v.id === variant.id);
                                     return (
                                         <label key={variant.id} style={{
-                                            padding: '12px', borderRadius: '8px', border: isSelected ? `2px solid ${restaurant?.theme_color}` : '1px solid #E5E7EB',
+                                            padding: '12px', borderRadius: '8px', border: isSelected ? `2px solid ${ restaurant?.theme_color } ` : '1px solid #E5E7EB',
                                             background: isSelected ? '#EFF6FF' : 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
                                         }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1260,7 +1262,7 @@ return (
                                                 <span style={{ fontWeight: 500 }}>{variant.name}</span>
                                             </div>
                                             <span style={{ fontWeight: 600, color: restaurant?.theme_color }}>
-                                                {variant.price > 0 ? `+${variant.price} ${restaurant?.currency}` : ''}
+                                                {variant.price > 0 ? `+ ${ variant.price } ${ restaurant?.currency } ` : ''}
                                             </span>
                                         </label>
                                     );
@@ -1350,7 +1352,7 @@ return (
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {cart.map((item, idx) => (
-                                    <div key={`${item.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F9FAFB', padding: '12px', borderRadius: '12px', border: '1px solid #F3F4F6' }}>
+                                    <div key={`${ item.id } -${ idx } `} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F9FAFB', padding: '12px', borderRadius: '12px', border: '1px solid #F3F4F6' }}>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600, color: '#374151', fontSize: '0.95rem' }}>{item.name}</div>
 
@@ -1441,7 +1443,7 @@ return (
                                         fontWeight: 500
                                     }}
                                 >
-                                    <i className={`fa-solid ${customerInfo.locationLat ? 'fa-check' : 'fa-location-dot'}`}></i>
+                                    <i className={`fa - solid ${ customerInfo.locationLat ? 'fa-check' : 'fa-location-dot' } `}></i>
                                     {customerInfo.locationLat ? 'Konum Eklendi (Kurye İçin)' : 'Tam Konum Ekle (Kurye İçin)'}
                                 </button>
 
@@ -1545,7 +1547,7 @@ return (
 
                                     {/* Cash */}
                                     {(restaurant.payment_settings?.cash ?? true) && (
-                                        <label style={{ padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'cash' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <label style={{ padding: '12px', border: `1px solid ${ customerInfo.paymentMethod === 'cash' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <input type="radio" name="payment" value="cash" checked={customerInfo.paymentMethod === 'cash'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'cash' })} />
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <i className="fa-solid fa-money-bill-wave" style={{ color: '#10B981', width: '20px', textAlign: 'center' }}></i>
@@ -1556,7 +1558,7 @@ return (
 
                                     {/* Credit Card */}
                                     {(restaurant.payment_settings?.credit_card) && (
-                                        <label style={{ padding: '12px', border: `1px solid ${customerInfo.paymentMethod === 'credit_card' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <label style={{ padding: '12px', border: `1px solid ${ customerInfo.paymentMethod === 'credit_card' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <input type="radio" name="payment" value="credit_card" checked={customerInfo.paymentMethod === 'credit_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'credit_card' })} />
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <i className="fa-regular fa-credit-card" style={{ color: '#3B82F6', width: '20px', textAlign: 'center' }}></i>
@@ -1567,7 +1569,7 @@ return (
 
                                     {/* Meal Card */}
                                     {(restaurant.payment_settings?.meal_card?.enabled) && (
-                                        <div style={{ border: `1px solid ${customerInfo.paymentMethod === 'meal_card' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', overflow: 'hidden' }}>
+                                        <div style={{ border: `1px solid ${ customerInfo.paymentMethod === 'meal_card' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', overflow: 'hidden' }}>
                                             <label style={{ padding: '12px', cursor: 'pointer', background: customerInfo.paymentMethod === 'meal_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <input type="radio" name="payment" value="meal_card" checked={customerInfo.paymentMethod === 'meal_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'meal_card', mealCardProvider: restaurant.payment_settings?.meal_card?.methods[0] || '' })} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1595,7 +1597,7 @@ return (
 
                                     {/* IBAN */}
                                     {(restaurant.payment_settings?.iban?.enabled) && (
-                                        <div style={{ border: `1px solid ${customerInfo.paymentMethod === 'iban' ? restaurant.theme_color : '#E5E7EB'}`, borderRadius: '8px', overflow: 'hidden' }}>
+                                        <div style={{ border: `1px solid ${ customerInfo.paymentMethod === 'iban' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', overflow: 'hidden' }}>
                                             <label style={{ padding: '12px', cursor: 'pointer', background: customerInfo.paymentMethod === 'iban' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <input type="radio" name="payment" value="iban" checked={customerInfo.paymentMethod === 'iban'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'iban' })} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1759,98 +1761,98 @@ return (
                                         style={{ border: 0 }}
                                         src={`https://maps.google.com/maps?q=${customerInfo.locationLat},${customerInfo.locationLng}&z=15&output=embed`}
                                     />
-                                </div>
+                                </div >
                             )}
 
-                            {/* Summary Content for Print */}
-                            <div id="order-summary-content">
-                                {/* Header - OneQR Branding */}
-                                <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
-                                <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+{/* Summary Content for Print */ }
+<div id="order-summary-content">
+    {/* Header - OneQR Branding */}
+    <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
+    <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
 
-                                {/* Restaurant Name */}
-                                <h3 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', margin: '15px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
+    {/* Restaurant Name */}
+    <h3 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', margin: '15px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
 
-                                {/* Customer Info Block */}
-                                <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
-                                    Müşteri:<br />
-                                    {customerInfo.fullName}<br />
-                                    {customerInfo.phone}<br />
-                                    <div style={{ marginTop: '5px', fontWeight: 'normal' }}>
-                                        {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
-                                        {customerInfo.isSite && ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`}
-                                        {` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`}
-                                        {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
-                                    </div>
-                                    {customerInfo.addressDetail && <div style={{ fontStyle: 'italic', marginTop: '2px' }}>({customerInfo.addressDetail})</div>}
-                                    {customerInfo.locationLat && <div style={{ marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
-                                </div>
+    {/* Customer Info Block */}
+    <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
+        Müşteri:<br />
+        {customerInfo.fullName}<br />
+        {customerInfo.phone}<br />
+        <div style={{ marginTop: '5px', fontWeight: 'normal' }}>
+            {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
+            {customerInfo.isSite && ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`}
+            {` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`}
+            {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
+        </div>
+        {customerInfo.addressDetail && <div style={{ fontStyle: 'italic', marginTop: '2px' }}>({customerInfo.addressDetail})</div>}
+        {customerInfo.locationLat && <div style={{ marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
+    </div>
 
-                                <div style={{ borderBottom: '1px dashed black', marginBottom: '15px' }}></div>
+    <div style={{ borderBottom: '1px dashed black', marginBottom: '15px' }}></div>
 
-                                {/* Items Table */}
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={{ textAlign: 'left', width: '15%' }}>Adet</th>
-                                            <th style={{ textAlign: 'left', width: '60%' }}>Ürün</th>
-                                            <th style={{ textAlign: 'right', width: '25%' }}>Tutar</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {cart.map((item, idx) => (
-                                            <tr key={`${item.id}-${idx}`}>
-                                                <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>{item.quantity}x</td>
-                                                <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>
-                                                    {item.name}
-                                                    {item.selectedVariants.length > 0 && <div style={{ fontSize: '14px', fontStyle: 'italic' }}>({item.selectedVariants.map(v => v.name).join(', ')})</div>}
-                                                    {item.excludedIngredients.length > 0 && <div style={{ fontSize: '14px', fontStyle: 'italic', textDecoration: 'line-through', color: '#EF4444' }}>({item.excludedIngredients.join(', ')})</div>}
-                                                </td>
-                                                <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '5px' }}>{item.finalPrice * item.quantity} ₺</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+    {/* Items Table */}
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px' }}>
+        <thead>
+            <tr>
+                <th style={{ textAlign: 'left', width: '15%' }}>Adet</th>
+                <th style={{ textAlign: 'left', width: '60%' }}>Ürün</th>
+                <th style={{ textAlign: 'right', width: '25%' }}>Tutar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {cart.map((item, idx) => (
+                <tr key={`${item.id}-${idx}`}>
+                    <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>{item.quantity}x</td>
+                    <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>
+                        {item.name}
+                        {item.selectedVariants.length > 0 && <div style={{ fontSize: '14px', fontStyle: 'italic' }}>({item.selectedVariants.map(v => v.name).join(', ')})</div>}
+                        {item.excludedIngredients.length > 0 && <div style={{ fontSize: '14px', fontStyle: 'italic', textDecoration: 'line-through', color: '#EF4444' }}>({item.excludedIngredients.join(', ')})</div>}
+                    </td>
+                    <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '5px' }}>{item.finalPrice * item.quantity} ₺</td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
 
-                                {/* Total Section */}
-                                <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '24px', fontWeight: 900 }}>
-                                    <span>TOPLAM:</span>
-                                    <span>{cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0)} ₺</span>
-                                </div>
+    {/* Total Section */}
+    <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '24px', fontWeight: 900 }}>
+        <span>TOPLAM:</span>
+        <span>{cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0)} ₺</span>
+    </div>
 
-                                {/* Payment Method */}
-                                <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' }}>
-                                    <span>Ödeme:</span>
-                                    <span>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
-                                </div>
+    {/* Payment Method */}
+    <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+        <span>Ödeme:</span>
+        <span>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
+    </div>
 
-                                {/* Footer - OneQR Branding */}
-                                <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>OneQR.tr</div>
-                                    {/* Center Logo Placeholder - using the QR code SVG for print if possible or img */}
-                                    <img src="/logo-qr.png" alt="OneQR" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
-                                    <div style={{ fontSize: '10px' }}>oneqr.tr ile oluşturuldu</div>
-                                    <div style={{ fontSize: '10px' }}>{new Date().toLocaleString('tr-TR')}</div>
-                                </div>
-                            </div>
+    {/* Footer - OneQR Branding */}
+    <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+        <div style={{ fontWeight: 'bold', fontSize: '16px' }}>OneQR.tr</div>
+        {/* Center Logo Placeholder - using the QR code SVG for print if possible or img */}
+        <img src="/logo-qr.png" alt="OneQR" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+        <div style={{ fontSize: '10px' }}>oneqr.tr ile oluşturuldu</div>
+        <div style={{ fontSize: '10px' }}>{new Date().toLocaleString('tr-TR')}</div>
+    </div>
+</div>
 
-                        </div>
+                        </div >
 
-                        <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
-                            <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                <i className="fa-solid fa-print"></i> Yazdır
-                            </button>
-                            {restaurant?.whatsapp_number && (
-                                <button onClick={sendWhatsappOrder} style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
-                                    <i className="fa-brands fa-whatsapp"></i> Whatsapp
-                                </button>
-                            )}
-                            <button onClick={submitSystemOrder} style={{ flex: 1, background: restaurant?.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                                Tamamla
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
+        <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <i className="fa-solid fa-print"></i> Yazdır
+        </button>
+        {restaurant?.whatsapp_number && (
+            <button onClick={sendWhatsappOrder} style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
+                <i className="fa-brands fa-whatsapp"></i> Whatsapp
+            </button>
+        )}
+        <button onClick={submitSystemOrder} style={{ flex: 1, background: restaurant?.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+            Tamamla
+        </button>
+    </div>
+                    </div >
+                </div >
             )
         }
 
@@ -1906,6 +1908,6 @@ return (
             orderEnabled={isOrderEnabled}
         />
 
-    </div>
+    </div >
 );
 }
