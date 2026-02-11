@@ -565,19 +565,26 @@ export default function PublicMenuPage() {
                 excluded_ingredients: item.excludedIngredients
             }));
 
+            // Construct address detail string carefully
+            let addressDetail = `${ customerInfo.neighborhood } Mah.${ customerInfo.street } Sok.`;
+            if (customerInfo.isSite) {
+                addressDetail += ` ${ customerInfo.siteName } Sit.${ customerInfo.block } Blok`;
+            }
+            addressDetail += ` No:${ customerInfo.buildingNumber } Daire:${ customerInfo.doorNumber } Kat:${ customerInfo.floor } `;
+            if (customerInfo.apartmentName) {
+                addressDetail += ` (${ customerInfo.apartmentName } Apt.)`;
+            }
+            if (customerInfo.addressDetail) {
+                addressDetail += `\nNot: ${ customerInfo.addressDetail } `;
+            }
+
             const { data, error } = await supabase
                 .from('orders')
                 .insert({
                     restaurant_id: restaurant.id,
                     customer_name: customerInfo.fullName,
                     customer_phone: customerInfo.phone,
-                    address_detail: `
-                        ${ customerInfo.neighborhood } Mah.${ customerInfo.street } Sok.
-        ${ customerInfo.isSite ? `${customerInfo.siteName} Sit. ${customerInfo.block} Blok` : '' }
-    No:${ customerInfo.buildingNumber } Daire:${ customerInfo.doorNumber } Kat:${ customerInfo.floor }
-                        ${ customerInfo.apartmentName ? `(${customerInfo.apartmentName} Apt.)` : '' }
-                        ${ customerInfo.addressDetail ? `\nNot: ${customerInfo.addressDetail}` : '' }
-    `.trim(),
+                    address_detail: addressDetail,
                     location_lat: customerInfo.locationLat,
                     location_lng: customerInfo.locationLng,
                     items: orderItems,
@@ -615,32 +622,39 @@ export default function PublicMenuPage() {
         message += `* Müşteri:* ${ customerInfo.fullName } \n`;
         message += `* Telefon:* ${ customerInfo.phone } \n`;
         message += `* Adres:* ${ customerInfo.neighborhood } Mah.${ customerInfo.street } Sok.No:${ customerInfo.buildingNumber } D: ${ customerInfo.doorNumber } \n`;
-        if (customerInfo.addressDetail) message += `* Not:* ${ customerInfo.addressDetail } \n`;
-        if (customerInfo.locationLat) message += `* Konum:* https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
-    message += `\n*Sipariş Detayı:*\n`;
-
-    let total = 0;
-    cart.forEach(item => {
-        const itemTotal = item.finalPrice * item.quantity;
-        total += itemTotal;
-        message += `- ${item.quantity}x ${item.name}`;
-
-        if (item.selectedVariants && item.selectedVariants.length > 0) {
-            message += ` (+${item.selectedVariants.map(v => v.name).join(', ')})`;
+        
+        if (customerInfo.addressDetail) {
+            message += `* Not:* ${ customerInfo.addressDetail } \n`;
         }
-        if (item.excludedIngredients && item.excludedIngredients.length > 0) {
-            message += ` (ÇIKAR: ${item.excludedIngredients.join(', ')})`;
-        }
+        
+        if (customerInfo.locationLat) {
+            message += `* Konum:* https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
+}
 
-        message += ` : ${itemTotal} ${restaurant.currency}\n`;
-    });
+message += `\n*Sipariş Detayı:*\n`;
 
-    message += `\n*TOPLAM TUTAR:* ${total} ${restaurant.currency}\n`;
-    message += `\n*Ödeme:* ${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}`;
+let total = 0;
+cart.forEach(item => {
+    const itemTotal = item.finalPrice * item.quantity;
+    total += itemTotal;
+    message += `- ${item.quantity}x ${item.name}`;
 
-    const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    if (item.selectedVariants && item.selectedVariants.length > 0) {
+        message += ` (+${item.selectedVariants.map(v => v.name).join(', ')})`;
+    }
+    if (item.excludedIngredients && item.excludedIngredients.length > 0) {
+        message += ` (ÇIKAR: ${item.excludedIngredients.join(', ')})`;
+    }
 
+    message += ` : ${itemTotal} ${restaurant.currency}\n`;
+});
+
+message += `\n*TOPLAM TUTAR:* ${total} ${restaurant.currency}\n`;
+message += `\n*Ödeme:* ${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}`;
+
+const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
+window.open(url, '_blank');
+    };
     // Also save to system as valid order just via whatsapp
     // submitSystemOrder(); // Optional: Save it to DB as well? Usually yes but maybe separate button/action.
     // For now just open whatsapp.
