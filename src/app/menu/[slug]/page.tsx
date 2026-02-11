@@ -852,16 +852,16 @@ return (
         <style jsx global>{`
         /* Default Mobile View */
         .mobile - only { display: block; }
-                .desktop - only { display: none; }
-                .main - layout { display: block; }
-                .content - area { padding: 20px; max - width: 600px; margin: 0 auto; }
+        .desktop - only { display: none; }
+        .main - layout { display: block; }
+        .content - area { padding: 20px; max - width: 600px; margin: 0 auto; }
 
     /* Desktop View (min-width: 768px) */
     @media(min - width: 768px) {
-                    .mobile - only { display: none!important; }
-                    .desktop - only { display: block!important; }
-                    
-                    .main - layout {
+            .mobile - only { display: none!important; }
+            .desktop - only { display: block!important; }
+            
+            .main - layout {
             display: flex!important;
             max - width: 1200px;
             margin: 0 auto;
@@ -869,8 +869,8 @@ return (
             gap: 40px;
             align - items: flex - start;
         }
-                    
-                    .desktop - sidebar {
+            
+            .desktop - sidebar {
             width: 280px;
             position: sticky;
             top: 20px;
@@ -884,14 +884,14 @@ return (
             overflow - y: auto;
         }
 
-                    .content - area {
+            .content - area {
             flex: 1;
             padding: 0!important;
             max - width: none!important;
             margin: 0!important;
         }
 
-                    .cat - nav - btn {
+            .cat - nav - btn {
             display: block;
             width: 100 %;
             text - align: left;
@@ -901,7 +901,7 @@ return (
             font - size: 1rem!important;
         }
 
-                    .cat - nav - btn:hover {
+            .cat - nav - btn:hover {
             background - color: #F3F4F6!important;
         }
     }
@@ -964,7 +964,7 @@ return (
     70 % { box- shadow: 0 0 0 10px rgba(0, 0, 0, 0);
 }
 100 % { box- shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
-                            }
+    }
 `}</style>
                 </div>
             </header>
