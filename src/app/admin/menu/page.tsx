@@ -21,6 +21,7 @@ interface Product {
     is_available: boolean;
     display_order: number;
     is_visible?: boolean;
+    ingredients?: string[];
 }
 
 interface Variant {
@@ -50,6 +51,7 @@ export default function MenuManagementPage() {
 
     const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
     const [productImage, setProductImage] = useState<File | null>(null);
+    const [productIngredientsInput, setProductIngredientsInput] = useState('');
 
     // Variant Form States
     const [variantName, setVariantName] = useState('');
@@ -231,9 +233,11 @@ export default function MenuManagementPage() {
         setProductImage(null);
         if (product) {
             setEditingProduct(product);
+            setProductIngredientsInput(product.ingredients ? product.ingredients.join(', ') : '');
             setIsEditModeProduct(true);
         } else {
             setEditingProduct({ category_id: categories.length > 0 ? categories[0].id : '', name: '', price: 0, description: '', is_available: true });
+            setProductIngredientsInput('');
             setIsEditModeProduct(false);
         }
         setIsProductModalOpen(true);
@@ -244,6 +248,13 @@ export default function MenuManagementPage() {
         if (!editingProduct.category_id || !editingProduct.name) return;
 
         setIsSaving(true);
+
+        // Parse ingredients
+        const ingredientsArray = productIngredientsInput
+            .split(',')
+            .map(i => i.trim())
+            .filter(i => i.length > 0);
+
         let imageUrl = editingProduct.image_url;
 
         if (productImage) {
@@ -278,7 +289,8 @@ export default function MenuManagementPage() {
                     price: editingProduct.price,
                     description: editingProduct.description,
                     image_url: imageUrl,
-                    is_available: editingProduct.is_available
+                    is_available: editingProduct.is_available,
+                    ingredients: ingredientsArray // Save array
                 })
                 .eq('id', editingProduct.id);
             error = err;
@@ -293,7 +305,8 @@ export default function MenuManagementPage() {
                     description: editingProduct.description,
                     image_url: imageUrl,
                     is_available: true,
-                    display_order: 1 // simplified logic
+                    display_order: 1, // simplified logic
+                    ingredients: ingredientsArray // Save array
                 });
             error = err;
         }
@@ -653,6 +666,20 @@ export default function MenuManagementPage() {
                                     onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}
                                     rows={3}
                                 />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">İçindekiler (Virgülle ayırarak giriniz)</label>
+                                <textarea
+                                    className="form-input"
+                                    value={productIngredientsInput}
+                                    onChange={e => setProductIngredientsInput(e.target.value)}
+                                    placeholder="Örn: Domates, Marul, Turşu, Mayonez"
+                                    rows={2}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>
+                                    Bu malzemeler menüde listelenir ve müşteri istemediklerini çıkarabilir.
+                                </p>
                             </div>
 
                             {/* Variants Section - Accordion */}

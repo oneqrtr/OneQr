@@ -61,6 +61,7 @@ interface Product {
     price: number;
     image_url?: string;
     is_available: boolean;
+    ingredients?: string[]; // Added
 }
 
 interface Variant {
@@ -88,9 +89,11 @@ export default function PublicMenuPage() {
     interface CartItem {
         id: string;
         name: string;
-        price: number;
+        basePrice: number; // Base product price
+        finalPrice: number; // Unit price with variants
         quantity: number;
-        variantName?: string;
+        selectedVariants: Variant[];
+        excludedIngredients: string[];
     }
     const [cart, setCart] = useState<CartItem[]>([]);
 
@@ -121,8 +124,11 @@ export default function PublicMenuPage() {
         }
     };
 
+    // Modal States for Options
+    const [selectedProductForOptions, setSelectedProductForOptions] = useState<Product | null>(null);
+    const [tempSelectedVariants, setTempSelectedVariants] = useState<Variant[]>([]);
+    const [tempExcludedIngredients, setTempExcludedIngredients] = useState<string[]>([]);
     // Modal States
-    const [selectedProductForVariant, setSelectedProductForVariant] = useState<Product | null>(null);
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
     // Customer Info State
@@ -265,48 +271,83 @@ export default function PublicMenuPage() {
     // Check if orders are enabled in restaurant settings
     const isOrderEnabled = restaurant?.is_order_enabled ?? true;
 
-    const addToCart = (product: Product, variant?: Variant) => {
+    // Helper to compare arrays for cart matching
+    const arraysEqual = (a: any[], b: any[], key?: string) => {
+        if (a.length !== b.length) return false;
+        const sortedA = [...a].sort((x, y) => key ? x[key].localeCompare(y[key]) : x.localeCompare(y));
+        const sortedB = [...b].sort((x, y) => key ? x[key].localeCompare(y[key]) : x.localeCompare(y));
+        return sortedA.every((val, index) => {
+            if (key) return val[key] === sortedB[index][key];
+            return val === sortedB[index];
+        });
+    };
+
+    const addToCart = (product: Product, selectedVars: Variant[], excludedIngs: string[]) => {
         if (!isOrderEnabled) return;
+
+        const variantsPrice = selectedVars.reduce((acc, v) => acc + v.price, 0);
+        const finalUnitPrice = product.price + variantsPrice;
+
         setCart(prev => {
-            const existingItem = prev.find(item => item.id === product.id && item.variantName === variant?.name);
-            if (existingItem) {
-                return prev.map(item =>
-                    (item.id === product.id && item.variantName === variant?.name)
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                );
+            // Check for existing item with exact same configuration
+            const existingItemIndex = prev.findIndex(item =>
+                item.id === product.id &&
+                arraysEqual(item.selectedVariants, selectedVars, 'id') &&
+                arraysEqual(item.excludedIngredients, excludedIngs)
+            );
+
+            if (existingItemIndex > -1) {
+                const newCart = [...prev];
+                newCart[existingItemIndex].quantity += 1;
+                return newCart;
             } else {
                 return [...prev, {
                     id: product.id,
                     name: product.name,
-                    price: variant ? (product.price + variant.price) : product.price,
+                    basePrice: product.price,
+                    finalPrice: finalUnitPrice,
                     quantity: 1,
-                    variantName: variant?.name
+                    selectedVariants: selectedVars,
+                    excludedIngredients: excludedIngs
                 }];
             }
         });
-        setSelectedProductForVariant(null);
+
+        // Reset and close modal
+        setSelectedProductForOptions(null);
+        setTempSelectedVariants([]);
+        setTempExcludedIngredients([]);
     };
 
-    const updateCartItemQuantity = (productId: string, variantName: string | undefined, delta: number) => {
+    const updateCartItemQuantity = (index: number, delta: number) => {
         setCart(prev => {
-            return prev.map(item => {
-                if (item.id === productId && item.variantName === variantName) {
-                    const newQuantity = Math.max(0, item.quantity + delta);
-                    return { ...item, quantity: newQuantity };
-                }
-                return item;
-            }).filter(item => item.quantity > 0);
+            const newCart = [...prev];
+            const item = newCart[index];
+            const newQuantity = Math.max(0, item.quantity + delta);
+
+            if (newQuantity === 0) {
+                return newCart.filter((_, i) => i !== index);
+            }
+
+            item.quantity = newQuantity;
+            return newCart;
         });
     };
 
     const handleProductClick = (product: Product) => {
         if (!isOrderEnabled) return;
+
+        // Always open modal if it has variants OR ingredients
         const productVariants = variants.filter(v => v.product_id === product.id);
-        if (productVariants.length > 0) {
-            setSelectedProductForVariant(product);
+        const hasIngredients = product.ingredients && product.ingredients.length > 0;
+
+        if (productVariants.length > 0 || hasIngredients) {
+            setSelectedProductForOptions(product);
+            setTempSelectedVariants([]);
+            setTempExcludedIngredients([]);
         } else {
-            addToCart(product);
+            // Direct add if simple product
+            addToCart(product, [], []);
         }
     };
 
@@ -324,7 +365,7 @@ export default function PublicMenuPage() {
         if (!restaurant) return;
         setIsSubmitting(true);
 
-        const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        const totalAmount = cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0);
 
         // Construct full address for DB
         let fullAddress = `${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.`;
@@ -424,9 +465,22 @@ export default function PublicMenuPage() {
         message += `\nSipariş:\n`;
         let totalAmount = 0;
         cart.forEach(item => {
-            const t = item.price * item.quantity;
+            const t = item.finalPrice * item.quantity;
             totalAmount += t;
-            message += `${item.quantity}x ${item.name} (${item.price}₺) = ${t}₺\n`;
+            message += `${item.quantity}x ${item.name}`;
+
+            // Add Variants details
+            if (item.selectedVariants.length > 0) {
+                const vNames = item.selectedVariants.map(v => v.name).join(', ');
+                message += ` (+${vNames})`;
+            }
+            // Add Exclusions details
+            if (item.excludedIngredients.length > 0) {
+                const exNames = item.excludedIngredients.map(i => `${i} ÇIKAR`).join(', ');
+                message += ` (${exNames})`;
+            }
+
+            message += ` = ${t} ₺\n`;
         });
         message += `\nTOPLAM: ${totalAmount} ₺\n`;
         message += `Ödeme: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
@@ -442,9 +496,7 @@ export default function PublicMenuPage() {
         if (!w) return;
 
         const dateStr = new Date().toLocaleString('tr-TR');
-        const totalAmount = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-
-        // Helper specifically for dash lines to ensure they don't break
+        const totalAmount = cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0);
         const dashLine = "------------------------------------------------";
 
         w.document.write(`
@@ -453,337 +505,253 @@ export default function PublicMenuPage() {
                 <title>Sipariş Fişi</title>
                 <style>
                     @page { size: 80mm auto; margin: 0mm; }
-                    body {
-                        width: 80mm;
-                        margin: 0 auto;
-                        padding: 5px;
-                        font-family: 'Courier New', Courier, monospace; /* Monospace is key for receipt look */
-                        font-weight: bold;
-                        color: black;
-                        font-size: 16px;
-                    }
+                    body { width: 80mm; margin: 0 auto; padding: 5px; font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; }
                     .center { text-align: center; }
-                    .left { text-align: left; }
-                    .right { text-align: right; }
-                    
-                    .bold { font-weight: 900; }
-                    
-                    /* Use a pre-wrap to respect text layout */
-                    .separator { 
-                        white-space: pre; 
-                        overflow: hidden; 
-                        margin: 5px 0;
-                        font-weight: normal;
-                    }
-                    
-                    .header-title { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
-                    .rest-name { font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 10px 0; line-height: 1.2; }
-                    
-                    .customer-block { font-size: 18px; font-weight: bold; line-height: 1.3; text-align: left; }
-                    .customer-label { font-size: 16px; text-decoration: underline; margin-bottom: 5px; display: block; }
-                    
-                    /* Flex table layout */
-                    .product-row { display: flex; font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-                    .col-qty { width: 20%; text-align: left; }
-                    .col-name { width: 55%; text-align: left; }
+                    .separator { white-space: pre; overflow: hidden; margin: 5px 0; font-weight: normal; }
+                    .rest-name { font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 10px 0; }
+                    .customer-block { font-size: 18px; margin-bottom: 10px; }
+                    .product-row { display: flex; font-size: 18px; margin-bottom: 8px; flex-wrap: wrap; }
+                    .col-qty { width: 15%; }
+                    .col-content { width: 60%; }
                     .col-price { width: 25%; text-align: right; }
-                    
+                    .mod-text { font-size: 20px; font-weight: 900; display: block; margin-top: 2px; } /* Large font for mods */
+                    .variant-text { font-size: 16px; font-style: italic; }
+                    .exclusion-text { text-decoration: line-through; margin-right: 5px; }
                     .total-row { display: flex; justify-content: space-between; font-size: 26px; font-weight: 900; margin-top: 10px; }
-                    .payment-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-top: 5px; }
-                    
-                    .footer { margin-top: 20px; text-align: center; }
-                    .qr-code { width: 120px; height: 120px; margin: 10px auto; display: block; }
-                    .footer-text { font-size: 12px; margin-top: 2px; font-weight: normal; }
                 </style>
             </head>
             <body>
-                <div class="center header-title">OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
+                <div class="center">OneQR</div>
                 <div class="center separator">${dashLine}</div>
-                
-                <div class="center rest-name">${restaurant?.name || 'Restoran Adı'}</div>
+                <div class="center rest-name">${restaurant?.name || 'Restoran'}</div>
                 <div class="center separator">${dashLine}</div>
-                
+
                 <div class="customer-block">
-                    <span class="customer-label">Müşteri:</span>
-                    <div>${customerInfo.fullName}</div>
-                    <div>${customerInfo.phone}</div>
-                    <div style="margin-top: 5px; font-size: 16px; font-weight: normal;">
-                        ${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.
-                        ${customerInfo.isSite ? `${customerInfo.siteName} Sit. ${customerInfo.block} Blok` : ''}
-                        No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}
-                        ${customerInfo.apartmentName ? ` (${customerInfo.apartmentName} Apt.)` : ''}
-                    </div>
-                    ${customerInfo.addressDetail ? `<div style="font-size: 14px; font-style: italic; margin-top: 2px;">(${customerInfo.addressDetail})</div>` : ''}
-                    ${customerInfo.locationLat ? '<div style="margin-top: 5px; font-size: 14px;">(Konum Paylaşıldı)</div>' : ''}
+                    ${customerInfo.fullName}<br/>
+                    ${customerInfo.neighborhood} Mah.<br/>
+                    ${customerInfo.phone}
                 </div>
-                
+
                 <div class="center separator">${dashLine}</div>
-                
-                <div class="product-row" style="font-size: 16px; border-bottom: 1px solid black; padding-bottom: 2px;">
-                    <div class="col-qty">Adet</div>
-                    <div class="col-name">Ürün</div>
-                    <div class="col-price">Tutar</div>
-                </div>
-                
-                <!-- Items -->
+
                 ${cart.map(item => `
                     <div class="product-row">
                         <div class="col-qty">${item.quantity}x</div>
-                        <div class="col-name">
-                            ${item.name}
-                            ${item.variantName ? `<div style="font-size: 14px; font-weight: normal; font-style: italic;">(${item.variantName})</div>` : ''}
+                        <div class="col-content">
+                            <div>${item.name}</div>
+
+                            <!-- Variants -->
+                            ${item.selectedVariants.length > 0 ? `
+                                <div class="mod-text">
+                                    + ${item.selectedVariants.map(v => v.name).join(', ')}
+                                </div>
+                            ` : ''}
+
+                            <!-- Excluded Ingredients -->
+                            ${item.excludedIngredients.length > 0 ? `
+                                <div class="mod-text" style="color: black;">
+                                    ⚠️ ${item.excludedIngredients.map(i => `${i} YOK`).join(', ')}
+                                </div>
+                            ` : ''}
                         </div>
-                        <div class="col-price">${item.price * item.quantity} ₺</div>
+                        <div class="col-price">${item.finalPrice * item.quantity} ₺</div>
                     </div>
+                    <div style="border-bottom: 1px dashed #000; width: 100%; margin-bottom: 5px; opacity: 0.5;"></div>
                 `).join('')}
-                
+
                 <div class="center separator">${dashLine}</div>
-                
-                <div class="total-row">
-                    <span>TOPLAM:</span>
-                    <span>${totalAmount} ₺</span>
-                </div>
-                
-                <div class="payment-row">
-                    <span>Ödeme:</span>
-                    <span>${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}</span>
-                </div>
-                
-                <div class="center separator">${dashLine}</div>
-                
-                <div class="footer">
-                    <div style="font-size: 18px; font-weight: 900;">OneQR.tr</div>
-                    <!-- Generates a QR code pointing to https://oneqr.tr. The intermediate API ensures an image for print reliability. -->
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://oneqr.tr" class="qr-code" alt="QR Code" />
-                    <div class="footer-text">oneqr.tr ile oluşturuldu</div>
-                    <div class="footer-text">${dateStr}</div>
-                </div>
-                
-                <script>
-                   setTimeout(() => {
-                       window.print();
-                   }, 500); 
-                </script>
+                <div class="total-row"><span>TOPLAM:</span><span>${totalAmount} ₺</span></div>
+                 <div class="center separator">${dashLine}</div>
+                 <div class="center" style="margin-top: 10px;">Afiyet Olsun!</div>
+                 <script>setTimeout(() => { window.print(); }, 500);</script>
             </body>
             </html>
-         `);
+        `);
         w.document.close();
     };
 
 
-    // ... [Inside Render - Modal Section]
 
-    // Existing "Checkout Modal" (Input Form)
-    {
-        isCheckoutModalOpen && !showOrderSummary && (
-            <div style={{
-                position: 'fixed', inset: 0, zIndex: 100,
-                background: 'rgba(0,0,0,0.5)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '16px'
-            }} onClick={() => setIsCheckoutModalOpen(false)}>
-                <div style={{
-                    background: 'white', borderRadius: '16px',
-                    width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto',
-                    padding: '24px', position: 'relative'
-                }} onClick={e => e.stopPropagation()}>
 
-                    <button onClick={() => setIsCheckoutModalOpen(false)} style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>
-                        <i className="fa-solid fa-times"></i>
-                    </button>
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            alert('Tarayıcınız konum servisini desteklemiyor.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setCustomerInfo(prev => ({
+                    ...prev,
+                    addressType: 'location',
+                    locationLat: position.coords.latitude,
+                    locationLng: position.coords.longitude
+                }));
+                // Try reverse geocoding if needed, or just keep lat/lng
+            },
+            (error) => {
+                console.error("Error getting location", error);
+                alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
+            }
+        );
+    };
 
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '20px' }}>Sipariş Bilgileri</h2>
+    const submitSystemOrder = async () => {
+        if (!restaurant) return;
+        setIsSubmitting(true);
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {/* Personal Info */}
-                        <div>
-                            <label className="label">Ad Soyad</label>
-                            <input className="form-input" value={customerInfo.fullName} onChange={e => setCustomerInfo({ ...customerInfo, fullName: e.target.value })} placeholder="Ad Soyad" />
-                        </div>
-                        <div>
-                            <label className="label">Telefon</label>
-                            <input className="form-input" value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} placeholder="05XX..." type="tel" />
-                        </div>
-                        {/* Remember Me */}
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer', color: '#4B5563' }}>
-                            <input
-                                type="checkbox"
-                                checked={customerInfo.rememberMe}
-                                onChange={e => setCustomerInfo(prev => ({ ...prev, rememberMe: e.target.checked }))}
-                            />
-                            Beni Hatırla
-                        </label>
+        try {
+            const supabase = createClient();
 
-                        {/* Address Section */}
-                        <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
-                            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>Teslimat Adresi</h3>
+            // Calculate Total
+            const totalAmount = cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0);
 
-                            <button onClick={handleGetLocation} className="btn-outline" style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                <i className="fa-solid fa-location-dot"></i> {customerInfo.locationLat ? 'Konum Güncelle' : 'Konum Ekle (Otomatik Doldur)'}
-                            </button>
+            // Prepare Items for DB
+            const orderItems = cart.map(item => ({
+                product_id: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.finalPrice, // Unit price including variants
+                total_price: item.finalPrice * item.quantity,
+                selected_variants: item.selectedVariants,
+                excluded_ingredients: item.excludedIngredients
+            }));
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                                <input className="form-input" value={customerInfo.neighborhood} onChange={e => setCustomerInfo({ ...customerInfo, neighborhood: e.target.value })} placeholder="Mahalle" />
-                                <input className="form-input" value={customerInfo.street} onChange={e => setCustomerInfo({ ...customerInfo, street: e.target.value })} placeholder="Sokak" />
-                            </div>
+            const { data, error } = await supabase
+                .from('orders')
+                .insert({
+                    restaurant_id: restaurant.id,
+                    customer_name: customerInfo.fullName,
+                    customer_phone: customerInfo.phone,
+                    customer_address: `
+                        ${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.
+                        ${customerInfo.isSite ? `${customerInfo.siteName} Sit. ${customerInfo.block} Blok` : ''}
+                        No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}
+                        ${customerInfo.apartmentName ? `(${customerInfo.apartmentName} Apt.)` : ''}
+                        ${customerInfo.addressDetail ? `\nNot: ${customerInfo.addressDetail}` : ''}
+                    `.trim(),
+                    location_lat: customerInfo.locationLat,
+                    location_lng: customerInfo.locationLng,
+                    items: orderItems,
+                    total_amount: totalAmount,
+                    payment_method: customerInfo.paymentMethod,
+                    payment_provider: customerInfo.paymentMethod === 'meal_card' ? customerInfo.mealCardProvider : null,
+                    status: 'pending',
+                    source: 'system' // or 'qr'
+                })
+                .select()
+                .single();
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                                <input className="form-input" value={customerInfo.apartmentName} onChange={e => setCustomerInfo({ ...customerInfo, apartmentName: e.target.value })} placeholder="Apartman Adı" />
-                                <input className="form-input" value={customerInfo.buildingNumber} onChange={e => setCustomerInfo({ ...customerInfo, buildingNumber: e.target.value })} placeholder="Bina No" />
-                            </div>
+            if (error) throw error;
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                                <input className="form-input" value={customerInfo.floor} onChange={e => setCustomerInfo({ ...customerInfo, floor: e.target.value })} placeholder="Kat" />
-                                <input className="form-input" value={customerInfo.doorNumber} onChange={e => setCustomerInfo({ ...customerInfo, doorNumber: e.target.value })} placeholder="Daire No" />
-                            </div>
+            // Success
+            setOrderSuccess(true);
+            setCart([]);
+            saveCustomerInfoToLocal(); // Save for next time
 
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', marginBottom: '12px' }}>
-                                <input type="checkbox" checked={customerInfo.isSite} onChange={e => setCustomerInfo(prev => ({ ...prev, isSite: e.target.checked }))} />
-                                Site İçerisinde
-                            </label>
+            // Trigger print automatically if needed, or let user decide
+            // handlePrint(); // Optional: Auto print receipt for user? Probably not.
 
-                            {customerInfo.isSite && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                                    <input className="form-input" value={customerInfo.siteName} onChange={e => setCustomerInfo({ ...customerInfo, siteName: e.target.value })} placeholder="Site Adı" />
-                                    <input className="form-input" value={customerInfo.block} onChange={e => setCustomerInfo({ ...customerInfo, block: e.target.value })} placeholder="Blok" />
-                                </div>
-                            )}
+        } catch (error: any) {
+            console.error('Order submission error:', error);
+            alert('Sipariş gönderilirken bir hata oluştu: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-                            <textarea className="form-input" value={customerInfo.addressDetail} onChange={e => setCustomerInfo({ ...customerInfo, addressDetail: e.target.value })} placeholder="Adres Tarifi" rows={2} />
-                        </div>
+    const sendWhatsappOrder = () => {
+        if (!restaurant?.whatsapp_number) return;
 
-                        <button onClick={handleSubmitClick} className="btn-primary" style={{ width: '100%', padding: '14px' }}>
-                            İlerle
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+        let message = `*Yeni Sipariş - ${restaurant.name}*\n\n`;
+        message += `*Müşteri:* ${customerInfo.fullName}\n`;
+        message += `*Telefon:* ${customerInfo.phone}\n`;
+        message += `*Adres:* ${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok. No:${customerInfo.buildingNumber} D: ${customerInfo.doorNumber}\n`;
+        if (customerInfo.addressDetail) message += `*Not:* ${customerInfo.addressDetail}\n`;
+        if (customerInfo.locationLat) message += `*Konum:* https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
+        message += `\n*Sipariş Detayı:*\n`;
 
-    {/* Summary Modal */ }
-    {
-        showOrderSummary && (
-            <div style={{
-                position: 'fixed', inset: 0, zIndex: 110,
-                background: 'rgba(0,0,0,0.6)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '16px'
-            }}>
-                <div style={{
-                    background: 'white', borderRadius: '16px',
-                    width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto',
-                    padding: '0', position: 'relative', display: 'flex', flexDirection: 'column'
-                }}>
-                    <div style={{ padding: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Sipariş Özeti</h2>
-                        <button onClick={() => setShowOrderSummary(false)} style={{ border: 'none', background: 'none' }}><i className="fa-solid fa-times"></i></button>
-                    </div>
+        let total = 0;
+        cart.forEach(item => {
+            const itemTotal = item.finalPrice * item.quantity;
+            total += itemTotal;
+            message += `- ${item.quantity}x ${item.name}`;
 
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                        {/* Map */}
-                        {customerInfo.locationLat && (
-                            <div style={{ width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', border: '1px solid #E5E7EB' }}>
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    frameBorder="0"
-                                    style={{ border: 0 }}
-                                    src={`https://maps.google.com/maps?q=${customerInfo.locationLat},${customerInfo.locationLng}&z=15&output=embed`}
-                                />
-                            </div>
-                        )}
+            if (item.selectedVariants && item.selectedVariants.length > 0) {
+                message += ` (+${item.selectedVariants.map(v => v.name).join(', ')})`;
+            }
+            if (item.excludedIngredients && item.excludedIngredients.length > 0) {
+                message += ` (ÇIKAR: ${item.excludedIngredients.join(', ')})`;
+            }
 
-                        {/* Summary Content for Print */}
-                        <div id="order-summary-content">
-                            {/* Header - OneQR Branding */}
-                            <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
-                            <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+            message += ` : ${itemTotal} ${restaurant.currency}\n`;
+        });
 
-                            {/* Restaurant Name */}
-                            <h3 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', margin: '15px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
+        message += `\n*TOPLAM TUTAR:* ${total} ${restaurant.currency}\n`;
+        message += `\n*Ödeme:* ${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}`;
 
-                            {/* Customer Info Block */}
-                            <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
-                                Müşteri:<br />
-                                {customerInfo.fullName}<br />
-                                {customerInfo.phone}<br />
-                                <div style={{ marginTop: '5px', fontWeight: 'normal' }}>
-                                    {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
-                                    {customerInfo.isSite && ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`}
-                                    {` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`}
-                                    {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
-                                </div>
-                                {customerInfo.addressDetail && <div style={{ fontStyle: 'italic', marginTop: '2px' }}>({customerInfo.addressDetail})</div>}
-                                {customerInfo.locationLat && <div style={{ marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
-                            </div>
+        const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
 
-                            <div style={{ borderBottom: '1px dashed black', marginBottom: '15px' }}></div>
+        // Also save to system as valid order just via whatsapp
+        // submitSystemOrder(); // Optional: Save it to DB as well? Usually yes but maybe separate button/action.
+        // For now just open whatsapp.
+    };
 
-                            {/* Items Table */}
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px' }}>
-                                <thead>
-                                    <tr>
-                                        <th style={{ textAlign: 'left', width: '15%' }}>Adet</th>
-                                        <th style={{ textAlign: 'left', width: '60%' }}>Ürün</th>
-                                        <th style={{ textAlign: 'right', width: '25%' }}>Tutar</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cart.map(item => (
-                                        <tr key={item.id + item.variantName}>
-                                            <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>{item.quantity}x</td>
-                                            <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>
-                                                {item.name}
-                                                {item.variantName && <div style={{ fontSize: '14px', fontStyle: 'italic' }}>({item.variantName})</div>}
-                                            </td>
-                                            <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '5px' }}>{item.price * item.quantity} ₺</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+    const addToCart = (product: Product, selectedVariants: Variant[], excludedIngredients: string[]) => {
+        const variantsKey = selectedVariants.map(v => v.id).sort().join('-');
+        const exclusionKey = excludedIngredients.sort().join('-');
 
-                            {/* Total Section */}
-                            <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '24px', fontWeight: 900 }}>
-                                <span>TOPLAM:</span>
-                                <span>{cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} ₺</span>
-                            </div>
+        // Calculate final unit price
+        const variantTotal = selectedVariants.reduce((acc, v) => acc + v.price, 0);
+        const finalPrice = product.price + variantTotal;
 
-                            {/* Payment Method */}
-                            <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' }}>
-                                <span>Ödeme:</span>
-                                <span>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
-                            </div>
+        setCart(prevCart => {
+            const existingItemIndex = prevCart.findIndex(item => {
+                const iVarKey = item.selectedVariants.map(v => v.id).sort().join('-');
+                const iExclKey = item.excludedIngredients.sort().join('-');
+                return item.id === product.id && iVarKey === variantsKey && iExclKey === exclusionKey;
+            });
 
-                            {/* Footer - OneQR Branding */}
-                            <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ fontWeight: 'bold', fontSize: '16px' }}>OneQR.tr</div>
-                                {/* Center Logo Placeholder - using the QR code SVG for print if possible or img */}
-                                <img src="/logo-qr.png" alt="OneQR" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
-                                <div style={{ fontSize: '10px' }}>oneqr.tr ile oluşturuldu</div>
-                                <div style={{ fontSize: '10px' }}>{new Date().toLocaleString('tr-TR')}</div>
-                            </div>
-                        </div>
+            if (existingItemIndex > -1) {
+                const newCart = [...prevCart];
+                newCart[existingItemIndex].quantity += 1;
+                return newCart;
+            } else {
+                return [...prevCart, {
+                    id: product.id,
+                    name: product.name,
+                    basePrice: product.price,
+                    finalPrice: finalPrice,
+                    quantity: 1,
+                    selectedVariants: selectedVariants,
+                    excludedIngredients: excludedIngredients
+                }];
+            }
+        });
 
-                    </div>
+        setSelectedProductForOptions(null);
+        setTempSelectedVariants([]);
+        setTempExcludedIngredients([]);
+        // Optional: Show toast or feedback
+    };
 
-                    <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
-                        <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <i className="fa-solid fa-print"></i> Yazdır
-                        </button>
-                        {restaurant?.whatsapp_number && (
-                            <button onClick={sendWhatsappOrder} style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
-                                <i className="fa-brands fa-whatsapp"></i> Whatsapp
-                            </button>
-                        )}
-                        <button onClick={confirmOrder} style={{ flex: 1, background: restaurant?.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
-                            Tamamla
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+    const updateCartItemQuantity = (index: number, change: number) => {
+        setCart(prevCart => {
+            const newCart = [...prevCart];
+            const item = newCart[index];
+            if (!item) return prevCart;
+
+            const newQty = item.quantity + change;
+            if (newQty <= 0) {
+                // Remove item
+                newCart.splice(index, 1);
+            } else {
+                item.quantity = newQty;
+            }
+            return newCart;
+        });
+    };
+
 
     useEffect(() => {
         const fetchMenu = async () => {
@@ -895,7 +863,7 @@ export default function PublicMenuPage() {
         if (!restaurant) return;
 
         const trackView = async () => {
-            // Simple check to avoid counting the owner/admin as a visitor usually requires checking auth state, 
+            // Simple check to avoid counting the owner/admin as a visitor usually requires checking auth state,
             // but for now we count all page loads or just check local storage to dedup session.
             // Using a simple session storage flag to dedup views per session
             const sessionKey = `viewed_${restaurant.id}`;
@@ -1345,31 +1313,105 @@ export default function PublicMenuPage() {
                 </div>
             )}
 
-            {/* Variant Modal */}
-            {selectedProductForVariant && (
+            {/* Options Modal (Replaces Variant Modal) */}
+            {selectedProductForOptions && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)'
-                }} onClick={() => setSelectedProductForVariant(null)}>
-                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', color: '#111827' }}>{selectedProductForVariant.name}</h3>
-                        <p style={{ color: '#6B7280', marginBottom: '16px' }}>Lütfen bir seçenek belirleyin:</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {variants.filter(v => v.product_id === selectedProductForVariant!.id).map(variant => (
-                                <button
-                                    key={variant.id}
-                                    onClick={() => addToCart(selectedProductForVariant!, variant)}
-                                    style={{
-                                        padding: '12px 16px', borderRadius: '8px', border: '1px solid #E5E7EB',
-                                        background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        cursor: 'pointer', textAlign: 'left'
-                                    }}
-                                >
-                                    <span style={{ fontWeight: 500, color: '#374151' }}>{variant.name}</span>
-                                    <span style={{ color: restaurant?.theme_color, fontWeight: 600 }}>+{variant.price} {restaurant?.currency}</span>
-                                </button>
-                            ))}
+                }} onClick={() => setSelectedProductForOptions(null)}>
+                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>{selectedProductForOptions.name}</h3>
+                            <button onClick={() => setSelectedProductForOptions(null)} style={{ border: 'none', background: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>
+                                <i className="fa-solid fa-times"></i>
+                            </button>
                         </div>
+
+                        {/* Variants Section */}
+                        {variants.filter(v => v.product_id === selectedProductForOptions.id).length > 0 && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>Seçenekler</h4>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {variants.filter(v => v.product_id === selectedProductForOptions.id).map(variant => {
+                                        const isSelected = tempSelectedVariants.some(v => v.id === variant.id);
+                                        return (
+                                            <label key={variant.id} style={{
+                                                padding: '12px', borderRadius: '8px', border: isSelected ? `2px solid ${restaurant?.theme_color}` : '1px solid #E5E7EB',
+                                                background: isSelected ? '#EFF6FF' : 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setTempSelectedVariants([...tempSelectedVariants, variant]);
+                                                            } else {
+                                                                setTempSelectedVariants(tempSelectedVariants.filter(v => v.id !== variant.id));
+                                                            }
+                                                        }}
+                                                        style={{ width: '18px', height: '18px' }}
+                                                    />
+                                                    <span style={{ fontWeight: 500 }}>{variant.name}</span>
+                                                </div>
+                                                <span style={{ fontWeight: 600, color: restaurant?.theme_color }}>
+                                                    {variant.price > 0 ? `+${variant.price} ${restaurant?.currency}` : ''}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Ingredients Section */}
+                        {selectedProductForOptions.ingredients && selectedProductForOptions.ingredients.length > 0 && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>İçindekiler (Çıkarmak için tiki kaldırın)</h4>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {selectedProductForOptions.ingredients.map((ing, idx) => {
+                                        const isExcluded = tempExcludedIngredients.includes(ing);
+                                        return (
+                                            <label key={idx} style={{
+                                                padding: '8px 12px', borderRadius: '20px',
+                                                border: isExcluded ? '1px dashed #EF4444' : '1px solid #E5E7EB',
+                                                background: isExcluded ? '#FEF2F2' : '#F3F4F6',
+                                                color: isExcluded ? '#EF4444' : '#374151',
+                                                textDecoration: isExcluded ? 'line-through' : 'none',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem'
+                                            }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!isExcluded}
+                                                    onChange={(e) => {
+                                                        if (!e.target.checked) {
+                                                            setTempExcludedIngredients([...tempExcludedIngredients, ing]);
+                                                        } else {
+                                                            setTempExcludedIngredients(tempExcludedIngredients.filter(i => i !== ing));
+                                                        }
+                                                    }}
+                                                    style={{ display: 'none' }}
+                                                />
+                                                {isExcluded ? <i className="fa-solid fa-xmark"></i> : <i className="fa-solid fa-check"></i>}
+                                                {ing}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => addToCart(selectedProductForOptions, tempSelectedVariants, tempExcludedIngredients)}
+                            style={{ width: '100%', padding: '16px', background: restaurant?.theme_color, color: 'white', border: 'none', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>Sepete Ekle</span>
+                                <span>
+                                    {(selectedProductForOptions.price + tempSelectedVariants.reduce((acc, v) => acc + v.price, 0))} {restaurant?.currency}
+                                </span>
+                            </div>
+                        </button>
                     </div>
                 </div>
             )}
@@ -1406,19 +1448,33 @@ export default function PublicMenuPage() {
                                         <div key={`${item.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F9FAFB', padding: '12px', borderRadius: '12px', border: '1px solid #F3F4F6' }}>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontWeight: 600, color: '#374151', fontSize: '0.95rem' }}>{item.name}</div>
-                                                {item.variantName && <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{item.variantName}</div>}
+
+                                                {/* Variants */}
+                                                {item.selectedVariants && item.selectedVariants.length > 0 && (
+                                                    <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '2px' }}>
+                                                        {item.selectedVariants.map(v => v.name).join(', ')}
+                                                    </div>
+                                                )}
+
+                                                {/* Exclusions */}
+                                                {item.excludedIngredients && item.excludedIngredients.length > 0 && (
+                                                    <div style={{ fontSize: '0.8rem', color: '#EF4444', marginTop: '2px', textDecoration: 'line-through' }}>
+                                                        {item.excludedIngredients.join(', ')}
+                                                    </div>
+                                                )}
+
                                                 <div style={{ fontSize: '0.9rem', color: restaurant?.theme_color || '#000', fontWeight: 700, marginTop: '4px' }}>
-                                                    {item.price * item.quantity} {restaurant?.currency}
+                                                    {item.finalPrice * item.quantity} {restaurant?.currency}
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '6px 10px', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                                 <button
-                                                    onClick={() => updateCartItemQuantity(item.id, item.variantName, -1)}
+                                                    onClick={() => updateCartItemQuantity(idx, -1)}
                                                     style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#F3F4F6', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: '4px' }}
                                                 >-</button>
                                                 <span style={{ fontWeight: 600, fontSize: '1rem', minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
                                                 <button
-                                                    onClick={() => updateCartItemQuantity(item.id, item.variantName, 1)}
+                                                    onClick={() => updateCartItemQuantity(idx, 1)}
                                                     style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#F3F4F6', color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', paddingBottom: '4px' }}
                                                 >+</button>
                                             </div>
@@ -1428,7 +1484,7 @@ export default function PublicMenuPage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', padding: '16px', background: '#F9FAFB', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
                                         <span style={{ fontWeight: 600, color: '#374151', fontSize: '1.1rem' }}>Toplam Tutar</span>
                                         <span style={{ fontWeight: 800, color: restaurant?.theme_color || '#000', fontSize: '1.25rem' }}>
-                                            {cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)} {restaurant?.currency}
+                                            {cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0)} {restaurant?.currency}
                                         </span>
                                     </div>
                                 </div>
@@ -1766,6 +1822,132 @@ export default function PublicMenuPage() {
                 </div>
             )}
 
+
+            {/* Summary Modal */}
+            {
+                showOrderSummary && (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 1200,
+                        background: 'rgba(0,0,0,0.6)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '16px',
+                        backdropFilter: 'blur(3px)'
+                    }}>
+                        <div style={{
+                            background: 'white', borderRadius: '16px',
+                            width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto',
+                            padding: '0', position: 'relative', display: 'flex', flexDirection: 'column'
+                        }}>
+                            <div style={{ padding: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Sipariş Özeti</h2>
+                                <button onClick={() => setShowOrderSummary(false)} style={{ border: 'none', background: 'none' }}><i className="fa-solid fa-times"></i></button>
+                            </div>
+
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                                {/* Map */}
+                                {customerInfo.locationLat && (
+                                    <div style={{ width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', border: '1px solid #E5E7EB' }}>
+                                        <iframe
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            style={{ border: 0 }}
+                                            src={`https://maps.google.com/maps?q=${customerInfo.locationLat},${customerInfo.locationLng}&z=15&output=embed`}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Summary Content for Print */}
+                                <div id="order-summary-content">
+                                    {/* Header - OneQR Branding */}
+                                    <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
+                                    <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
+
+                                    {/* Restaurant Name */}
+                                    <h3 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', margin: '15px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
+
+                                    {/* Customer Info Block */}
+                                    <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
+                                        Müşteri:<br />
+                                        {customerInfo.fullName}<br />
+                                        {customerInfo.phone}<br />
+                                        <div style={{ marginTop: '5px', fontWeight: 'normal' }}>
+                                            {customerInfo.neighborhood} Mah. {customerInfo.street} Sok.
+                                            {customerInfo.isSite && ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`}
+                                            {` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`}
+                                            {customerInfo.apartmentName && ` (${customerInfo.apartmentName} Apt.)`}
+                                        </div>
+                                        {customerInfo.addressDetail && <div style={{ fontStyle: 'italic', marginTop: '2px' }}>({customerInfo.addressDetail})</div>}
+                                        {customerInfo.locationLat && <div style={{ marginTop: '5px' }}>(Konum Paylaşıldı)</div>}
+                                    </div>
+
+                                    <div style={{ borderBottom: '1px dashed black', marginBottom: '15px' }}></div>
+
+                                    {/* Items Table */}
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px' }}>
+                                        <thead>
+                                            <tr>
+                                                <th style={{ textAlign: 'left', width: '15%' }}>Adet</th>
+                                                <th style={{ textAlign: 'left', width: '60%' }}>Ürün</th>
+                                                <th style={{ textAlign: 'right', width: '25%' }}>Tutar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cart.map((item, idx) => (
+                                                <tr key={`${item.id}-${idx}`}>
+                                                    <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>{item.quantity}x</td>
+                                                    <td style={{ textAlign: 'left', verticalAlign: 'top', paddingTop: '5px' }}>
+                                                        {item.name}
+                                                        {item.selectedVariants.length > 0 && <div style={{ fontSize: '14px', fontStyle: 'italic' }}>({item.selectedVariants.map(v => v.name).join(', ')})</div>}
+                                                        {item.excludedIngredients.length > 0 && <div style={{ fontSize: '14px', fontStyle: 'italic', textDecoration: 'line-through', color: '#EF4444' }}>({item.excludedIngredients.join(', ')})</div>}
+                                                    </td>
+                                                    <td style={{ textAlign: 'right', verticalAlign: 'top', paddingTop: '5px' }}>{item.finalPrice * item.quantity} ₺</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    {/* Total Section */}
+                                    <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '24px', fontWeight: 900 }}>
+                                        <span>TOPLAM:</span>
+                                        <span>{cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0)} ₺</span>
+                                    </div>
+
+                                    {/* Payment Method */}
+                                    <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                                        <span>Ödeme:</span>
+                                        <span>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
+                                    </div>
+
+                                    {/* Footer - OneQR Branding */}
+                                    <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '16px' }}>OneQR.tr</div>
+                                        {/* Center Logo Placeholder - using the QR code SVG for print if possible or img */}
+                                        <img src="/logo-qr.png" alt="OneQR" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                                        <div style={{ fontSize: '10px' }}>oneqr.tr ile oluşturuldu</div>
+                                        <div style={{ fontSize: '10px' }}>{new Date().toLocaleString('tr-TR')}</div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
+                                <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <i className="fa-solid fa-print"></i> Yazdır
+                                </button>
+                                {restaurant?.whatsapp_number && (
+                                    <button onClick={sendWhatsappOrder} style={{ flex: 1, background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>
+                                        <i className="fa-brands fa-whatsapp"></i> Whatsapp
+                                    </button>
+                                )}
+                                <button onClick={submitSystemOrder} style={{ flex: 1, background: restaurant?.theme_color, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                                    Tamamla
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             <footer style={{
                 background: '#111827',
