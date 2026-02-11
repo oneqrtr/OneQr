@@ -618,42 +618,42 @@ export default function PublicMenuPage() {
     const sendWhatsappOrder = () => {
         if (!restaurant?.whatsapp_number) return;
 
-        let message = `* Yeni Sipariş - ${ restaurant.name }*\n\n`;
-        message += `* Müşteri:* ${ customerInfo.fullName } \n`;
-        message += `* Telefon:* ${ customerInfo.phone } \n`;
-        message += `* Adres:* ${ customerInfo.neighborhood } Mah.${ customerInfo.street } Sok.No:${ customerInfo.buildingNumber } D: ${ customerInfo.doorNumber } \n`;
+        let message = '*Yeni Sipariş - ' + restaurant.name + '*\n\n';
+        message += '*Müşteri:* ' + customerInfo.fullName + '\n';
+        message += '*Telefon:* ' + customerInfo.phone + '\n';
+        message += '*Adres:* ' + customerInfo.neighborhood + ' Mah. ' + customerInfo.street + ' Sok. No:' + customerInfo.buildingNumber + ' D: ' + customerInfo.doorNumber + '\n';
 
         if (customerInfo.addressDetail) {
-            message += `* Not:* ${ customerInfo.addressDetail } \n`;
+            message += '*Not:* ' + customerInfo.addressDetail + '\n';
         }
 
         if (customerInfo.locationLat) {
-            message += `* Konum:* https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
-}
+            message += '*Konum:* https://maps.google.com/?q=' + customerInfo.locationLat + ',' + customerInfo.locationLng + '\n';
+        }
 
-message += `\n*Sipariş Detayı:*\n`;
+        message += '\n*Sipariş Detayı:*\n';
 
-let total = 0;
-cart.forEach(item => {
-    const itemTotal = item.finalPrice * item.quantity;
-    total += itemTotal;
-    message += `- ${item.quantity}x ${item.name}`;
+        let total = 0;
+        cart.forEach(item => {
+            const itemTotal = item.finalPrice * item.quantity;
+            total += itemTotal;
+            message += '- ' + item.quantity + 'x ' + item.name;
 
-    if (item.selectedVariants && item.selectedVariants.length > 0) {
-        message += ` (+${item.selectedVariants.map(v => v.name).join(', ')})`;
-    }
-    if (item.excludedIngredients && item.excludedIngredients.length > 0) {
-        message += ` (ÇIKAR: ${item.excludedIngredients.join(', ')})`;
-    }
+            if (item.selectedVariants && item.selectedVariants.length > 0) {
+                message += ' (+' + item.selectedVariants.map(v => v.name).join(', ') + ')';
+            }
+            if (item.excludedIngredients && item.excludedIngredients.length > 0) {
+                message += ' (ÇIKAR: ' + item.excludedIngredients.join(', ') + ')';
+            }
 
-    message += ` : ${itemTotal} ${restaurant.currency}\n`;
-});
+            message += ' : ' + itemTotal + ' ' + restaurant.currency + '\n';
+        });
 
-message += `\n*TOPLAM TUTAR:* ${total} ${restaurant.currency}\n`;
-message += `\n*Ödeme:* ${customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer'}`;
+        message += '\n*TOPLAM TUTAR:* ' + total + ' ' + restaurant.currency + '\n';
+        message += '\n*Ödeme:* ' + (customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer');
 
-const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
-window.open(url, '_blank');
+        const url = 'https://wa.me/' + restaurant.whatsapp_number + '?text=' + encodeURIComponent(message);
+        window.open(url, '_blank');
     };
 
 
@@ -686,7 +686,7 @@ useEffect(() => {
             const hostname = window.location.hostname;
             const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1');
             const rootDomain = isLocal ? 'localhost' : 'oneqr.tr';
-            const isSubdomain = hostname !== rootDomain && hostname !== `www.${rootDomain}`;
+            const isSubdomain = hostname !== rootDomain && hostname !== `www.${ rootDomain } `;
 
             // Rule: Premium cannot use subdomain
             // Rule: Freemium can use subdomain only during trial
@@ -702,65 +702,65 @@ useEffect(() => {
                 if (!allowed) {
                     // Redirect to root path variant
                     const rootUrl = isLocal ? `http://localhost:3000/menu/${slug}` : `https://oneqr.tr/menu/${slug}`;
-                    window.location.href = rootUrl;
-                    return;
-                }
+    window.location.href = rootUrl;
+    return;
+}
             }
 
-            if (plan === 'expired') {
-                window.location.href = 'https://oneqr.tr';
-                return;
-            }
+if (plan === 'expired') {
+    window.location.href = 'https://oneqr.tr';
+    return;
+}
 
-            setRestaurant(restData);
+setRestaurant(restData);
 
-            // 2. Fetch Categories
-            const { data: catData, error: catError } = await supabase
-                .from('categories')
-                .select('*')
-                .eq('restaurant_id', restData.id)
-                .eq('is_visible', true)
-                .order('display_order', { ascending: true });
+// 2. Fetch Categories
+const { data: catData, error: catError } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('restaurant_id', restData.id)
+    .eq('is_visible', true)
+    .order('display_order', { ascending: true });
 
-            if (catData) {
-                setCategories(catData);
-                if (catData.length > 0) setActiveCategory(catData[0].id);
-            }
+if (catData) {
+    setCategories(catData);
+    if (catData.length > 0) setActiveCategory(catData[0].id);
+}
 
-            // 3. Fetch Products
-            if (catData && catData.length > 0) {
-                const catIds = catData.map(c => c.id);
-                const { data: prodData, error: prodError } = await supabase
-                    .from('products')
-                    .select('*')
-                    .in('category_id', catIds)
-                    .eq('is_available', true)
-                    .eq('is_visible', true)
-                    .order('display_order', { ascending: true });
+// 3. Fetch Products
+if (catData && catData.length > 0) {
+    const catIds = catData.map(c => c.id);
+    const { data: prodData, error: prodError } = await supabase
+        .from('products')
+        .select('*')
+        .in('category_id', catIds)
+        .eq('is_available', true)
+        .eq('is_visible', true)
+        .order('display_order', { ascending: true });
 
-                if (prodData) {
-                    setProducts(prodData);
+    if (prodData) {
+        setProducts(prodData);
 
-                    // 4. Fetch Variants
-                    const prodIds = prodData.map(p => p.id);
-                    const { data: varData } = await supabase
-                        .from('product_variants')
-                        .select('*')
-                        .in('product_id', prodIds)
-                        .eq('is_available', true);
+        // 4. Fetch Variants
+        const prodIds = prodData.map(p => p.id);
+        const { data: varData } = await supabase
+            .from('product_variants')
+            .select('*')
+            .in('product_id', prodIds)
+            .eq('is_available', true);
 
-                    if (varData) setVariants(varData);
-                }
-            }
+        if (varData) setVariants(varData);
+    }
+}
 
         } catch (error) {
-            console.error('Error fetching menu:', error);
-        } finally {
-            setLoading(false);
-        }
+    console.error('Error fetching menu:', error);
+} finally {
+    setLoading(false);
+}
     };
 
-    if (slug) fetchMenu();
+if (slug) fetchMenu();
 }, [slug]);
 
 // Analytics Tracking
