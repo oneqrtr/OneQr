@@ -520,11 +520,9 @@ export default function PublicMenuPage() {
                 <div class="center separator">${dashLine}</div>
                 
                 <div class="footer">
-                    <div style="font-weight: bold; font-size: 14px;">OneQR.tr</div>
                     <div class="center">
-                        ${getQrWithLogo('https://oneqr.tr', 'OneQR System')}
+                        ${restaurant?.logo_url ? `<img src="${restaurant.logo_url}" style="width: 60px; height: 60px; object-fit: contain;" />` : ''}
                     </div>
-                    <div>oneqr.tr ile oluşturuldu</div>
                     <div class="timestamp">${dateStr}</div>
                 </div>
 
