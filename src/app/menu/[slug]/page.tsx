@@ -285,6 +285,8 @@ export default function PublicMenuPage() {
     const addToCart = (product: Product, selectedVars: Variant[], excludedIngs: string[]) => {
         if (!isOrderEnabled) return;
 
+        console.log("Adding to cart:", { product, selectedVars, excludedIngs }); // DEBUG
+
         const variantsPrice = selectedVars.reduce((acc, v) => acc + v.price, 0);
         const finalUnitPrice = product.price + variantsPrice;
 
@@ -307,8 +309,8 @@ export default function PublicMenuPage() {
                     basePrice: product.price,
                     finalPrice: finalUnitPrice,
                     quantity: 1,
-                    selectedVariants: selectedVars,
-                    excludedIngredients: excludedIngs
+                    selectedVariants: [...selectedVars], // Ensure copy
+                    excludedIngredients: [...excludedIngs] // Ensure copy
                 }];
             }
         });
@@ -367,6 +369,8 @@ export default function PublicMenuPage() {
         const w = window.open('', '_blank');
         if (!w) return;
 
+        console.log("Printing Cart:", cart); // DEBUG
+
         const dateStr = new Date().toLocaleString('tr-TR');
         const totalAmount = cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0);
         const dashLine = "------------------------------------------------";
@@ -393,7 +397,11 @@ export default function PublicMenuPage() {
                 </style>
             </head>
             <body>
-                <div class="center">OneQR</div>
+                <div class="center" style="margin-bottom: 5px;">
+                    ${restaurant?.logo_url ? `<img src="${restaurant.logo_url}" style="width: 60px; height: 60px; border-radius: 50%;" />` : ''}
+                </div>
+                <div class="center" style="font-size: 12px; margin-bottom: 5px;">OneQR.tr</div>
+                
                 <div class="center separator">${dashLine}</div>
                 <div class="center rest-name">${restaurant?.name || 'Restoran'}</div>
                 <div class="center separator">${dashLine}</div>
@@ -413,14 +421,14 @@ export default function PublicMenuPage() {
                             <div>${item.name}</div>
 
                             <!-- Variants -->
-                            ${item.selectedVariants.length > 0 ? `
+                            ${item.selectedVariants && item.selectedVariants.length > 0 ? `
                                 <div class="mod-text">
-                                    + ${item.selectedVariants.map(v => v.name).join(', ')}
+                                    + ${item.selectedVariants.map(v => v?.name || '').join(', ')}
                                 </div>
                             ` : ''}
 
                             <!-- Excluded Ingredients -->
-                            ${item.excludedIngredients.length > 0 ? `
+                            ${item.excludedIngredients && item.excludedIngredients.length > 0 ? `
                                 <div class="mod-text" style="color: black;">
                                     ⚠️ ${item.excludedIngredients.map(i => `${i} YOK`).join(', ')}
                                 </div>
@@ -433,9 +441,20 @@ export default function PublicMenuPage() {
 
                 <div class="center separator">${dashLine}</div>
                 <div class="total-row"><span>TOPLAM:</span><span>${totalAmount} ₺</span></div>
-                 <div class="center separator">${dashLine}</div>
-                 <div class="center" style="margin-top: 10px;">Afiyet Olsun!</div>
-                 <script>setTimeout(() => { window.print(); }, 500);</script>
+                <div class="center separator">${dashLine}</div>
+                 
+                <div class="center" style="margin-top: 15px;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.href)}" style="width: 100px; height: 100px;" />
+                </div>
+                <div class="center" style="margin-top: 5px; font-size: 12px;">Sipariş vermek için tarayın</div>
+                
+                <div class="center" style="margin-top: 10px;">Afiyet Olsun!</div>
+                <script>
+                    // Wait for images to load before printing
+                    window.onload = function() {
+                        setTimeout(() => { window.print(); }, 1000);
+                    }
+                </script>
             </body>
             </html>
         `);
