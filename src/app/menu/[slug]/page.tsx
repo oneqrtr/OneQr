@@ -655,7 +655,6 @@ message += `\n*Ödeme:* ${customerInfo.paymentMethod === 'cash' ? 'Nakit' : cust
 const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
 window.open(url, '_blank');
     };
-};
 
 
 
