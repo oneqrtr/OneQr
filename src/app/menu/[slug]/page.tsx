@@ -1,4 +1,5 @@
 'use client';
+import './menu.css';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
@@ -45,7 +46,6 @@ interface Restaurant {
     };
 }
 // ... (rest of the file until ContactFab props)
-
 
 interface Category {
     id: string;
@@ -363,8 +363,6 @@ export default function PublicMenuPage() {
         return method;
     };
 
-
-
     const handlePrint = () => {
         const w = window.open('', '_blank');
         if (!w) return;
@@ -409,41 +407,7 @@ export default function PublicMenuPage() {
             <html>
             <head>
                 <title>Sipariş Fişi</title>
-                <style>
-                    @page { size: 80mm auto; margin: 0mm; }
-                    body { 
-                        width: 80mm; 
-                        margin: 0 auto; 
-                        padding: 10px 5px; 
-                        font-family: 'Courier New', monospace; 
-                        font-weight: bold; 
-                        font-size: 14px; 
-                        line-height: 1.2;
-                        color: black;
-                    }
-                    .center { text-align: center; display: flex; flex-direction: column; alignItems: center; justify-content: center; }
-                    .separator { overflow: hidden; white-space: nowrap; margin: 5px 0; }
-                    .header { font-size: 16px; font-weight: 900; }
-                    .rest-name { font-size: 20px; font-weight: 900; margin: 5px 0; text-transform: uppercase; }
-                    .section-title { text-align: left; font-size: 14px; text-decoration: underline; margin-bottom: 5px; }
-                    
-                    .customer-info { text-align: left; font-size: 14px; margin-bottom: 5px; }
-                    
-                    /* Product Table */
-                    .product-row { display: flex; font-size: 14px; margin-bottom: 4px; }
-                    .col-qty { width: 15%; text-align: left; vertical-align: top; }
-                    .col-name { width: 60%; text-align: left; word-wrap: break-word; }
-                    .col-price { width: 25%; text-align: right; vertical-align: top; }
-                    
-                    .variant-row { font-size: 12px; margin-left: 15%; font-weight: normal; font-style: italic; }
-                    .exclusion-row { font-size: 12px; margin-left: 15%; font-weight: normal; text-decoration: line-through; }
-                    
-                    .total-section { font-size: 18px; font-weight: 900; text-align: right; margin: 10px 0; }
-                    .payment-info { font-size: 16px; font-weight: 900; text-align: left; margin: 5px 0; }
-                    
-                    .footer { text-align: center; font-size: 12px; margin-top: 20px; font-weight: normal; }
-                    .timestamp { font-size: 12px; margin-top: 5px; }
-                </style>
+                
             </head>
             <body>
                 <div class="center header">OneQR - Menü Sistemleri</div>
@@ -539,10 +503,6 @@ export default function PublicMenuPage() {
     `);
         w.document.close();
     };
-
-
-
-
 
     const submitSystemOrder = async () => {
         if (!restaurant) return;
@@ -655,8 +615,6 @@ export default function PublicMenuPage() {
         const url = 'https://wa.me/' + restaurant.whatsapp_number + '?text=' + encodeURIComponent(message);
         window.open(url, '_blank');
     };
-
-
 
 useEffect(() => {
     const fetchMenu = async () => {
@@ -848,69 +806,12 @@ if (restaurant.status !== 'active') {
 return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB' }}>
 
-        {/* Responsive Styles */}
-        <style jsx global>{`
-        /* Default Mobile View */
-        .mobile - only { display: block; }
-        .desktop - only { display: none; }
-        .main - layout { display: block; }
-        .content - area { padding: 20px; max - width: 600px; margin: 0 auto; }
+        {}
 
-    /* Desktop View (min-width: 768px) */
-    @media(min - width: 768px) {
-            .mobile - only { display: none!important; }
-            .desktop - only { display: block!important; }
-            
-            .main - layout {
-            display: flex!important;
-            max - width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            gap: 40px;
-            align - items: flex - start;
-        }
-            
-            .desktop - sidebar {
-            width: 280px;
-            position: sticky;
-            top: 20px;
-            background: white;
-            padding: 24px;
-            border - radius: 16px;
-            box - shadow: 0 4px 6px - 1px rgba(0, 0, 0, 0.1);
-            border: 1px solid #E5E7EB;
-            flex - shrink: 0;
-            max - height: calc(100vh - 40px);
-            overflow - y: auto;
-        }
-
-            .content - area {
-            flex: 1;
-            padding: 0!important;
-            max - width: none!important;
-            margin: 0!important;
-        }
-
-            .cat - nav - btn {
-            display: block;
-            width: 100 %;
-            text - align: left;
-            padding: 12px 16px!important;
-            margin - bottom: 8px;
-            border - radius: 8px!important;
-            font - size: 1rem!important;
-        }
-
-            .cat - nav - btn:hover {
-            background - color: #F3F4F6!important;
-        }
-    }
-    `}</style>
-
-        {/* Header / Cover (Mobile Only used for hero image logic, but re-used/hidden via CSS) */}
+        {}
         <div className="mobile-only">
             <header style={{ background: 'white', padding: '0', textAlign: 'center', borderBottom: '1px solid #E5E7EB' }}>
-                {/* Hero Image */}
+                {}
                 <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
                     <img
                         src={restaurant.hero_image_url || "/images/defaults/cover_pizza.png"}
@@ -957,20 +858,12 @@ return (
                         <i className="fa-solid fa-arrow-up"></i>
                         Logoya tıklayarak uygulamayı indirebilirsiniz
                     </div>
-                    <style>{`
-    @keyframes pulse {
-        0 % { box- shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
-    }
-    70 % { box- shadow: 0 0 0 10px rgba(0, 0, 0, 0);
-}
-100 % { box- shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
-    }
-`}</style>
+                    
                 </div>
             </header>
         </div>
 
-        {/* Sticky Category Bar (Mobile Only) */}
+        {}
         <div className="mobile-only" style={{
             position: 'sticky',
             top: 0,
@@ -993,7 +886,7 @@ return (
                     <button
                         key={cat.id}
                         onClick={() => {
-                            const element = document.getElementById(`cat - ${ cat.id } `);
+                            const element = document.getElementById('cat-' + cat.id);
                             if (element) {
                                 const headerOffset = 70;
                                 const elementPosition = element.getBoundingClientRect().top;
@@ -1022,10 +915,10 @@ return (
             </div>
         </div>
 
-        {/* Main Layout Wrapper (Handles both desktop Sidebar and Main Content) */}
+        {}
         <div className="main-layout">
 
-            {/* Desktop Sidebar */}
+            {}
             <aside className="desktop-sidebar desktop-only">
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                     <div style={{
@@ -1047,7 +940,7 @@ return (
                             key={cat.id}
                             className="cat-nav-btn"
                             onClick={() => {
-                                const element = document.getElementById(`cat - ${ cat.id } `);
+                                const element = document.getElementById('cat-' + cat.id);
                                 if (element) {
                                     const headerOffset = 40;
                                     const elementPosition = element.getBoundingClientRect().top;
@@ -1062,7 +955,7 @@ return (
                                 color: activeCategory === cat.id ? restaurant.theme_color : '#374151',
                                 fontWeight: activeCategory === cat.id ? 600 : 500,
                                 cursor: 'pointer',
-                                borderLeft: activeCategory === cat.id ? `3px solid ${ restaurant.theme_color } ` : '3px solid transparent'
+                                borderLeft: activeCategory === cat.id ? '3px solid ' +  restaurant.theme_color  : '3px solid transparent'
                             }}
                         >
                             {cat.name}
@@ -1071,9 +964,9 @@ return (
                 </nav>
             </aside>
 
-            {/* Main Product Content */}
+            {}
             <main className="content-area">
-                {/* Desktop Hero Image (if exists) */}
+                {}
                 <div className="desktop-only" style={{ width: '100%', height: '250px', borderRadius: '16px', overflow: 'hidden', marginBottom: '32px' }}>
                     <img
                         src={restaurant.hero_image_url || "/images/defaults/cover_pizza.png"}
@@ -1088,8 +981,8 @@ return (
                     if (catProducts.length === 0) return null;
 
                     return (
-                        <div key={cat.id} id={`cat - ${ cat.id } `} style={{ marginBottom: '32px', scrollMarginTop: '20px' }}>
-                            <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: `4px solid ${ restaurant.theme_color } ` }}>
+                        <div key={cat.id} id={'cat-' + cat.id} style={{ marginBottom: '32px', scrollMarginTop: '20px' }}>
+                            <div style={{ marginBottom: '16px', paddingLeft: '4px', borderLeft: '4px solid ' +  restaurant.theme_color  }}>
                                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>
                                     {cat.name}
                                 </h2>
@@ -1118,7 +1011,7 @@ return (
                                                     <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '12px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
                                                 )}
 
-                                                {/* Variants Display */}
+                                                {}
                                                 {variants.filter(v => v.product_id === product.id).length > 0 && (
                                                     <div style={{ marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                         {variants.filter(v => v.product_id === product.id).map(variant => (
@@ -1197,7 +1090,7 @@ return (
             </main>
         </div>
 
-        {/* Image Modal */}
+        {}
         {selectedImage && (
             <div style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -1219,7 +1112,7 @@ return (
             </div>
         )}
 
-        {/* Options Modal (Replaces Variant Modal) */}
+        {}
         {selectedProductForOptions && (
             <div style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -1233,7 +1126,7 @@ return (
                         </button>
                     </div>
 
-                    {/* Variants Section */}
+                    {}
                     {variants.filter(v => v.product_id === selectedProductForOptions.id).length > 0 && (
                         <div style={{ marginBottom: '24px' }}>
                             <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>Seçenekler</h4>
@@ -1242,7 +1135,7 @@ return (
                                     const isSelected = tempSelectedVariants.some(v => v.id === variant.id);
                                     return (
                                         <label key={variant.id} style={{
-                                            padding: '12px', borderRadius: '8px', border: isSelected ? `2px solid ${ restaurant?.theme_color } ` : '1px solid #E5E7EB',
+                                            padding: '12px', borderRadius: '8px', border: isSelected ? '2px solid ' +  restaurant?.theme_color  : '1px solid #E5E7EB',
                                             background: isSelected ? '#EFF6FF' : 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
                                         }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1270,7 +1163,7 @@ return (
                         </div>
                     )}
 
-                    {/* Ingredients Section */}
+                    {}
                     {selectedProductForOptions.ingredients && selectedProductForOptions.ingredients.length > 0 && (
                         <div style={{ marginBottom: '24px' }}>
                             <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>İçindekiler (Çıkarmak için tiki kaldırın)</h4>
@@ -1322,7 +1215,7 @@ return (
             </div>
         )}
 
-        {/* Checkout Modal */}
+        {}
         {isCheckoutModalOpen && (
             <div style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -1341,7 +1234,7 @@ return (
                         </button>
                     </div>
 
-                    {/* Cart Items List */}
+                    {}
                     <div style={{ marginBottom: '24px', borderBottom: '1px solid #E5E7EB', paddingBottom: '16px' }}>
                         {cart.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '32px 0', color: '#6B7280' }}>
@@ -1355,14 +1248,14 @@ return (
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 600, color: '#374151', fontSize: '0.95rem' }}>{item.name}</div>
 
-                                            {/* Variants */}
+                                            {}
                                             {item.selectedVariants && item.selectedVariants.length > 0 && (
                                                 <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '2px' }}>
                                                     {item.selectedVariants.map(v => v.name).join(', ')}
                                                 </div>
                                             )}
 
-                                            {/* Exclusions */}
+                                            {}
                                             {item.excludedIngredients && item.excludedIngredients.length > 0 && (
                                                 <div style={{ fontSize: '0.8rem', color: '#EF4444', marginTop: '2px', textDecoration: 'line-through' }}>
                                                     {item.excludedIngredients.join(', ')}
@@ -1397,7 +1290,7 @@ return (
                         )}
                     </div>
 
-                    {/* Customer Form */}
+                    {}
                     {cart.length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>Sipariş Bilgileri</h3>
@@ -1427,7 +1320,7 @@ return (
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Teslimat Adresi</label>
 
-                                {/* Location Button */}
+                                {}
                                 <button
                                     onClick={handleGetLocation}
                                     style={{
@@ -1446,7 +1339,7 @@ return (
                                     {customerInfo.locationLat ? 'Konum Eklendi (Kurye İçin)' : 'Tam Konum Ekle (Kurye İçin)'}
                                 </button>
 
-                                {/* Always show Address Fields */}
+                                {}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                         <input
@@ -1498,7 +1391,7 @@ return (
                                         />
                                     </div>
 
-                                    {/* Sitede mi oturuyorsunuz? Checkbox */}
+                                    {}
                                     <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 500, color: '#374151' }}>
                                             <input
@@ -1544,7 +1437,7 @@ return (
                                 <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Ödeme Yöntemi</label>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-                                    {/* Cash */}
+                                    {}
                                     {(restaurant.payment_settings?.cash ?? true) && (
                                         <label style={{ padding: '12px', border: `1px solid ${ customerInfo.paymentMethod === 'cash' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <input type="radio" name="payment" value="cash" checked={customerInfo.paymentMethod === 'cash'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'cash' })} />
@@ -1555,7 +1448,7 @@ return (
                                         </label>
                                     )}
 
-                                    {/* Credit Card */}
+                                    {}
                                     {(restaurant.payment_settings?.credit_card) && (
                                         <label style={{ padding: '12px', border: `1px solid ${ customerInfo.paymentMethod === 'credit_card' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <input type="radio" name="payment" value="credit_card" checked={customerInfo.paymentMethod === 'credit_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'credit_card' })} />
@@ -1566,7 +1459,7 @@ return (
                                         </label>
                                     )}
 
-                                    {/* Meal Card */}
+                                    {}
                                     {(restaurant.payment_settings?.meal_card?.enabled) && (
                                         <div style={{ border: `1px solid ${ customerInfo.paymentMethod === 'meal_card' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', overflow: 'hidden' }}>
                                             <label style={{ padding: '12px', cursor: 'pointer', background: customerInfo.paymentMethod === 'meal_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1594,7 +1487,7 @@ return (
                                         </div>
                                     )}
 
-                                    {/* IBAN */}
+                                    {}
                                     {(restaurant.payment_settings?.iban?.enabled) && (
                                         <div style={{ border: `1px solid ${ customerInfo.paymentMethod === 'iban' ? restaurant.theme_color : '#E5E7EB' } `, borderRadius: '8px', overflow: 'hidden' }}>
                                             <label style={{ padding: '12px', cursor: 'pointer', background: customerInfo.paymentMethod === 'iban' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1691,7 +1584,7 @@ return (
                         </div>
                     )}
 
-                    {/* Success Screen */}
+                    {}
                     {orderSuccess && (
                         <div style={{ textAlign: 'center', padding: '40px 0' }}>
                             <div style={{
@@ -1728,8 +1621,7 @@ return (
             </div>
         )}
 
-
-        {/* Summary Modal */}
+        {}
         {
             showOrderSummary && (
                 <div style={{
@@ -1750,7 +1642,7 @@ return (
                         </div>
 
                         <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-                            {/* Map */}
+                            {}
                             {customerInfo.locationLat && (
                                 <div style={{ width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', border: '1px solid #E5E7EB' }}>
                                     <iframe
@@ -1760,19 +1652,19 @@ return (
                                         style={{ border: 0 }}
                                         src={`https://maps.google.com/maps?q=${customerInfo.locationLat},${customerInfo.locationLng}&z=15&output=embed`}
                                     />
-                                </div >
+                                </div>
                             )}
 
-{/* Summary Content for Print */ }
+{ }
 <div id="order-summary-content">
-    {/* Header - OneQR Branding */}
+    {}
     <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>OneQR - İşletmeler İçin Akıllı QR Menü ve Katalog Sistemi</div>
     <div style={{ borderBottom: '1px dashed black', marginBottom: '10px' }}></div>
 
-    {/* Restaurant Name */}
+    {}
     <h3 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', margin: '15px 0', textTransform: 'uppercase' }} className="print-title">{restaurant?.name}</h3>
 
-    {/* Customer Info Block */}
+    {}
     <div style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 'bold' }}>
         Müşteri:<br />
         {customerInfo.fullName}<br />
@@ -1789,7 +1681,7 @@ return (
 
     <div style={{ borderBottom: '1px dashed black', marginBottom: '15px' }}></div>
 
-    {/* Items Table */}
+    {}
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '18px' }}>
         <thead>
             <tr>
@@ -1813,29 +1705,29 @@ return (
         </tbody>
     </table>
 
-    {/* Total Section */}
+    {}
     <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '24px', fontWeight: 900 }}>
         <span>TOPLAM:</span>
         <span>{cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0)} ₺</span>
     </div>
 
-    {/* Payment Method */}
+    {}
     <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '18px', fontWeight: 'bold' }}>
         <span>Ödeme:</span>
         <span>{(customerInfo.paymentMethod === 'cash' ? 'Nakit' : customerInfo.paymentMethod === 'credit_card' ? 'Kredi Kartı' : 'Diğer')}</span>
     </div>
 
-    {/* Footer - OneQR Branding */}
+    {}
     <div style={{ marginTop: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
         <div style={{ fontWeight: 'bold', fontSize: '16px' }}>OneQR.tr</div>
-        {/* Center Logo Placeholder - using the QR code SVG for print if possible or img */}
+        {}
         <img src="/logo-qr.png" alt="OneQR" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
         <div style={{ fontSize: '10px' }}>oneqr.tr ile oluşturuldu</div>
         <div style={{ fontSize: '10px' }}>{new Date().toLocaleString('tr-TR')}</div>
     </div>
 </div>
 
-                        </div >
+                        </div>
 
     <div style={{ padding: '16px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: '12px', background: '#F9FAFB', borderRadius: '0 0 16px 16px' }}>
         <button onClick={handlePrint} className="btn-outline" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -1850,8 +1742,8 @@ return (
             Tamamla
         </button>
     </div>
-                    </div >
-                </div >
+                    </div>
+                </div>
             )
         }
 
@@ -1891,7 +1783,6 @@ return (
             </div>
         </footer>
 
-
         <ContactFab
             callEnabled={restaurant.is_call_enabled || false}
             whatsappEnabled={restaurant.is_whatsapp_enabled || false}
@@ -1907,6 +1798,6 @@ return (
             orderEnabled={isOrderEnabled}
         />
 
-    </div >
+    </div>
 );
 }
