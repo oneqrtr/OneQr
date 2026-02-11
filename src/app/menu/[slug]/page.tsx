@@ -566,16 +566,16 @@ export default function PublicMenuPage() {
             }));
 
             // Construct address detail string carefully
-            let addressDetail = `${ customerInfo.neighborhood } Mah.${ customerInfo.street } Sok.`;
+            let addressDetail = customerInfo.neighborhood + ' Mah. ' + customerInfo.street + ' Sok.';
             if (customerInfo.isSite) {
-                addressDetail += ` ${ customerInfo.siteName } Sit.${ customerInfo.block } Blok`;
+                addressDetail += ' ' + customerInfo.siteName + ' Sit. ' + customerInfo.block + ' Blok';
             }
-            addressDetail += ` No:${ customerInfo.buildingNumber } Daire:${ customerInfo.doorNumber } Kat:${ customerInfo.floor } `;
+            addressDetail += ' No:' + customerInfo.buildingNumber + ' Daire:' + customerInfo.doorNumber + ' Kat:' + customerInfo.floor;
             if (customerInfo.apartmentName) {
-                addressDetail += ` (${ customerInfo.apartmentName } Apt.)`;
+                addressDetail += ' (' + customerInfo.apartmentName + ' Apt.)';
             }
             if (customerInfo.addressDetail) {
-                addressDetail += `\nNot: ${ customerInfo.addressDetail } `;
+                addressDetail += '\nNot: ' + customerInfo.addressDetail;
             }
 
             const { data, error } = await supabase
@@ -622,11 +622,11 @@ export default function PublicMenuPage() {
         message += `* Müşteri:* ${ customerInfo.fullName } \n`;
         message += `* Telefon:* ${ customerInfo.phone } \n`;
         message += `* Adres:* ${ customerInfo.neighborhood } Mah.${ customerInfo.street } Sok.No:${ customerInfo.buildingNumber } D: ${ customerInfo.doorNumber } \n`;
-        
+
         if (customerInfo.addressDetail) {
             message += `* Not:* ${ customerInfo.addressDetail } \n`;
         }
-        
+
         if (customerInfo.locationLat) {
             message += `* Konum:* https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
 }
@@ -655,9 +655,6 @@ message += `\n*Ödeme:* ${customerInfo.paymentMethod === 'cash' ? 'Nakit' : cust
 const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
 window.open(url, '_blank');
     };
-    // Also save to system as valid order just via whatsapp
-    // submitSystemOrder(); // Optional: Save it to DB as well? Usually yes but maybe separate button/action.
-    // For now just open whatsapp.
 };
 
 
