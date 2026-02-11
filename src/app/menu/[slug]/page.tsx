@@ -793,6 +793,7 @@ if (loading) {
             <p style={{ color: '#6b7280' }}>Menü yükleniyor...</p>
         </div>
     );
+}
 
 if (!restaurant) {
     return (
