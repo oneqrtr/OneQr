@@ -361,136 +361,8 @@ export default function PublicMenuPage() {
         return method;
     };
 
-    const submitSystemOrder = async () => {
-        if (!restaurant) return;
-        setIsSubmitting(true);
 
-        const totalAmount = cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0);
 
-        // Construct full address for DB
-        let fullAddress = `${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.`;
-        if (customerInfo.isSite) {
-            fullAddress += ` ${customerInfo.siteName} Sit. ${customerInfo.block} Blok`;
-        }
-        fullAddress += ` No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}`;
-        if (customerInfo.apartmentName) {
-            fullAddress += ` (${customerInfo.apartmentName} Apt.)`;
-        }
-        if (customerInfo.addressDetail) {
-            fullAddress += `\nTarif: ${customerInfo.addressDetail}`;
-        }
-
-        const supabase = createClient();
-        const { error } = await supabase.from('orders').insert({
-            restaurant_id: restaurant.id,
-            customer_name: customerInfo.fullName,
-            customer_phone: customerInfo.phone,
-            address_type: customerInfo.addressType,
-            address_detail: fullAddress, // Saved constructed address
-            location_lat: customerInfo.locationLat,
-            location_lng: customerInfo.locationLng,
-
-            payment_method: customerInfo.paymentMethod === 'meal_card'
-                ? `meal_card_${customerInfo.mealCardProvider}`
-                : customerInfo.paymentMethod,
-            items: cart, // Supabase handles JSONB
-            total_amount: totalAmount,
-            status: 'pending'
-        });
-
-        setIsSubmitting(false);
-        saveCustomerInfoToLocal();
-
-        if (error) {
-            console.error('Sipariş hatası:', error);
-            alert('Sipariş oluşturulurken bir hata oluştu. Lütfen tekrar deneyiniz.');
-        } else {
-            // Success flow
-            setOrderSuccess(true);
-            setCart([]);
-            setShowOrderSummary(false); // Close summary modal
-            setIsCheckoutModalOpen(true); // Ensure main modal is open to show success screen
-        }
-    };
-
-    const handleSubmitClick = () => {
-        // Validation
-        const isValid = customerInfo.fullName && customerInfo.phone &&
-            (customerInfo.addressType === 'manual' ? (customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.doorNumber) : true); // Basic validation
-
-        if (!isValid) {
-            alert("Lütfen gerekli alanları doldurunuz.");
-            return;
-        }
-
-        saveCustomerInfoToLocal();
-        setShowOrderSummary(true);
-    };
-
-    const confirmOrder = async () => {
-        // Logic to finalize order (submit to Supabase or WhatsApp)
-        // Reuse existing submitSystemOrder or sendWhatsappOrder but called from the summary modal
-        await submitSystemOrder();
-        // After system order, we might want to show success or keep summary open?
-        // user asked "siparişi tamamla tıklandıgında checkout modalı açalım... " -> Wait, the flow is:
-        // 1. Cart -> "Siparişi Tamamla" -> Opens Address/Info Modal (Current "Checkout Modal")
-        // 2. Info Modal -> "Siparişi Onayla/Tamamla" -> **User Request**: "checkout modalı açalım siparişi adres konum bilgilerini görebileceği bir alan yapalım/google haritalar/yazdır/wp"
-        // So:
-        // Step 1: Cart -> Checkout Modal (Inputs)
-        // Step 2: Checkout Modal (Inputs) -> "Devam Et / İncele" -> Order Summary Modal (Maps, Print, WhatsApp)
-        // Step 3: Order Summary -> "Onayla ve Gönder" (System Submit) OR just "Whatsapp ile Gönder"
-    };
-
-    // ... (previous helper functions)
-
-    const sendWhatsappOrder = () => {
-        if (!restaurant || !restaurant.whatsapp_number) return;
-
-        let message = `Müşteri: ${customerInfo.fullName}\n`;
-        message += `Tel: ${customerInfo.phone}\n`;
-
-        message += `\nAdres:\n`;
-        if (customerInfo.isSite) {
-            message += `Site: ${customerInfo.siteName}, Blok: ${customerInfo.block}\n`;
-        }
-        message += `${customerInfo.neighborhood} Mah., ${customerInfo.street} Sok.\n`;
-        message += `Apt: ${customerInfo.apartmentName || '-'}, No: ${customerInfo.buildingNumber}, Daire: ${customerInfo.doorNumber}, Kat: ${customerInfo.floor}\n`;
-
-        if (customerInfo.addressDetail) message += `Tarif: ${customerInfo.addressDetail}\n`;
-
-        if (customerInfo.locationLat && customerInfo.locationLng) {
-            message += `\nKonum: https://maps.google.com/?q=${customerInfo.locationLat},${customerInfo.locationLng}\n`;
-        }
-
-        message += `\nSipariş:\n`;
-        let totalAmount = 0;
-        cart.forEach(item => {
-            const t = item.finalPrice * item.quantity;
-            totalAmount += t;
-            message += `${item.quantity}x ${item.name}`;
-
-            // Add Variants details
-            if (item.selectedVariants.length > 0) {
-                const vNames = item.selectedVariants.map(v => v.name).join(', ');
-                message += ` (+${vNames})`;
-            }
-            // Add Exclusions details
-            if (item.excludedIngredients.length > 0) {
-                const exNames = item.excludedIngredients.map(i => `${i} ÇIKAR`).join(', ');
-                message += ` (${exNames})`;
-            }
-
-            message += ` = ${t} ₺\n`;
-        });
-        message += `\nTOPLAM: ${totalAmount} ₺\n`;
-        message += `Ödeme: ${getPaymentMethodLabel(customerInfo.paymentMethod, customerInfo.mealCardProvider)}`;
-
-        const url = `https://wa.me/${restaurant.whatsapp_number}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
-    };
-
-    // Print Function
-    // Print Function
     const handlePrint = () => {
         const w = window.open('', '_blank');
         if (!w) return;
@@ -573,27 +445,6 @@ export default function PublicMenuPage() {
 
 
 
-    const handleGetLocation = () => {
-        if (!navigator.geolocation) {
-            alert('Tarayıcınız konum servisini desteklemiyor.');
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setCustomerInfo(prev => ({
-                    ...prev,
-                    addressType: 'location',
-                    locationLat: position.coords.latitude,
-                    locationLng: position.coords.longitude
-                }));
-                // Try reverse geocoding if needed, or just keep lat/lng
-            },
-            (error) => {
-                console.error("Error getting location", error);
-                alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
-            }
-        );
-    };
 
     const submitSystemOrder = async () => {
         if (!restaurant) return;
@@ -697,60 +548,6 @@ export default function PublicMenuPage() {
         // For now just open whatsapp.
     };
 
-    const addToCart = (product: Product, selectedVariants: Variant[], excludedIngredients: string[]) => {
-        const variantsKey = selectedVariants.map(v => v.id).sort().join('-');
-        const exclusionKey = excludedIngredients.sort().join('-');
-
-        // Calculate final unit price
-        const variantTotal = selectedVariants.reduce((acc, v) => acc + v.price, 0);
-        const finalPrice = product.price + variantTotal;
-
-        setCart(prevCart => {
-            const existingItemIndex = prevCart.findIndex(item => {
-                const iVarKey = item.selectedVariants.map(v => v.id).sort().join('-');
-                const iExclKey = item.excludedIngredients.sort().join('-');
-                return item.id === product.id && iVarKey === variantsKey && iExclKey === exclusionKey;
-            });
-
-            if (existingItemIndex > -1) {
-                const newCart = [...prevCart];
-                newCart[existingItemIndex].quantity += 1;
-                return newCart;
-            } else {
-                return [...prevCart, {
-                    id: product.id,
-                    name: product.name,
-                    basePrice: product.price,
-                    finalPrice: finalPrice,
-                    quantity: 1,
-                    selectedVariants: selectedVariants,
-                    excludedIngredients: excludedIngredients
-                }];
-            }
-        });
-
-        setSelectedProductForOptions(null);
-        setTempSelectedVariants([]);
-        setTempExcludedIngredients([]);
-        // Optional: Show toast or feedback
-    };
-
-    const updateCartItemQuantity = (index: number, change: number) => {
-        setCart(prevCart => {
-            const newCart = [...prevCart];
-            const item = newCart[index];
-            if (!item) return prevCart;
-
-            const newQty = item.quantity + change;
-            if (newQty <= 0) {
-                // Remove item
-                newCart.splice(index, 1);
-            } else {
-                item.quantity = newQty;
-            }
-            return newCart;
-        });
-    };
 
 
     useEffect(() => {
