@@ -473,7 +473,7 @@ export default function PublicMenuPage() {
                     restaurant_id: restaurant.id,
                     customer_name: customerInfo.fullName,
                     customer_phone: customerInfo.phone,
-                    customer_address: `
+                    address_detail: `
                         ${customerInfo.neighborhood} Mah. ${customerInfo.street} Sok.
                         ${customerInfo.isSite ? `${customerInfo.siteName} Sit. ${customerInfo.block} Blok` : ''}
                         No:${customerInfo.buildingNumber} Daire:${customerInfo.doorNumber} Kat:${customerInfo.floor}
