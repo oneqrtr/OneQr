@@ -1,8 +1,25 @@
 'use client';
-import { createClient } from '@/lib/supabase'; // Import at top level for cleaner usage
+import { createClient } from '@/lib/supabase';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+const DEFAULT_SIDEBAR_ORDER = [
+    '/admin', '/admin/orders', '/admin/tables', '/admin/menu', '/admin/report',
+    '/admin/qr', '/admin/theme', '/admin/settings/billing', '/admin/settings'
+];
+
+const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' | 'restaurant' }[] = [
+    { path: '/admin', label: 'Panel', icon: 'fa-chart-pie' },
+    { path: '/admin/orders', label: 'Siparişler', icon: 'fa-bell', badge: 'orders' },
+    { path: '/admin/tables', label: 'Restoran Siparişleri', icon: 'fa-utensils', badge: 'restaurant' },
+    { path: '/admin/menu', label: 'Menü Yönetimi', icon: 'fa-list' },
+    { path: '/admin/report', label: 'Restoran Raporu', icon: 'fa-chart-bar' },
+    { path: '/admin/qr', label: 'QR Kodlar', icon: 'fa-qrcode' },
+    { path: '/admin/theme', label: 'Tema', icon: 'fa-palette' },
+    { path: '/admin/settings/billing', label: 'Abonelik', icon: 'fa-credit-card' },
+    { path: '/admin/settings', label: 'Ayarlar', icon: 'fa-gear' },
+];
 
 export default function Sidebar() {
     const [businessName, setBusinessName] = useState('');
@@ -11,8 +28,11 @@ export default function Sidebar() {
     const [userEmail, setUserEmail] = useState('');
     const [plan, setPlan] = useState('trial');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [restaurantId, setRestaurantId] = useState<string | null>(null);
+    const [sidebarOrder, setSidebarOrder] = useState<string[]>(DEFAULT_SIDEBAR_ORDER);
+    const [isDraggable, setIsDraggable] = useState(false);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-    // Notification State
     const [unreadCount, setUnreadCount] = useState(0);
     const [unreadRestaurantCount, setUnreadRestaurantCount] = useState(0);
     const [notificationSound, setNotificationSound] = useState('ding');
@@ -90,16 +110,25 @@ export default function Sidebar() {
 
             const { data: rest } = await supabase
                 .from('restaurants')
-                .select('id, name, slug, plan, logo_url, notification_sound')
+                .select('id, name, slug, plan, logo_url, notification_sound, sidebar_order')
                 .eq('owner_id', user.id)
                 .maybeSingle();
 
             if (rest) {
+                setRestaurantId(rest.id);
                 setBusinessName(rest.name);
                 setBusinessSlug(rest.slug);
                 setLogoUrl(rest.logo_url);
                 setPlan(rest.plan || 'trial');
                 setNotificationSound(rest.notification_sound || 'ding');
+                const order = rest.sidebar_order as string[] | null;
+                if (Array.isArray(order) && order.length > 0) {
+                    const merged = [...order];
+                    DEFAULT_SIDEBAR_ORDER.forEach((p) => { if (!merged.includes(p)) merged.push(p); });
+                    setSidebarOrder(merged);
+                } else {
+                    setSidebarOrder(DEFAULT_SIDEBAR_ORDER);
+                }
                 localStorage.setItem('oneqr_business_name', rest.name);
 
                 // Subscribe to orders
@@ -151,12 +180,46 @@ export default function Sidebar() {
         };
     }, []);
 
+    useEffect(() => {
+        const check = () => setIsDraggable(typeof window !== 'undefined' && window.innerWidth >= 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
     const isActive = (path: string) => {
-        if (path === '/admin') {
-            return pathname === '/admin';
-        }
+        if (path === '/admin') return pathname === '/admin';
+        if (path === '/admin/settings') return pathname?.startsWith('/admin/settings') && pathname !== '/admin/settings/billing';
         return pathname?.startsWith(path);
     };
+
+    const orderedNavItems = sidebarOrder
+        .map((path) => NAV_ITEMS.find((n) => n.path === path))
+        .filter(Boolean) as typeof NAV_ITEMS;
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(index));
+    };
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+    const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        const from = draggedIndex;
+        setDraggedIndex(null);
+        if (from == null || from === dropIndex) return;
+        const pathOrder = orderedNavItems.map((i) => i.path);
+        const [removed] = pathOrder.splice(from, 1);
+        pathOrder.splice(dropIndex, 0, removed);
+        setSidebarOrder(pathOrder);
+        if (restaurantId) {
+            createClient().from('restaurants').update({ sidebar_order: pathOrder }).eq('id', restaurantId).then(() => {});
+        }
+    };
+    const handleDragEnd = () => setDraggedIndex(null);
 
     const [isMobileExpanded, setIsMobileExpanded] = useState(false);
 
@@ -191,76 +254,57 @@ export default function Sidebar() {
                 </div>
 
                 <nav className="sidebar-nav" style={{ marginTop: '20px' }}>
-                    <Link href="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-chart-pie"></i></span>
-                        <span>Panel</span>
-                    </Link>
-                    <Link href="/admin/orders" className={`nav-item ${isActive('/admin/orders') ? 'active' : ''}`} style={{ position: 'relative' }}>
-                        <span className="nav-icon"><i className="fa-solid fa-bell"></i></span>
-                        <span>Siparişler</span>
-                        {unreadCount > 0 && (
-                            <span style={{
-                                position: 'absolute',
-                                right: '12px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: '#EF4444',
-                                color: 'white',
-                                borderRadius: '999px',
-                                padding: '2px 8px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
-                            }}>
-                                {unreadCount}
-                            </span>
-                        )}
-                    </Link>
-                    <Link href="/admin/tables" className={`nav-item ${isActive('/admin/tables') ? 'active' : ''}`} style={{ position: 'relative' }}>
-                        <span className="nav-icon"><i className="fa-solid fa-utensils"></i></span>
-                        <span>Restoran Siparişleri</span>
-                        {unreadRestaurantCount > 0 && (
-                            <span style={{
-                                position: 'absolute',
-                                right: '12px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: '#EF4444',
-                                color: 'white',
-                                borderRadius: '999px',
-                                padding: '2px 8px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
-                            }}>
-                                {unreadRestaurantCount}
-                            </span>
-                        )}
-                    </Link>
-                    <Link href="/admin/menu" className={`nav-item ${isActive('/admin/menu') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-list"></i></span>
-                        <span>Menü Yönetimi</span>
-                    </Link>
-                    <Link href="/admin/report" className={`nav-item ${isActive('/admin/report') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-chart-bar"></i></span>
-                        <span>Restoran Raporu</span>
-                    </Link>
-                    <Link href="/admin/qr" className={`nav-item ${isActive('/admin/qr') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-qrcode"></i></span>
-                        <span>QR Kodlar</span>
-                    </Link>
-                    <Link href="/admin/theme" className={`nav-item ${isActive('/admin/theme') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-palette"></i></span>
-                        <span>Tema</span>
-                    </Link>
-                    <Link href="/admin/settings/billing" className={`nav-item ${isActive('/admin/settings/billing') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-credit-card"></i></span>
-                        <span>Abonelik</span>
-                    </Link>
-                    <Link href="/admin/settings" className={`nav-item ${isActive('/admin/settings') && !isActive('/admin/settings/billing') ? 'active' : ''}`}>
-                        <span className="nav-icon"><i className="fa-solid fa-gear"></i></span>
-                        <span>Ayarlar</span>
-                    </Link>
+                    {orderedNavItems.map((item, index) => {
+                        const badgeCount = item.badge === 'orders' ? unreadCount : item.badge === 'restaurant' ? unreadRestaurantCount : 0;
+                        const content = (
+                            <Link
+                                href={item.path}
+                                className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                                style={{ position: 'relative', display: 'block' }}
+                            >
+                                <span className="nav-icon"><i className={`fa-solid ${item.icon}`}></i></span>
+                                <span>{item.label}</span>
+                                {badgeCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        right: '12px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: '#EF4444',
+                                        color: 'white',
+                                        borderRadius: '999px',
+                                        padding: '2px 8px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                                    }}>
+                                        {badgeCount}
+                                    </span>
+                                )}
+                            </Link>
+                        );
+                        if (isDraggable) {
+                            return (
+                                <div
+                                    key={item.path}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    style={{
+                                        cursor: 'grab',
+                                        opacity: draggedIndex === index ? 0.5 : 1,
+                                        marginBottom: '2px'
+                                    }}
+                                    title="Sıralamak için sürükleyin"
+                                >
+                                    {content}
+                                </div>
+                            );
+                        }
+                        return <div key={item.path}>{content}</div>;
+                    })}
                 </nav>
                 <div className="sidebar-footer">
                     <div
