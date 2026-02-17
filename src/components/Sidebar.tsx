@@ -114,8 +114,10 @@ export default function Sidebar() {
                             filter: `restaurant_id=eq.${rest.id}`
                         },
                         (payload) => {
-                            const newOrder = payload.new as { source?: string };
-                            const isRestaurantOrder = newOrder?.source === 'restaurant';
+                            const newOrder = payload.new as { source?: string; table_number?: number | null };
+                            const isRestaurantOrder =
+                                newOrder?.source === 'restaurant' ||
+                                (typeof newOrder?.table_number === 'number' && newOrder.table_number > 0);
 
                             // Play sound 5 times when new order arrives
                             const REPEAT_COUNT = 5;
@@ -124,7 +126,7 @@ export default function Sidebar() {
                                 setTimeout(() => playNotificationSound(), i * DELAY_MS);
                             }
 
-                            // Badge: restoran siparişi → Restoran Siparişleri, diğer → Siparişler
+                            // Badge: restoran siparişi → Restoran Siparişleri, diğer → Siparişler (anında güncelleme)
                             if (isRestaurantOrder) {
                                 if (window.location.pathname !== '/admin/tables') {
                                     setUnreadRestaurantCount(prev => prev + 1);
