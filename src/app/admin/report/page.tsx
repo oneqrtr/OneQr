@@ -9,6 +9,7 @@ interface Order {
     table_number?: number | null;
     total_amount: number;
     status: string;
+    payment_method?: string;
 }
 
 export default function ReportPage() {
@@ -48,7 +49,7 @@ export default function ReportPage() {
 
             const { data: ordersData } = await supabase
                 .from('orders')
-                .select('id, table_number, total_amount, status')
+                .select('id, table_number, total_amount, status, payment_method')
                 .eq('restaurant_id', rest.id)
                 .eq('source', 'restaurant')
                 .gte('created_at', startOfDay.toISOString())
@@ -77,6 +78,15 @@ export default function ReportPage() {
     });
     const grandTotal = orders.reduce((sum, o) => sum + o.total_amount, 0);
     const totalCount = orders.length;
+
+    const paymentBreakdown: Record<string, number> = {};
+    orders.forEach((o) => {
+        const method = o.payment_method === 'credit_card' ? 'credit_card' : o.payment_method === 'cash' ? 'cash' : 'other';
+        paymentBreakdown[method] = (paymentBreakdown[method] || 0) + o.total_amount;
+    });
+    const cashTotal = paymentBreakdown.cash || 0;
+    const cardTotal = paymentBreakdown.credit_card || 0;
+    const otherPaymentTotal = paymentBreakdown.other || 0;
 
     return (
         <>
@@ -118,6 +128,20 @@ export default function ReportPage() {
                                 <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '4px' }}>Günlük Ciro</div>
                                 <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#059669' }}>{grandTotal.toLocaleString('tr-TR')} ₺</div>
                             </div>
+                            <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px' }}>
+                                <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '4px' }}>Nakit satış</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#047857' }}>{cashTotal.toLocaleString('tr-TR')} ₺</div>
+                            </div>
+                            <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px' }}>
+                                <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '4px' }}>Kart satışı</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1D4ED8' }}>{cardTotal.toLocaleString('tr-TR')} ₺</div>
+                            </div>
+                            {otherPaymentTotal > 0 && (
+                                <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px' }}>
+                                    <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '4px' }}>Diğer ödeme</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#6B7280' }}>{otherPaymentTotal.toLocaleString('tr-TR')} ₺</div>
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>

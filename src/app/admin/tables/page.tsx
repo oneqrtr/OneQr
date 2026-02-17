@@ -37,6 +37,7 @@ export default function TablesPage() {
     const [restaurantSlug, setRestaurantSlug] = useState('');
     const [orders, setOrders] = useState<Order[]>([]);
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [orderToClose, setOrderToClose] = useState<Order | null>(null);
     const printFrameRef = useRef<HTMLIFrameElement>(null);
 
     const isSameDay = (d1: Date, d2: Date) =>
@@ -165,15 +166,23 @@ export default function TablesPage() {
         setTimeout(() => iframe.contentWindow?.print(), 500);
     };
 
-    const closeOrder = async (order: Order) => {
-        if (!confirm('Bu siparişi kapatmak istediğinize emin misiniz? (Ödeme alındı)')) return;
+    const closeOrder = (order: Order) => {
+        setOrderToClose(order);
+    };
+
+    const confirmCloseWithPayment = async (paymentMethod: 'cash' | 'credit_card') => {
+        if (!orderToClose) return;
         const supabase = createClient();
-        const { error } = await supabase.from('orders').update({ status: 'completed' }).eq('id', order.id);
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'completed', payment_method: paymentMethod })
+            .eq('id', orderToClose.id);
         if (error) {
             alert('Güncelleme hatası: ' + error.message);
             return;
         }
-        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'completed' } : o)));
+        setOrders((prev) => prev.map((o) => (o.id === orderToClose.id ? { ...o, status: 'completed', payment_method: paymentMethod } : o)));
+        setOrderToClose(null);
     };
 
     const formatTime = (dateString: string) =>
@@ -284,6 +293,92 @@ export default function TablesPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Ödeme yöntemi seç modal */}
+                {orderToClose && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 100,
+                            background: 'rgba(0,0,0,0.4)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '16px'
+                        }}
+                        onClick={() => setOrderToClose(null)}
+                    >
+                        <div
+                            style={{
+                                background: 'white',
+                                borderRadius: '16px',
+                                padding: '24px',
+                                maxWidth: '360px',
+                                width: '100%',
+                                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '8px' }}>Siparişi kapat</div>
+                            <div style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '16px' }}>
+                                {orderToClose.customer_name} · {orderToClose.total_amount} ₺ — Ödeme nasıl alındı?
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => confirmCloseWithPayment('cash')}
+                                    style={{
+                                        flex: 1,
+                                        padding: '14px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        background: '#ECFDF5',
+                                        color: '#047857',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        fontSize: '1rem'
+                                    }}
+                                >
+                                    <i className="fa-solid fa-money-bill-wave" style={{ marginRight: '8px' }} /> Nakit
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => confirmCloseWithPayment('credit_card')}
+                                    style={{
+                                        flex: 1,
+                                        padding: '14px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        background: '#EFF6FF',
+                                        color: '#1D4ED8',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        fontSize: '1rem'
+                                    }}
+                                >
+                                    <i className="fa-solid fa-credit-card" style={{ marginRight: '8px' }} /> Kart
+                                </button>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setOrderToClose(null)}
+                                style={{
+                                    marginTop: '12px',
+                                    width: '100%',
+                                    padding: '10px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#6B7280',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                İptal
+                            </button>
+                        </div>
                     </div>
                 )}
 
