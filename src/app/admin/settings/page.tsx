@@ -12,6 +12,7 @@ export default function SettingsPage() {
 
     // Notification & Printer States
     const [isOrdersEnabled, setIsOrdersEnabled] = useState(true);
+    const [tableCount, setTableCount] = useState(10);
     const [notificationSound, setNotificationSound] = useState('ding');
     const [printerHeader, setPrinterHeader] = useState('');
     const [printerFooter, setPrinterFooter] = useState('');
@@ -81,6 +82,7 @@ export default function SettingsPage() {
 
                 // Orders
                 setIsOrdersEnabled(rest.is_order_enabled ?? true);
+                setTableCount(rest.table_count ?? 10);
 
                 // Notification & Printer
                 setNotificationSound(rest.notification_sound || 'ding');
@@ -147,6 +149,7 @@ export default function SettingsPage() {
 
                 // theme_color managed in /admin/theme
                 is_order_enabled: isOrdersEnabled,
+                table_count: tableCount,
                 notification_sound: notificationSound,
                 printer_header: printerHeader,
                 printer_footer: printerFooter,
@@ -300,6 +303,20 @@ export default function SettingsPage() {
                                         onChange={(e) => setIsOrdersEnabled(e.target.checked)}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: '16px' }}>
+                                <label className="form-label">Masa Sayısı (Restoran içi sipariş)</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={99}
+                                    value={tableCount}
+                                    onChange={(e) => setTableCount(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
+                                    className="form-input"
+                                    style={{ maxWidth: '120px' }}
+                                />
+                                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Restoran Siparişleri ekranında gösterilecek masa adedi (1–99).</div>
                             </div>
 
                             {/* Payment Methods Sub-Section */}

@@ -546,6 +546,8 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                 ? `Restoran içi - Masa: ${customerInfo.tableNumber}${customerInfo.orderNote ? '\nNot: ' + customerInfo.orderNote : ''}`
                 : addressDetail;
 
+            const tableNum = isRestaurantMode ? (parseInt(customerInfo.tableNumber, 10) || null) : null;
+
             const { data, error } = await supabase
                 .from('orders')
                 .insert({
@@ -560,7 +562,8 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                     payment_method: customerInfo.paymentMethod,
                     payment_provider: customerInfo.paymentMethod === 'meal_card' ? customerInfo.mealCardProvider : null,
                     status: 'pending',
-                    source: orderSource
+                    source: orderSource,
+                    ...(tableNum != null && { table_number: tableNum })
                 })
                 .select()
                 .single();

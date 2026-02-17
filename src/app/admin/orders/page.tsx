@@ -420,7 +420,6 @@ export default function OrdersPage() {
     };
 
     const externalOrders = orders.filter(o => o.source !== 'restaurant');
-    const restaurantOrders = orders.filter(o => o.source === 'restaurant');
 
     const renderOrderCard = (order: Order) => (
         <div key={order.id} style={{
@@ -563,39 +562,15 @@ export default function OrdersPage() {
             {loading ? (
                 <div>Yükleniyor...</div>
             ) : (
-                <>
-                    <section style={{ marginBottom: '32px' }}>
-                        <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#374151', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <i className="fa-solid fa-globe" style={{ color: '#2563EB' }}></i>
-                            Gelen Siparişler <span style={{ fontWeight: 500, color: '#6B7280', fontSize: '0.9rem' }}>(online / paket)</span>
-                        </h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                            {externalOrders.length === 0 ? (
-                                <div style={{ padding: '32px', textAlign: 'center', background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', color: '#6B7280' }}>
-                                    Bu tarihte dış sipariş yok.
-                                </div>
-                            ) : (
-                                externalOrders.map(renderOrderCard)
-                            )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                    {externalOrders.length === 0 ? (
+                        <div style={{ padding: '40px', textAlign: 'center', background: 'white', borderRadius: '12px', color: '#6B7280' }}>
+                            Bu tarihte sipariş bulunmuyor.
                         </div>
-                    </section>
-
-                    <section>
-                        <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#374151', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <i className="fa-solid fa-utensils" style={{ color: '#059669' }}></i>
-                            Restoran Siparişleri
-                        </h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                            {restaurantOrders.length === 0 ? (
-                                <div style={{ padding: '32px', textAlign: 'center', background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', color: '#6B7280' }}>
-                                    Bu tarihte restoran içi sipariş yok.
-                                </div>
-                            ) : (
-                                restaurantOrders.map(renderOrderCard)
-                            )}
-                        </div>
-                    </section>
-                </>
+                    ) : (
+                        externalOrders.map(renderOrderCard)
+                    )}
+                </div>
             )}
 
             {/* Print functionality is handled via direct window.print() */}

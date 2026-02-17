@@ -206,9 +206,17 @@ export default function Sidebar() {
                             </span>
                         )}
                     </Link>
-                    <Link href="/admin/menu" className={`nav-item ${isActive('/admin/menu') ? 'active' : ''}`}>
+                    <Link href="/admin/tables" className={`nav-item ${isActive('/admin/tables') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-utensils"></i></span>
+                        <span>Restoran Siparişleri</span>
+                    </Link>
+                    <Link href="/admin/menu" className={`nav-item ${isActive('/admin/menu') ? 'active' : ''}`}>
+                        <span className="nav-icon"><i className="fa-solid fa-list"></i></span>
                         <span>Menü Yönetimi</span>
+                    </Link>
+                    <Link href="/admin/report" className={`nav-item ${isActive('/admin/report') ? 'active' : ''}`}>
+                        <span className="nav-icon"><i className="fa-solid fa-chart-bar"></i></span>
+                        <span>Restoran Raporu</span>
                     </Link>
                     <Link href="/admin/qr" className={`nav-item ${isActive('/admin/qr') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-qrcode"></i></span>
