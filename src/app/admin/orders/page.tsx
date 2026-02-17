@@ -251,6 +251,8 @@ export default function OrdersPage() {
                     .col-qty { width: 20%; text-align: left; }
                     .col-name { width: 55%; text-align: left; }
                     .col-price { width: 25%; text-align: right; }
+                    .receipt-extra { font-size: 18px; font-weight: bold; font-style: italic; margin-top: 2px; line-height: 1.2; }
+                    .receipt-excluded { color: #000; font-style: normal; }
                     
                     .total-row { display: flex; justify-content: space-between; font-size: 26px; font-weight: 900; margin-top: 10px; }
                     .payment-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-top: 5px; }
@@ -295,8 +297,8 @@ export default function OrdersPage() {
                         <div class="col-qty">${item.quantity}</div>
                         <div class="col-name">
                             ${item.name}
-                            ${variants ? `<div style="font-size: 14px; font-weight: normal; font-style: italic;">+ ${variants}</div>` : ''}
-                            ${excluded ? `<div style="font-size: 13px; font-weight: normal; color: #991B1B;">Çıkar: ${excluded}</div>` : ''}
+                            ${variants ? `<div class="receipt-extra">+ ${variants}</div>` : ''}
+                            ${excluded ? `<div class="receipt-extra receipt-excluded">Çıkar: ${excluded}</div>` : ''}
                         </div>
                         <div class="col-price">${item.price * item.quantity} ₺</div>
                     </div>
