@@ -10,7 +10,8 @@ export default function AdminDashboard() {
         activeProducts: 0,
         categoryCount: 0,
         dailyVisitors: 0,
-        mostViewedProduct: null as { product_name: string; view_count: number } | null
+        mostViewedProduct: null as { product_name: string; view_count: number } | null,
+        topOrderedProducts: [] as { name: string; totalQuantity: number }[]
     });
     const [subscription, setSubscription] = useState<{
         plan: string;
@@ -89,12 +90,32 @@ export default function AdminDashboard() {
                     const { data: topProductData } = await supabase.rpc('get_most_viewed_product', { target_restaurant_id: restaurant.id });
                     const topProduct = topProductData && topProductData.length > 0 ? topProductData[0] : null;
 
+                    // D. En çok sipariş verilen ürünler (orders -> items aggregate)
+                    const { data: ordersData } = await supabase
+                        .from('orders')
+                        .select('items')
+                        .eq('restaurant_id', restaurant.id);
+                    const quantityByProduct: Record<string, number> = {};
+                    (ordersData || []).forEach((row: { items: unknown }) => {
+                        const items = Array.isArray(row.items) ? row.items : (typeof row.items === 'string' ? (() => { try { return JSON.parse(row.items); } catch { return []; } })() : []);
+                        items.forEach((item: { name?: string; quantity?: number }) => {
+                            const name = item?.name || 'Belirsiz';
+                            const qty = typeof item?.quantity === 'number' ? item.quantity : 0;
+                            quantityByProduct[name] = (quantityByProduct[name] || 0) + qty;
+                        });
+                    });
+                    const topOrderedProducts = Object.entries(quantityByProduct)
+                        .map(([name, totalQuantity]) => ({ name, totalQuantity }))
+                        .sort((a, b) => b.totalQuantity - a.totalQuantity)
+                        .slice(0, 10);
+
                     setStats({
                         totalViews: viewCount || 0,
                         activeProducts: realProductCount,
                         categoryCount: categoryIds.length,
                         dailyVisitors: dailyCount || 0,
-                        mostViewedProduct: topProduct
+                        mostViewedProduct: topProduct,
+                        topOrderedProducts
                     });
                 }
             } catch (error) {
@@ -206,11 +227,32 @@ export default function AdminDashboard() {
                                 <div style={{ padding: '16px', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
                                     <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>QR Tarama Sayısı</div>
                                     <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
-                                        {/* Assuming QR scan is similar to view menu for now, or we can separate if we use specific query parameters for QR scans in future */}
                                         {stats.totalViews}
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Toplam Erişim</div>
                                 </div>
+                            </div>
+
+                            {/* En çok sipariş verilen ürünler */}
+                            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #E5E7EB' }}>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
+                                    En Çok Sipariş Verilen Ürünler
+                                </div>
+                                {stats.topOrderedProducts.length === 0 ? (
+                                    <div style={{ fontSize: '0.9rem', color: '#9CA3AF' }}>Henüz sipariş verisi yok.</div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {stats.topOrderedProducts.map((p, i) => (
+                                            <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: i < 3 ? '#F0FDF4' : '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: '#111827', fontWeight: 500 }}>
+                                                    <span style={{ width: '22px', height: '22px', borderRadius: '6px', background: i === 0 ? '#F59E0B' : i === 1 ? '#94A3B8' : i === 2 ? '#CD7F32' : '#E5E7EB', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>{i + 1}</span>
+                                                    {p.name}
+                                                </span>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#059669' }}>{p.totalQuantity} adet</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </>
