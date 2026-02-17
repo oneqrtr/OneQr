@@ -4,6 +4,7 @@ import './menu.css';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import Link from 'next/link';
 import ContactFab from '@/components/ContactFab';
@@ -73,9 +74,11 @@ interface Variant {
     is_available: boolean;
 }
 
-export default function PublicMenuPage() {
+export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp }: { slug?: string; restaurantMode?: boolean } = {}) {
     const params = useParams();
-    const slug = params?.slug as string;
+    const pathname = usePathname();
+    const slug = slugProp ?? (params?.slug as string);
+    const isRestaurantMode = restaurantModeProp ?? (pathname?.startsWith('/restoran') ?? false);
 
     const [loading, setLoading] = useState(true);
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -149,7 +152,9 @@ export default function PublicMenuPage() {
         isSite: false,
         siteName: '',
         block: '',
-
+        // Restoran içi
+        tableNumber: '',
+        orderNote: '',
         paymentMethod: 'cash' as string, // 'cash', 'credit_card', 'meal_card', 'iban'
         mealCardProvider: '', // If paymentMethod is 'meal_card'
         rememberMe: true, // New
@@ -536,21 +541,26 @@ export default function PublicMenuPage() {
                 addressDetail += '\nNot: ' + customerInfo.addressDetail;
             }
 
+            const orderSource = isRestaurantMode ? 'restaurant' : 'system';
+            const orderAddressDetail = isRestaurantMode
+                ? `Restoran içi - Masa: ${customerInfo.tableNumber}${customerInfo.orderNote ? '\nNot: ' + customerInfo.orderNote : ''}`
+                : addressDetail;
+
             const { data, error } = await supabase
                 .from('orders')
                 .insert({
                     restaurant_id: restaurant.id,
                     customer_name: customerInfo.fullName,
-                    customer_phone: customerInfo.phone,
-                    address_detail: addressDetail,
-                    location_lat: customerInfo.locationLat,
-                    location_lng: customerInfo.locationLng,
+                    customer_phone: customerInfo.phone || null,
+                    address_detail: orderAddressDetail,
+                    location_lat: isRestaurantMode ? null : customerInfo.locationLat,
+                    location_lng: isRestaurantMode ? null : customerInfo.locationLng,
                     items: orderItems,
                     total_amount: totalAmount,
                     payment_method: customerInfo.paymentMethod,
                     payment_provider: customerInfo.paymentMethod === 'meal_card' ? customerInfo.mealCardProvider : null,
                     status: 'pending',
-                    source: 'system' // or 'qr'
+                    source: orderSource
                 })
                 .select()
                 .single();
@@ -1291,8 +1301,42 @@ export default function PublicMenuPage() {
                         { }
                         {cart.length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>Sipariş Bilgileri</h3>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>{isRestaurantMode ? 'Restoran İçi Sipariş' : 'Sipariş Bilgileri'}</h3>
 
+                                {isRestaurantMode ? (
+                                    <>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Ad Soyad</label>
+                                            <input type="text" value={customerInfo.fullName} onChange={e => setCustomerInfo({ ...customerInfo, fullName: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Adınız Soyadınız" />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Masa No</label>
+                                            <input type="text" value={customerInfo.tableNumber} onChange={e => setCustomerInfo({ ...customerInfo, tableNumber: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Örn: 5" />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Telefon <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(opsiyonel)</span></label>
+                                            <input type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="05XX XXX XX XX" />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Sipariş Notu <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(opsiyonel)</span></label>
+                                            <textarea value={customerInfo.orderNote} onChange={e => setCustomerInfo({ ...customerInfo, orderNote: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Örn: Acil getirir misiniz?" rows={2} />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Ödeme</label>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <label style={{ flex: 1, padding: '12px', border: '1px solid ' + (customerInfo.paymentMethod === 'cash' ? restaurant.theme_color : '#E5E7EB'), borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'cash' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <input type="radio" name="pay_restoran" value="cash" checked={customerInfo.paymentMethod === 'cash'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'cash' })} />
+                                                    <span>Nakit</span>
+                                                </label>
+                                                <label style={{ flex: 1, padding: '12px', border: '1px solid ' + (customerInfo.paymentMethod === 'credit_card' ? restaurant.theme_color : '#E5E7EB'), borderRadius: '8px', cursor: 'pointer', background: customerInfo.paymentMethod === 'credit_card' ? '#F9FAFB' : 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <input type="radio" name="pay_restoran" value="credit_card" checked={customerInfo.paymentMethod === 'credit_card'} onChange={() => setCustomerInfo({ ...customerInfo, paymentMethod: 'credit_card' })} />
+                                                    <span>Kredi Kartı</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Ad Soyad</label>
                                     <input
@@ -1522,11 +1566,13 @@ export default function PublicMenuPage() {
 
                                     </div>
                                 </div>
+                                    </>
+                                )}
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
                                     <button
                                         onClick={submitSystemOrder}
-                                        disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
+                                        disabled={(isRestaurantMode ? !(customerInfo.fullName && customerInfo.tableNumber) : !(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))) || isSubmitting}
                                         style={{
                                             background: '#F59E0B',
                                             color: 'white',
@@ -1535,13 +1581,12 @@ export default function PublicMenuPage() {
                                             border: 'none',
                                             fontSize: '1rem',
                                             fontWeight: 700,
-
-                                            cursor: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 'pointer' : 'not-allowed',
+                                            cursor: (isRestaurantMode ? (customerInfo.fullName && customerInfo.tableNumber) : (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))) && !isSubmitting ? 'pointer' : 'not-allowed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             gap: '8px',
-                                            opacity: (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) && !isSubmitting ? 1 : 0.6,
+                                            opacity: (isRestaurantMode ? (customerInfo.fullName && customerInfo.tableNumber) : (customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block)))) && !isSubmitting ? 1 : 0.6,
                                             width: '100%'
                                         }}
                                     >
@@ -1553,7 +1598,7 @@ export default function PublicMenuPage() {
                                         {isSubmitting ? 'Sipariş Oluşturuluyor...' : 'Siparişi Tamamla'}
                                     </button>
 
-                                    {restaurant.whatsapp_number && (
+                                    {restaurant.whatsapp_number && !isRestaurantMode && (
                                         <button
                                             onClick={sendWhatsappOrder}
                                             disabled={!(customerInfo.fullName && customerInfo.phone && customerInfo.neighborhood && customerInfo.street && customerInfo.buildingNumber && customerInfo.floor && customerInfo.doorNumber && (!customerInfo.isSite || (customerInfo.siteName && customerInfo.block))) || isSubmitting}
@@ -1799,4 +1844,9 @@ export default function PublicMenuPage() {
 
         </div >
     );
+}
+
+export default function PublicMenuPage() {
+    const params = useParams();
+    return <MenuContent slug={params?.slug as string} restaurantMode={false} />;
 }

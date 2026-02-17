@@ -17,6 +17,7 @@ interface OrderItem {
 interface Order {
     id: string;
     restaurant_id: string;
+    source?: string; // 'system' | 'restaurant' | 'qr' etc.
     customer_name: string;
     customer_phone?: string;
     address_type?: string;
@@ -418,11 +419,118 @@ export default function OrdersPage() {
         });
     };
 
+    const externalOrders = orders.filter(o => o.source !== 'restaurant');
+    const restaurantOrders = orders.filter(o => o.source === 'restaurant');
+
+    const renderOrderCard = (order: Order) => (
+        <div key={order.id} style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid #E5E7EB',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+        }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#111827' }}>
+                        {order.order_number && (
+                            <span style={{ color: '#F59E0B', marginRight: '8px' }}>#{order.order_number}</span>
+                        )}
+                        {order.customer_name}
+                        {order.customer_order_count && (
+                            <span style={{ fontWeight: 400, color: '#6B7280', fontSize: '0.9rem', marginLeft: '6px' }}>
+                                ({order.customer_order_count})
+                            </span>
+                        )}
+                    </div>
+                    <div style={{ color: '#6B7280', fontSize: '0.9rem' }}>{formatDate(order.created_at)}</div>
+                    <div style={{ color: '#374151', fontSize: '0.9rem', marginTop: '4px' }}>
+                        <i className="fa-solid fa-phone" style={{ marginRight: '6px', color: '#9CA3AF' }}></i>
+                        {order.customer_phone || '-'}
+                    </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#059669' }}>{order.total_amount} ₺</div>
+                    <div style={{
+                        background: order.payment_method === 'cash' ? '#ECFDF5' : '#EFF6FF',
+                        color: order.payment_method === 'cash' ? '#047857' : '#1D4ED8',
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-block', marginTop: '4px'
+                    }}>
+                        {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
+                <h4 style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>Sipariş Detayı</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {order.items.map((item: OrderItem, idx: number) => (
+                        <div key={idx} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '8px 10px', borderRadius: '6px', fontSize: '0.9rem', color: '#374151' }}>
+                            <div>
+                                <strong style={{ color: '#111827' }}>{item.quantity}x</strong> {item.name}
+                                {(item.selected_variants && item.selected_variants.length > 0) || (item.variantName) ? (
+                                    <span style={{ fontStyle: 'italic', color: '#059669' }}> + {item.selected_variants?.map((v: { name: string }) => v.name).join(', ') || item.variantName}</span>
+                                ) : null}
+                            </div>
+                            {item.excluded_ingredients && item.excluded_ingredients.length > 0 && (
+                                <div style={{ fontSize: '0.8rem', color: '#DC2626', marginTop: '4px' }}>
+                                    Çıkar: {item.excluded_ingredients.join(', ')}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', color: '#4B5563' }}>
+                <i className="fa-solid fa-location-dot" style={{ marginRight: '8px', color: '#EF4444' }}></i>
+                {order.address_detail}
+                {order.address_type === 'location' && (
+                    <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${order.location_lat},${order.location_lng}`}
+                        target="_blank"
+                        style={{ color: '#2563EB', marginLeft: '8px', fontWeight: 500 }}
+                    >
+                        Haritada Gör
+                    </a>
+                )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px' }}>
+                <button
+                    onClick={() => handlePrintClick(order)}
+                    style={{
+                        background: 'white', border: '1px solid #D1D5DB', padding: '10px 20px', borderRadius: '8px',
+                        color: '#374151', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                    }}
+                >
+                    <i className="fa-solid fa-print"></i> Yazdır
+                </button>
+
+                {order.location_lat && order.location_lng && (
+                    <button
+                        onClick={() => handleSendLocation(order)}
+                        style={{
+                            background: '#25D366', border: 'none', padding: '10px 20px', borderRadius: '8px',
+                            color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        <i className="fa-brands fa-whatsapp"></i> Konum Gönder
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Gelen Siparişler</h1>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Siparişler</h1>
 
                     <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', overflow: 'hidden' }}>
                         <button
@@ -455,117 +563,39 @@ export default function OrdersPage() {
             {loading ? (
                 <div>Yükleniyor...</div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                    {orders.length === 0 ? (
-                        <div style={{ padding: '40px', textAlign: 'center', background: 'white', borderRadius: '12px', color: '#6B7280' }}>
-                            Henüz sipariş bulunmuyor.
+                <>
+                    <section style={{ marginBottom: '32px' }}>
+                        <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#374151', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="fa-solid fa-globe" style={{ color: '#2563EB' }}></i>
+                            Gelen Siparişler <span style={{ fontWeight: 500, color: '#6B7280', fontSize: '0.9rem' }}>(online / paket)</span>
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                            {externalOrders.length === 0 ? (
+                                <div style={{ padding: '32px', textAlign: 'center', background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', color: '#6B7280' }}>
+                                    Bu tarihte dış sipariş yok.
+                                </div>
+                            ) : (
+                                externalOrders.map(renderOrderCard)
+                            )}
                         </div>
-                    ) : (
-                        orders.map(order => (
-                            <div key={order.id} style={{
-                                background: 'white',
-                                borderRadius: '12px',
-                                padding: '20px',
-                                border: '1px solid #E5E7EB',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '16px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#111827' }}>
-                                            {order.order_number && (
-                                                <span style={{ color: '#F59E0B', marginRight: '8px' }}>#{order.order_number}</span>
-                                            )}
-                                            {order.customer_name}
-                                            {order.customer_order_count && (
-                                                <span style={{ fontWeight: 400, color: '#6B7280', fontSize: '0.9rem', marginLeft: '6px' }}>
-                                                    ({order.customer_order_count})
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div style={{ color: '#6B7280', fontSize: '0.9rem' }}>{formatDate(order.created_at)}</div>
-                                        <div style={{ color: '#374151', fontSize: '0.9rem', marginTop: '4px' }}>
-                                            <i className="fa-solid fa-phone" style={{ marginRight: '6px', color: '#9CA3AF' }}></i>
-                                            {order.customer_phone || '-'}
-                                        </div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#059669' }}>{order.total_amount} ₺</div>
-                                        <div style={{
-                                            background: order.payment_method === 'cash' ? '#ECFDF5' : '#EFF6FF',
-                                            color: order.payment_method === 'cash' ? '#047857' : '#1D4ED8',
-                                            padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-block', marginTop: '4px'
-                                        }}>
-                                            {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
-                                        </div>
-                                    </div>
-                                </div>
+                    </section>
 
-                                <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
-                                    <h4 style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>Sipariş Detayı</h4>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        {order.items.map((item: OrderItem, idx: number) => (
-                                            <div key={idx} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '8px 10px', borderRadius: '6px', fontSize: '0.9rem', color: '#374151' }}>
-                                                <div>
-                                                    <strong style={{ color: '#111827' }}>{item.quantity}x</strong> {item.name}
-                                                    {(item.selected_variants && item.selected_variants.length > 0) || (item.variantName) ? (
-                                                        <span style={{ fontStyle: 'italic', color: '#059669' }}> + {item.selected_variants?.map((v: { name: string }) => v.name).join(', ') || item.variantName}</span>
-                                                    ) : null}
-                                                </div>
-                                                {item.excluded_ingredients && item.excluded_ingredients.length > 0 && (
-                                                    <div style={{ fontSize: '0.8rem', color: '#DC2626', marginTop: '4px' }}>
-                                                        Çıkar: {item.excluded_ingredients.join(', ')}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
+                    <section>
+                        <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#374151', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="fa-solid fa-utensils" style={{ color: '#059669' }}></i>
+                            Restoran Siparişleri
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                            {restaurantOrders.length === 0 ? (
+                                <div style={{ padding: '32px', textAlign: 'center', background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', color: '#6B7280' }}>
+                                    Bu tarihte restoran içi sipariş yok.
                                 </div>
-
-                                <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', color: '#4B5563' }}>
-                                    <i className="fa-solid fa-location-dot" style={{ marginRight: '8px', color: '#EF4444' }}></i>
-                                    {order.address_detail}
-                                    {order.address_type === 'location' && (
-                                        <a
-                                            href={`https://www.google.com/maps/search/?api=1&query=${order.location_lat},${order.location_lng}`}
-                                            target="_blank"
-                                            style={{ color: '#2563EB', marginLeft: '8px', fontWeight: 500 }}
-                                        >
-                                            Haritada Gör
-                                        </a>
-                                    )}
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px' }}>
-                                    <button
-                                        onClick={() => handlePrintClick(order)}
-                                        style={{
-                                            background: 'white', border: '1px solid #D1D5DB', padding: '10px 20px', borderRadius: '8px',
-                                            color: '#374151', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
-                                        }}
-                                    >
-                                        <i className="fa-solid fa-print"></i> Yazdır
-                                    </button>
-
-                                    {order.location_lat && order.location_lng && (
-                                        <button
-                                            onClick={() => handleSendLocation(order)}
-                                            style={{
-                                                background: '#25D366', border: 'none', padding: '10px 20px', borderRadius: '8px',
-                                                color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                            }}
-                                        >
-                                            <i className="fa-brands fa-whatsapp"></i> Konum Gönder
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+                            ) : (
+                                restaurantOrders.map(renderOrderCard)
+                            )}
+                        </div>
+                    </section>
+                </>
             )}
 
             {/* Print functionality is handled via direct window.print() */}

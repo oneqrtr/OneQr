@@ -45,8 +45,8 @@ export default function Topbar({ title }: { title: string }) {
                                 <span className="btn-label-desktop">Kartvizit</span>
                             </Link>
                         )}
-                        <Link href={`/menu/${slug}`} target="_blank" className="btn-icon-mobile outline" title="Menüyü Gör">
-                            <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                        <Link href={`/restoran/${slug}`} target="_blank" className="btn-icon-mobile outline" title="Restoran içi sipariş menüsü">
+                            <i className="fa-solid fa-utensils"></i>
                             <span className="btn-label-desktop">Menü</span>
                         </Link>
                     </>
