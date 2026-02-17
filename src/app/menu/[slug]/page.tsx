@@ -3,7 +3,7 @@ import './menu.css';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 
 import Link from 'next/link';
@@ -77,8 +77,13 @@ interface Variant {
 export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp }: { slug?: string; restaurantMode?: boolean } = {}) {
     const params = useParams();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const slug = slugProp ?? (params?.slug as string);
-    const isRestaurantMode = restaurantModeProp ?? (pathname?.startsWith('/restoran') ?? false);
+    // mode=online (subdomain veya ?mode=online) → online sipariş (admin/orders). ?masa=X → masa modu (admin/tables)
+    const hasMasaParam = typeof searchParams.get('masa') === 'string' && searchParams.get('masa') !== '';
+    const isOnlineMode = searchParams.get('mode') === 'online';
+    const isRestaurantMode = restaurantModeProp ?? (isOnlineMode ? false : (pathname?.startsWith('/restoran') ?? false) || hasMasaParam);
+    const tableNumberFromUrl = hasMasaParam ? (searchParams.get('masa') ?? '') : null;
 
     const [loading, setLoading] = useState(true);
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -113,6 +118,13 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
         window.addEventListener('beforeinstallprompt', handler);
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
+
+    // Masa numarası URL'den (?masa=X) geliyorsa otomatik doldur
+    useEffect(() => {
+        if (tableNumberFromUrl) {
+            setCustomerInfo(prev => ({ ...prev, tableNumber: tableNumberFromUrl }));
+        }
+    }, [tableNumberFromUrl]);
 
     const handleInstallClick = async () => {
         if (!deferredPrompt) {
@@ -1314,7 +1326,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Masa No</label>
-                                            <input type="text" value={customerInfo.tableNumber} onChange={e => setCustomerInfo({ ...customerInfo, tableNumber: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Örn: 5" />
+                                            <input type="text" value={customerInfo.tableNumber} onChange={e => setCustomerInfo({ ...customerInfo, tableNumber: e.target.value })} readOnly={!!tableNumberFromUrl} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Örn: 5" />
                                         </div>
                                         <div>
                                             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>Telefon <span style={{ fontWeight: 400, color: '#9CA3AF' }}>(opsiyonel)</span></label>

@@ -43,9 +43,10 @@ export function middleware(request: NextRequest) {
             return NextResponse.rewrite(url);
         }
 
-        // Rewrite the URL to the public menu page
-        // e.g. restaurant.oneqr.tr -> /menu/restaurant
-        url.pathname = `/menu/${subdomain}${url.pathname}`;
+        // Subdomain = online sipariş (evden / paket). Rewrite to menu with mode=online
+        // e.g. restaurant.oneqr.tr -> /menu/restaurant?mode=online
+        url.pathname = `/menu/${subdomain}`;
+        url.searchParams.set('mode', 'online');
         return NextResponse.rewrite(url);
     }
 

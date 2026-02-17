@@ -15,9 +15,11 @@ export default function QrPage() {
     const [qrColor, setQrColor] = useState('#000000');
     const [useLogo, setUseLogo] = useState(true);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
-    const [qrType, setQrType] = useState<'menu' | 'card' | 'website'>('menu');
+    const [qrType, setQrType] = useState<'menu' | 'restoran' | 'card' | 'website'>('menu');
     const [plan, setPlan] = useState('freemium');
     const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
+    const [tableCount, setTableCount] = useState(0);
+    const masaQrRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     const supabase = createClient();
 
@@ -32,7 +34,7 @@ export default function QrPage() {
             for (let i = 0; i < 3; i++) {
                 const { data } = await supabase
                     .from('restaurants')
-                    .select('slug, name, logo_url, plan, website_url')
+                    .select('slug, name, logo_url, plan, website_url, table_count')
                     .eq('owner_id', user.id)
                     .maybeSingle();
 
@@ -49,6 +51,7 @@ export default function QrPage() {
                 setLogoUrl(rest.logo_url);
                 setPlan(rest.plan || 'freemium');
                 setWebsiteUrl(rest.website_url || null);
+                setTableCount(Math.min(99, Math.max(0, Number(rest.table_count) || 0)));
             }
         };
         fetchInfo();
@@ -98,8 +101,9 @@ export default function QrPage() {
             pdf.setFontSize(14);
             pdf.setTextColor(100, 100, 100);
             const footerText = qrType === 'menu' ? 'Menüye ulaşmak için kameranızla taratın' :
-                qrType === 'card' ? 'Kartvizite ulaşmak için kameranızla taratın' :
-                    'Web sitesine gitmek için kameranızla taratın';
+                qrType === 'restoran' ? 'Restoran içi sipariş için taratın' :
+                    qrType === 'card' ? 'Kartvizite ulaşmak için kameranızla taratın' :
+                        'Web sitesine gitmek için kameranızla taratın';
             pdf.text(footerText, pdfWidth / 2, y + imgHeight + 15, { align: 'center' });
 
             const fileName = slug ? `OneQr-${slug}-${qrType}.pdf` : `OneQr.pdf`;
@@ -107,6 +111,35 @@ export default function QrPage() {
         } catch (error) {
             console.error('PDF creation failed', error);
             alert('PDF oluşturulurken bir hata oluştu.');
+        }
+    };
+
+    const handleDownloadAllMasaPdf = async () => {
+        if (!slug || tableCount < 1) return;
+        try {
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgSize = 120;
+
+            for (let i = 0; i < tableCount; i++) {
+                const el = masaQrRefs.current[i];
+                if (!el) continue;
+                const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+                const imgData = canvas.toDataURL('image/png');
+                const imgHeight = (canvas.height * imgSize) / canvas.width;
+                const x = (pdfWidth - imgSize) / 2;
+                const y = (pdfHeight - imgHeight) / 2 - 15;
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', x, y, imgSize, imgHeight);
+                pdf.setFontSize(14);
+                pdf.setTextColor(80, 80, 80);
+                pdf.text(`Masa ${i + 1}`, pdfWidth / 2, y + imgHeight + 12, { align: 'center' });
+            }
+            pdf.save(slug ? `OneQr-${slug}-masalar.pdf` : 'OneQr-masalar.pdf');
+        } catch (e) {
+            console.error(e);
+            alert('Masa QR PDF oluşturulurken bir hata oluştu.');
         }
     };
 
@@ -168,8 +201,26 @@ export default function QrPage() {
                                     fontWeight: 500
                                 }}
                             >
+                                <i className="fa-solid fa-globe" style={{ marginRight: '8px' }}></i>
+                                Menü (Online / Paket)
+                            </button>
+
+                            <button
+                                onClick={() => setQrType('restoran')}
+                                style={{
+                                    flex: 1,
+                                    minWidth: '150px',
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: qrType === 'restoran' ? '2px solid #059669' : '1px solid #E5E7EB',
+                                    background: qrType === 'restoran' ? '#ECFDF5' : 'white',
+                                    color: qrType === 'restoran' ? '#047857' : '#6B7280',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                }}
+                            >
                                 <i className="fa-solid fa-utensils" style={{ marginRight: '8px' }}></i>
-                                Menü
+                                Restoran Sipariş Menüsü
                             </button>
 
                             <button
@@ -232,9 +283,10 @@ export default function QrPage() {
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '24px', color: '#111827' }}>{businessName}</div>
                                 <QRCodeSVG
                                     value={
-                                        qrType === 'menu' ? `${baseUrl}/menu/${slug}` :
-                                            qrType === 'card' ? `${baseUrl}/k/${slug}` :
-                                                (websiteUrl || `${baseUrl}/menu/${slug}`)
+                                        qrType === 'menu' ? `https://${slug}.oneqr.tr` :
+                                            qrType === 'restoran' ? `${baseUrl}/restoran/${slug}` :
+                                                qrType === 'card' ? `${baseUrl}/k/${slug}` :
+                                                    (websiteUrl || `https://${slug}.oneqr.tr`)
                                     }
                                     size={250}
                                     level="H"
@@ -249,7 +301,10 @@ export default function QrPage() {
                                     }}
                                 />
                                 <div style={{ marginTop: '24px', fontSize: '0.9rem', color: '#6B7280', fontWeight: 500 }}>
-                                    {qrType === 'menu' ? 'Menüye ulaşmak için taratın' : 'Kartvizite ulaşmak için taratın'}
+                                    {qrType === 'menu' && 'Menüye ulaşmak için taratın'}
+                                    {qrType === 'restoran' && 'Restoran içi sipariş (masa) için taratın'}
+                                    {qrType === 'card' && 'Kartvizite ulaşmak için taratın'}
+                                    {qrType === 'website' && 'Web sitesine gitmek için taratın'}
                                 </div>
                             </div>
                         </div>
@@ -267,6 +322,36 @@ export default function QrPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Masa QR Kodları - ayarlardaki masa sayısına göre */}
+                    {tableCount > 0 && (
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+                            <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px', color: '#111827' }}>Masa QR Kodları</div>
+                            <div style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>Her masa için menü linki (siparişler Restoran Siparişleri sayfasına düşer)</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                                {Array.from({ length: tableCount }, (_, i) => (
+                                    <div
+                                        key={i}
+                                        ref={el => { masaQrRefs.current[i] = el; }}
+                                        style={{ background: '#fafafa', padding: '16px', borderRadius: '12px', border: '1px solid #E5E7EB', textAlign: 'center' }}
+                                    >
+                                        <div style={{ fontWeight: 600, marginBottom: '8px', color: '#374151' }}>Masa {i + 1}</div>
+                                        <QRCodeSVG
+                                            value={`${baseUrl}/menu/${slug}?masa=${i + 1}`}
+                                            size={120}
+                                            level="H"
+                                            fgColor={qrColor}
+                                            imageSettings={useLogo && logoUrl ? { src: logoUrl, height: 28, width: 28, excavate: true } : undefined}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <button type="button" onClick={handleDownloadAllMasaPdf} className="btn btn-primary" style={{ padding: '10px 20px' }}>
+                                <i className="fa-solid fa-file-pdf" style={{ marginRight: '8px' }}></i>
+                                Tüm masa QR'larını PDF olarak indir
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
