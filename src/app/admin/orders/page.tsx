@@ -52,6 +52,7 @@ export default function OrdersPage() {
     const [printerCopyCount, setPrinterCopyCount] = useState(1);
     const [whatsappNumber, setWhatsappNumber] = useState('');
     const [restaurantName, setRestaurantName] = useState('');
+    const [restaurantSlug, setRestaurantSlug] = useState('');
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
@@ -78,7 +79,7 @@ export default function OrdersPage() {
             if (!restId) {
                 const { data: rest, error: restError } = await supabase
                     .from('restaurants')
-                    .select('id, name, printer_header, printer_footer, printer_copy_count, whatsapp_number')
+                    .select('id, name, slug, printer_header, printer_footer, printer_copy_count, whatsapp_number')
                     .eq('owner_id', user.id)
                     .single();
 
@@ -90,6 +91,7 @@ export default function OrdersPage() {
                 restId = rest.id;
                 setRestaurantId(rest.id);
                 setRestaurantName(rest.name || '');
+                setRestaurantSlug(rest.slug || '');
                 setPrinterHeader(rest.printer_header || '');
                 setPrinterFooter(rest.printer_footer || '');
                 setPrinterHeader(rest.printer_header || '');
@@ -252,7 +254,9 @@ export default function OrdersPage() {
                     .payment-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-top: 5px; }
                     
                     .footer { margin-top: 20px; text-align: center; }
-                    .qr-code { width: 120px; height: 120px; margin: 10px auto; display: block; }
+                    .qr-wrap { position: relative; width: 120px; height: 120px; margin: 10px auto; }
+                    .qr-wrap .qr-img { width: 100%; height: 100%; display: block; }
+                    .qr-wrap .qr-logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; object-fit: contain; background: white; padding: 4px; box-sizing: border-box; }
                     .footer-text { font-size: 12px; margin-top: 2px; font-weight: normal; }
                 </style>
             </head>
@@ -260,7 +264,7 @@ export default function OrdersPage() {
                  <div class="center header-title">OneQR - Menü Sistemleri</div>
                  <div class="center separator">${dashLine}</div>
                  
-                 <div class="center rest-name">${restaurantName || 'RESTORAN ADI'}</div>
+                 <div class="center rest-name">${restaurantName}</div>
                  
                  <div class="center separator">${dashLine}</div>
                  
@@ -308,7 +312,10 @@ export default function OrdersPage() {
                 
                 <div class="footer">
                     <div style="font-size: 18px; font-weight: 900;">OneQR.tr</div>
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://oneqr.tr" class="qr-code" alt="QR Code" />
+                    <div class="qr-wrap">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=H&data=${encodeURIComponent(restaurantSlug ? `https://${restaurantSlug}.oneqr.tr` : 'https://oneqr.tr')}" class="qr-img" alt="QR Code" />
+                        <img src="/oneqr-logo.png" class="qr-logo" alt="OneQR" />
+                    </div>
                     <div class="footer-text">oneqr.tr ile oluşturuldu</div>
                     <div class="footer-text">${dateStr}</div>
                 </div>

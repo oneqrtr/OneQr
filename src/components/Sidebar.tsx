@@ -114,8 +114,12 @@ export default function Sidebar() {
                             filter: `restaurant_id=eq.${rest.id}`
                         },
                         (payload) => {
-                            // Play sound always
-                            playNotificationSound();
+                            // Play sound 5 times when new order arrives
+                            const REPEAT_COUNT = 5;
+                            const DELAY_MS = 1200;
+                            for (let i = 0; i < REPEAT_COUNT; i++) {
+                                setTimeout(() => playNotificationSound(), i * DELAY_MS);
+                            }
 
                             // Check if valid date (today) - usually valid since it's realtime insert
                             // Add badge if NOT on orders page
