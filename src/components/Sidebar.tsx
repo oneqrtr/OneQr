@@ -223,13 +223,13 @@ export default function Sidebar() {
                                 right: '12px',
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                background: '#059669',
+                                background: '#EF4444',
                                 color: 'white',
                                 borderRadius: '999px',
                                 padding: '2px 8px',
                                 fontSize: '0.75rem',
                                 fontWeight: 700,
-                                boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
+                                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
                             }}>
                                 {unreadRestaurantCount}
                             </span>
