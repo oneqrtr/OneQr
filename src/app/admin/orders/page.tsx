@@ -276,7 +276,7 @@ export default function OrdersPage() {
                  <div class="customer-block">
                     <span class="customer-label">MÜŞTERİ BİLGİLERİ</span>
                     <div>${order.customer_name}</div>
-                    <div>Tel: ${order.customer_phone || '-'}</div>
+                    ${order.customer_phone ? `<div>Tel: ${order.customer_phone}</div>` : ''}
                     <div style="margin-top: 5px; font-weight: normal;">
                         ${order.address_detail || 'Adres detayı yok'}
                     </div>

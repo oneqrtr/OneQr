@@ -144,7 +144,7 @@ export default function TablesPage() {
             <div class="center separator">${dashLine}</div>
             <div><strong>Masa: ${order.table_number ?? '-'}</strong></div>
             <div>${order.customer_name}</div>
-            <div>Tel: ${order.customer_phone || '-'}</div>
+            ${order.customer_phone ? `<div>Tel: ${order.customer_phone}</div>` : ''}
             <div class="center separator">${dashLine}</div>
             <div class="product-row" style="border-bottom:1px solid #000;padding-bottom:2px;">
                 <div class="col-qty">Adet</div><div class="col-name">Ürün</div><div class="col-price">Tutar</div>
