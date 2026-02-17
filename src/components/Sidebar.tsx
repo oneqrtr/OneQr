@@ -14,6 +14,7 @@ export default function Sidebar() {
 
     // Notification State
     const [unreadCount, setUnreadCount] = useState(0);
+    const [unreadRestaurantCount, setUnreadRestaurantCount] = useState(0);
     const [notificationSound, setNotificationSound] = useState('ding');
     const notificationSoundRef = useRef('ding');
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -25,11 +26,10 @@ export default function Sidebar() {
         notificationSoundRef.current = notificationSound;
     }, [notificationSound]);
 
-    // Reset unread count when on orders page
+    // Reset unread counts when on the relevant page
     useEffect(() => {
-        if (pathname === '/admin/orders') {
-            setUnreadCount(0);
-        }
+        if (pathname === '/admin/orders') setUnreadCount(0);
+        if (pathname === '/admin/tables') setUnreadRestaurantCount(0);
     }, [pathname]);
 
     const playNotificationSound = () => {
@@ -114,6 +114,9 @@ export default function Sidebar() {
                             filter: `restaurant_id=eq.${rest.id}`
                         },
                         (payload) => {
+                            const newOrder = payload.new as { source?: string };
+                            const isRestaurantOrder = newOrder?.source === 'restaurant';
+
                             // Play sound 5 times when new order arrives
                             const REPEAT_COUNT = 5;
                             const DELAY_MS = 1200;
@@ -121,10 +124,15 @@ export default function Sidebar() {
                                 setTimeout(() => playNotificationSound(), i * DELAY_MS);
                             }
 
-                            // Check if valid date (today) - usually valid since it's realtime insert
-                            // Add badge if NOT on orders page
-                            if (window.location.pathname !== '/admin/orders') {
-                                setUnreadCount(prev => prev + 1);
+                            // Badge: restoran siparişi → Restoran Siparişleri, diğer → Siparişler
+                            if (isRestaurantOrder) {
+                                if (window.location.pathname !== '/admin/tables') {
+                                    setUnreadRestaurantCount(prev => prev + 1);
+                                }
+                            } else {
+                                if (window.location.pathname !== '/admin/orders') {
+                                    setUnreadCount(prev => prev + 1);
+                                }
                             }
                         }
                     )
@@ -206,9 +214,26 @@ export default function Sidebar() {
                             </span>
                         )}
                     </Link>
-                    <Link href="/admin/tables" className={`nav-item ${isActive('/admin/tables') ? 'active' : ''}`}>
+                    <Link href="/admin/tables" className={`nav-item ${isActive('/admin/tables') ? 'active' : ''}`} style={{ position: 'relative' }}>
                         <span className="nav-icon"><i className="fa-solid fa-utensils"></i></span>
                         <span>Restoran Siparişleri</span>
+                        {unreadRestaurantCount > 0 && (
+                            <span style={{
+                                position: 'absolute',
+                                right: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: '#059669',
+                                color: 'white',
+                                borderRadius: '999px',
+                                padding: '2px 8px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                boxShadow: '0 2px 4px rgba(5, 150, 105, 0.3)'
+                            }}>
+                                {unreadRestaurantCount}
+                            </span>
+                        )}
                     </Link>
                     <Link href="/admin/menu" className={`nav-item ${isActive('/admin/menu') ? 'active' : ''}`}>
                         <span className="nav-icon"><i className="fa-solid fa-list"></i></span>
