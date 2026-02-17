@@ -21,38 +21,30 @@ export async function GET(
         });
     }
 
+    const themeColor = restaurant.theme_color || '#ffffff';
+    const baseUrl = `https://${params.slug}.oneqr.tr`;
+
     const manifest = {
         name: restaurant.name || 'OneQR Menü',
         short_name: restaurant.name ? restaurant.name.substring(0, 12) : 'OneQR',
         description: restaurant.description || `${restaurant.name} için dijital QR menü.`,
         id: `/${params.slug}`,
-        start_url: `https://${params.slug}.oneqr.tr/`,
-        scope: `https://${params.slug}.oneqr.tr/`,
+        start_url: `${baseUrl}/`,
+        scope: `${baseUrl}/`,
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: restaurant.theme_color || '#ffffff',
+        orientation: 'portrait' as const,
+        background_color: themeColor,
+        theme_color: themeColor,
         icons: restaurant.logo_url ? [
-            {
-                src: restaurant.logo_url,
-                sizes: '192x192',
-                type: 'image/png'
-            },
-            {
-                src: restaurant.logo_url,
-                sizes: '512x512',
-                type: 'image/png'
-            }
+            { src: restaurant.logo_url, sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: restaurant.logo_url, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+            { src: restaurant.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: restaurant.logo_url, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ] : [
-            {
-                src: '/icon-192x192.png',
-                sizes: '192x192',
-                type: 'image/png'
-            },
-            {
-                src: '/icon-512x512.png',
-                sizes: '512x512',
-                type: 'image/png'
-            }
+            { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+            { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ]
     };
 
