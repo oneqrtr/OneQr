@@ -5,11 +5,13 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface OrderItem {
-    id: string;
+    id?: string;
     name: string;
     quantity: number;
     price: number;
     variantName?: string;
+    selected_variants?: { id?: string; name: string; price?: number }[];
+    excluded_ingredients?: string[];
 }
 
 interface Order {
@@ -285,16 +287,21 @@ export default function OrdersPage() {
                     <div class="col-price">Tutar</div>
                 </div>
                 
-                ${items.map(item => `
+                ${items.map((item: any) => {
+                    const variants = item.selected_variants && item.selected_variants.length > 0 ? item.selected_variants.map((v: { name: string }) => v.name).join(', ') : item.variantName || '';
+                    const excluded = item.excluded_ingredients && item.excluded_ingredients.length > 0 ? item.excluded_ingredients.join(', ') : '';
+                    return `
                     <div class="product-row">
                         <div class="col-qty">${item.quantity}</div>
                         <div class="col-name">
                             ${item.name}
-                            ${item.variantName ? `<div style="font-size: 14px; font-weight: normal; font-style: italic;">(${item.variantName})</div>` : ''}
+                            ${variants ? `<div style="font-size: 14px; font-weight: normal; font-style: italic;">+ ${variants}</div>` : ''}
+                            ${excluded ? `<div style="font-size: 13px; font-weight: normal; color: #991B1B;">Çıkar: ${excluded}</div>` : ''}
                         </div>
                         <div class="col-price">${item.price * item.quantity} ₺</div>
                     </div>
-                `).join('')}
+                `;
+                }).join('')}
                 
                 <div class="center separator">${dashLine}</div>
                 
@@ -389,8 +396,10 @@ export default function OrdersPage() {
             items = order.items;
         }
 
-        items.forEach((item) => {
-            message += `${item.quantity}x ${item.name} ${item.variantName ? `(${item.variantName})` : ''} ${item.price * item.quantity} ₺\n`;
+        items.forEach((item: any) => {
+            const variants = item.selected_variants?.map((v: { name: string }) => v.name).join(', ') || item.variantName || '';
+            const excluded = item.excluded_ingredients?.length ? ` [Çıkar: ${item.excluded_ingredients.join(', ')}]` : '';
+            message += `${item.quantity}x ${item.name}${variants ? ` (+${variants})` : ''}${excluded} ${item.price * item.quantity} ₺\n`;
         });
 
         message += `TOPLAM: ${order.total_amount} ₺\n`;
@@ -494,11 +503,21 @@ export default function OrdersPage() {
 
                                 <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
                                     <h4 style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>Sipariş Detayı</h4>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                        {order.items.map((item, idx) => (
-                                            <span key={idx} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '6px 10px', borderRadius: '6px', fontSize: '0.9rem', color: '#374151' }}>
-                                                <strong style={{ color: '#111827' }}>{item.quantity}x</strong> {item.name} {item.variantName ? `(${item.variantName})` : ''}
-                                            </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {order.items.map((item: OrderItem, idx: number) => (
+                                            <div key={idx} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '8px 10px', borderRadius: '6px', fontSize: '0.9rem', color: '#374151' }}>
+                                                <div>
+                                                    <strong style={{ color: '#111827' }}>{item.quantity}x</strong> {item.name}
+                                                    {(item.selected_variants && item.selected_variants.length > 0) || (item.variantName) ? (
+                                                        <span style={{ fontStyle: 'italic', color: '#059669' }}> + {item.selected_variants?.map((v: { name: string }) => v.name).join(', ') || item.variantName}</span>
+                                                    ) : null}
+                                                </div>
+                                                {item.excluded_ingredients && item.excluded_ingredients.length > 0 && (
+                                                    <div style={{ fontSize: '0.8rem', color: '#DC2626', marginTop: '4px' }}>
+                                                        Çıkar: {item.excluded_ingredients.join(', ')}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
