@@ -477,7 +477,7 @@ export default function OrdersPage() {
         setRejectReasonCustom('');
     };
 
-    const externalOrders = orders.filter(o => o.source !== 'restaurant');
+    const externalOrders = orders.filter(o => o.source === 'online');
     const REJECT_REASONS = [
         { value: 'stock', label: 'Stok yok' },
         { value: 'capacity', label: 'Kapasite dolu' },
@@ -647,7 +647,7 @@ export default function OrdersPage() {
         <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Siparişler</h1>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Online Sipariş</h1>
 
                     <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', overflow: 'hidden' }}>
                         <button

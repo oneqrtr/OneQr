@@ -96,6 +96,7 @@ export default function TablesPage() {
     const [masaPreviewModal, setMasaPreviewModal] = useState(false);
     const [masaSubmitting, setMasaSubmitting] = useState(false);
     const [tableStatusMap, setTableStatusMap] = useState<Record<number, 'empty' | 'occupied' | 'bill_requested'>>({});
+    const [activeTab, setActiveTab] = useState<'masa' | 'paket'>('masa');
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -664,49 +665,89 @@ export default function TablesPage() {
             <div style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Masalar</h1>
-                        <button
-                            type="button"
-                            onClick={() => setMasaModalOpen(true)}
-                            className="paket-btn-desktop"
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '10px 18px',
-                                borderRadius: '10px',
-                                border: '1px solid #059669',
-                                background: 'white',
-                                color: '#059669',
-                                fontWeight: 600,
-                                fontSize: '0.9rem',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <i className="fa-solid fa-utensils" />
-                            Masa siparişi al
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPaketModalOpen(true)}
-                            className="paket-btn-desktop"
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '10px 18px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                background: '#2563EB',
-                                color: 'white',
-                                fontWeight: 600,
-                                fontSize: '0.9rem',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <i className="fa-solid fa-box" />
-                            Paket siparişi al
-                        </button>
+                        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Restoran Siparişleri</h1>
+                        <div style={{ display: 'flex', background: '#F3F4F6', borderRadius: '10px', padding: '4px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('masa')}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activeTab === 'masa' ? 'white' : 'transparent',
+                                    color: activeTab === 'masa' ? '#111827' : '#6B7280',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    boxShadow: activeTab === 'masa' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
+                                }}
+                            >
+                                <i className="fa-solid fa-utensils" style={{ marginRight: '8px' }} /> Masalar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('paket')}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activeTab === 'paket' ? 'white' : 'transparent',
+                                    color: activeTab === 'paket' ? '#111827' : '#6B7280',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    boxShadow: activeTab === 'paket' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none'
+                                }}
+                            >
+                                <i className="fa-solid fa-box" style={{ marginRight: '8px' }} /> Paket
+                            </button>
+                        </div>
+                        {activeTab === 'masa' && (
+                            <button
+                                type="button"
+                                onClick={() => setMasaModalOpen(true)}
+                                className="paket-btn-desktop"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    border: '1px solid #059669',
+                                    background: 'white',
+                                    color: '#059669',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <i className="fa-solid fa-utensils" />
+                                Masa siparişi al
+                            </button>
+                        )}
+                        {activeTab === 'paket' && (
+                            <button
+                                type="button"
+                                onClick={() => setPaketModalOpen(true)}
+                                className="paket-btn-desktop"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: '#2563EB',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <i className="fa-solid fa-box" />
+                                Paket siparişi al
+                            </button>
+                        )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', overflow: 'hidden' }}>
                         <button
@@ -731,10 +772,9 @@ export default function TablesPage() {
 
                 {loading ? (
                     <div>Yükleniyor...</div>
-                ) : (
+                ) : activeTab === 'paket' ? (
                     <>
-                    {/* Paket siparişleri bölümü */}
-                    <div style={{ marginBottom: '32px', background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
                         <div style={{ background: '#2563EB', color: 'white', padding: '12px 16px', fontWeight: 700, fontSize: '1.1rem' }}>Paket Siparişleri</div>
                         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {openPaketOrders.length === 0 && closedPaketOrders.length === 0 ? (
@@ -764,7 +804,9 @@ export default function TablesPage() {
                             )}
                         </div>
                     </div>
-
+                    </>
+                ) : (
+                    <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                         {Array.from({ length: tableCount }, (_, i) => i + 1).map((tableNum) => {
                             const openList = openOrdersByTable[tableNum] || [];

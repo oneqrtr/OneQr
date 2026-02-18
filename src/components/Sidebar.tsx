@@ -11,7 +11,7 @@ const DEFAULT_SIDEBAR_ORDER = [
 
 const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' | 'restaurant' }[] = [
     { path: '/admin', label: 'Panel', icon: 'fa-chart-pie' },
-    { path: '/admin/orders', label: 'Siparişler', icon: 'fa-bell', badge: 'orders' },
+    { path: '/admin/orders', label: 'Online Sipariş', icon: 'fa-bell', badge: 'orders' },
     { path: '/admin/tables', label: 'Restoran Siparişleri', icon: 'fa-utensils', badge: 'restaurant' },
     { path: '/admin/customers', label: 'Müşteriler', icon: 'fa-users' },
     { path: '/admin/menu', label: 'Menü Yönetimi', icon: 'fa-list' },
@@ -145,8 +145,10 @@ export default function Sidebar() {
                         },
                         (payload) => {
                             const newOrder = payload.new as { source?: string; table_number?: number | null };
+                            const isOnlineOrder = newOrder?.source === 'online';
                             const isRestaurantOrder =
                                 newOrder?.source === 'restaurant' ||
+                                newOrder?.source === 'system' ||
                                 (typeof newOrder?.table_number === 'number' && newOrder.table_number > 0);
 
                             // Play sound 5 times when new order arrives
@@ -156,14 +158,14 @@ export default function Sidebar() {
                                 setTimeout(() => playNotificationSound(), i * DELAY_MS);
                             }
 
-                            // Badge: restoran siparişi → Restoran Siparişleri, diğer → Siparişler (anında güncelleme)
-                            if (isRestaurantOrder) {
-                                if (window.location.pathname !== '/admin/tables') {
-                                    setUnreadRestaurantCount(prev => prev + 1);
-                                }
-                            } else {
+                            // Badge: online (dışarıdan) → Online Sipariş; restoran/paket → Restoran Siparişleri
+                            if (isOnlineOrder) {
                                 if (window.location.pathname !== '/admin/orders') {
                                     setUnreadCount(prev => prev + 1);
+                                }
+                            } else if (isRestaurantOrder) {
+                                if (window.location.pathname !== '/admin/tables') {
+                                    setUnreadRestaurantCount(prev => prev + 1);
                                 }
                             }
                         }

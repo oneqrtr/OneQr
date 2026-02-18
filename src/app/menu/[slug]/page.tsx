@@ -553,7 +553,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                 addressDetail += '\nNot: ' + customerInfo.addressDetail;
             }
 
-            const orderSource = isRestaurantMode ? 'restaurant' : 'system';
+            const orderSource = isRestaurantMode ? 'restaurant' : 'online';
             const orderAddressDetail = isRestaurantMode
                 ? `Restoran içi - Masa: ${customerInfo.tableNumber}${customerInfo.orderNote ? '\nNot: ' + customerInfo.orderNote : ''}`
                 : addressDetail;
