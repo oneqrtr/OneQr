@@ -2,7 +2,10 @@
 
 import { createClient } from '@/lib/supabase';
 import { useEffect, useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Topbar from '@/components/Topbar';
+
+const KonumMapModal = dynamic(() => import('@/components/KonumMapModal'), { ssr: false });
 
 interface OrderItem {
     id?: string;
@@ -39,6 +42,7 @@ export default function TablesPage() {
     const [tableCount, setTableCount] = useState(10);
     const [restaurantName, setRestaurantName] = useState('');
     const [restaurantSlug, setRestaurantSlug] = useState('');
+    const [restaurantThemeColor, setRestaurantThemeColor] = useState('#2563EB');
     const [orders, setOrders] = useState<Order[]>([]);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [orderToClose, setOrderToClose] = useState<Order | null>(null);
@@ -51,6 +55,9 @@ export default function TablesPage() {
     const [paketVariants, setPaketVariants] = useState<VariantRow[]>([]);
     const [paketCart, setPaketCart] = useState<{ product: ProductRow; quantity: number; selectedVariants: VariantRow[]; finalPrice: number }[]>([]);
     const [paketCustomer, setPaketCustomer] = useState({ fullName: '', phone: '', addressDetail: '' });
+    const [paketLocationLat, setPaketLocationLat] = useState<number | null>(null);
+    const [paketLocationLng, setPaketLocationLng] = useState<number | null>(null);
+    const [konumModalOpen, setKonumModalOpen] = useState(false);
     const [paketPayment, setPaketPayment] = useState<'cash' | 'credit_card'>('cash');
     const [paketSubmitting, setPaketSubmitting] = useState(false);
 
@@ -68,7 +75,7 @@ export default function TablesPage() {
 
             const { data: rest, error: restError } = await supabase
                 .from('restaurants')
-                .select('id, name, slug, table_count')
+                .select('id, name, slug, table_count, theme_color')
                 .eq('owner_id', user.id)
                 .single();
 
@@ -80,6 +87,7 @@ export default function TablesPage() {
             setRestaurantId(rest.id);
             setRestaurantName(rest.name || '');
             setRestaurantSlug(rest.slug || '');
+            setRestaurantThemeColor(rest.theme_color || '#2563EB');
             setTableCount(Math.max(1, rest.table_count ?? 10));
 
             const startOfDay = new Date(selectedDate);
@@ -156,6 +164,8 @@ export default function TablesPage() {
                 customer_name: paketCustomer.fullName,
                 customer_phone: paketCustomer.phone,
                 address_detail: paketCustomer.addressDetail,
+                location_lat: paketLocationLat ?? undefined,
+                location_lng: paketLocationLng ?? undefined,
                 items: orderItems,
                 total_amount: totalAmount,
                 payment_method: paketPayment,
@@ -167,6 +177,8 @@ export default function TablesPage() {
             setPaketModalOpen(false);
             setPaketCart([]);
             setPaketCustomer({ fullName: '', phone: '', addressDetail: '' });
+            setPaketLocationLat(null);
+            setPaketLocationLng(null);
         } catch (e: any) {
             alert('Sipariş gönderilirken hata: ' + (e?.message || 'Bilinmeyen'));
         } finally {
@@ -495,7 +507,14 @@ export default function TablesPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                                         <input type="text" placeholder="Müşteri adı *" value={paketCustomer.fullName} onChange={e => setPaketCustomer(p => ({ ...p, fullName: e.target.value }))} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} />
                                         <input type="tel" placeholder="Telefon *" value={paketCustomer.phone} onChange={e => setPaketCustomer(p => ({ ...p, phone: e.target.value }))} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} />
-                                        <textarea placeholder="Adres *" value={paketCustomer.addressDetail} onChange={e => setPaketCustomer(p => ({ ...p, addressDetail: e.target.value }))} rows={3} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', resize: 'vertical' }} />
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                        <textarea placeholder="Adres *" value={paketCustomer.addressDetail} onChange={e => setPaketCustomer(p => ({ ...p, addressDetail: e.target.value }))} rows={3} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', resize: 'vertical' }} />
+                                        <button type="button" onClick={() => setKonumModalOpen(true)} title="Haritadan konum seç" style={{ padding: '12px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', background: restaurantThemeColor, color: 'white', cursor: 'pointer', flexShrink: 0 }}><i className="fa-solid fa-map-location-dot" /></button>
+                                    </div>
+                                    {paketLocationLat != null && paketLocationLng != null && (
+                                        <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '4px' }}><i className="fa-solid fa-check" style={{ marginRight: '6px' }} />Konum kaydedildi: {paketLocationLat.toFixed(5)}, {paketLocationLng.toFixed(5)}</div>
+                                    )}
+                                    <KonumMapModal isOpen={konumModalOpen} onClose={() => setKonumModalOpen(false)} onSelect={(lat, lng) => { setPaketLocationLat(lat); setPaketLocationLng(lng); setKonumModalOpen(false); }} themeColor={restaurantThemeColor} selectedLat={paketLocationLat} selectedLng={paketLocationLng} />
                                         <div style={{ display: 'flex', gap: '12px' }}>
                                             <button type="button" onClick={() => setPaketPayment('cash')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'cash' ? '2px solid #059669' : '1px solid #D1D5DB', background: paketPayment === 'cash' ? '#ECFDF5' : 'white', fontWeight: 600, cursor: 'pointer' }}>Nakit</button>
                                             <button type="button" onClick={() => setPaketPayment('credit_card')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'credit_card' ? '2px solid #2563EB' : '1px solid #D1D5DB', background: paketPayment === 'credit_card' ? '#EFF6FF' : 'white', fontWeight: 600, cursor: 'pointer' }}>Kart</button>

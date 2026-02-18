@@ -486,15 +486,17 @@ export default function OrdersPage() {
 
             <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', color: '#4B5563' }}>
                 <i className="fa-solid fa-location-dot" style={{ marginRight: '8px', color: '#EF4444' }}></i>
-                {order.address_detail}
-                {order.address_type === 'location' && (
+                {order.location_lat != null && order.location_lng != null ? (
                     <a
                         href={`https://www.google.com/maps/search/?api=1&query=${order.location_lat},${order.location_lng}`}
                         target="_blank"
-                        style={{ color: '#2563EB', marginLeft: '8px', fontWeight: 500 }}
+                        rel="noopener noreferrer"
+                        style={{ color: '#2563EB', fontWeight: 500, textDecoration: 'underline', cursor: 'pointer' }}
                     >
-                        Haritada Gör
+                        {order.address_detail || 'Konuma git'}
                     </a>
+                ) : (
+                    order.address_detail
                 )}
             </div>
 
