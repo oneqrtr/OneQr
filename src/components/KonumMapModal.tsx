@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import 'leaflet/dist/leaflet.css';
 
 const LARA_CENTER: [number, number] = [36.855, 30.76];
 const LARA_BOUNDS: [[number, number], [number, number]] = [[36.82, 30.70], [36.89, 30.82]];
@@ -26,13 +27,14 @@ export default function KonumMapModal({ isOpen, onClose, onSelect, themeColor = 
 
         const init = async () => {
             const L = (await import('leaflet')).default;
-            await import('leaflet/dist/leaflet.css');
+            const el = mapRef.current;
+            if (!el) return;
 
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
             }
 
-            const map = L.map(mapRef.current, {
+            const map = L.map(el, {
                 center: LARA_CENTER,
                 zoom: 15,
                 maxBounds: LARA_BOUNDS,
