@@ -18,7 +18,7 @@ interface OrderItem {
 }
 
 interface CategoryRow { id: string; name: string; display_order?: number; }
-interface ProductRow { id: string; category_id: string; name: string; price: number; display_order?: number; }
+interface ProductRow { id: string; category_id: string; name: string; price: number; display_order?: number; image_url?: string; ingredients?: string[]; }
 interface VariantRow { id: string; product_id: string; name: string; price: number; }
 
 interface Order {
@@ -68,7 +68,7 @@ export default function TablesPage() {
     const [paketCategories, setPaketCategories] = useState<CategoryRow[]>([]);
     const [paketProducts, setPaketProducts] = useState<ProductRow[]>([]);
     const [paketVariants, setPaketVariants] = useState<VariantRow[]>([]);
-    const [paketCart, setPaketCart] = useState<{ product: ProductRow; quantity: number; selectedVariants: VariantRow[]; finalPrice: number }[]>([]);
+    const [paketCart, setPaketCart] = useState<{ product: ProductRow; quantity: number; selectedVariants: VariantRow[]; excludedIngredients: string[]; finalPrice: number }[]>([]);
     const [paketCustomer, setPaketCustomer] = useState({ fullName: '', phone: '', addressDetail: '', notes: '' });
     const [paketLocationLat, setPaketLocationLat] = useState<number | null>(null);
     const [paketLocationLng, setPaketLocationLng] = useState<number | null>(null);
@@ -81,6 +81,10 @@ export default function TablesPage() {
     const [isNewCustomerMode, setIsNewCustomerMode] = useState(false);
     const [customerPins, setCustomerPins] = useState<{ id: string; name: string; lat: number; lng: number }[]>([]);
     const [customerPinsMap, setCustomerPinsMap] = useState<Record<string, Customer>>({});
+    const [paketProductModal, setPaketProductModal] = useState<ProductRow | null>(null);
+    const [paketTempVariants, setPaketTempVariants] = useState<VariantRow[]>([]);
+    const [paketTempExcluded, setPaketTempExcluded] = useState<string[]>([]);
+    const [paketPreviewModal, setPaketPreviewModal] = useState(false);
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -122,7 +126,7 @@ export default function TablesPage() {
                 .from('orders')
                 .select('*')
                 .eq('restaurant_id', rest.id)
-                .eq('source', 'restaurant')
+                .in('source', ['restaurant', 'system'])
                 .gte('created_at', startOfDay.toISOString())
                 .lte('created_at', endOfDay.toISOString())
                 .order('created_at', { ascending: false });
@@ -142,7 +146,7 @@ export default function TablesPage() {
             setPaketCategories(cats || []);
             if (!cats?.length) { setPaketProducts([]); setPaketVariants([]); return; }
             const catIds = cats.map(c => c.id);
-            const { data: prods } = await supabase.from('products').select('id, category_id, name, price, display_order').in('category_id', catIds).order('display_order', { ascending: true });
+            const { data: prods } = await supabase.from('products').select('id, category_id, name, price, display_order, image_url, ingredients').in('category_id', catIds).order('display_order', { ascending: true });
             setPaketProducts(prods || []);
             const prodIds = (prods || []).map(p => p.id);
             const { data: vars } = await supabase.from('product_variants').select('id, product_id, name, price').in('product_id', prodIds);
@@ -177,13 +181,21 @@ export default function TablesPage() {
         fetch();
     }, [konumModalOpen, restaurantId]);
 
-    const addToPaketCart = (product: ProductRow, variant?: VariantRow) => {
-        const price = product.price + (variant?.price || 0);
+    const openProductForPaket = (product: ProductRow) => {
+        setPaketProductModal(product);
+        setPaketTempVariants([]);
+        setPaketTempExcluded([]);
+    };
+
+    const addToPaketCart = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
+        const price = product.price + selectedVariants.reduce((a, v) => a + v.price, 0);
         setPaketCart(prev => {
-            const existing = prev.find(x => x.product.id === product.id && JSON.stringify(x.selectedVariants.map(v => v.id)) === JSON.stringify(variant ? [variant.id] : []));
+            const key = JSON.stringify({ v: selectedVariants.map(x => x.id).sort(), e: excludedIngredients.sort() });
+            const existing = prev.find(x => x.product.id === product.id && JSON.stringify({ v: x.selectedVariants.map(v => v.id).sort(), e: x.excludedIngredients.sort() }) === key);
             if (existing) return prev.map(x => x === existing ? { ...x, quantity: x.quantity + 1 } : x);
-            return [...prev, { product, quantity: 1, selectedVariants: variant ? [variant] : [], finalPrice: price }];
+            return [...prev, { product, quantity: 1, selectedVariants, excludedIngredients, finalPrice: price }];
         });
+        setPaketProductModal(null);
     };
 
     const removeFromPaketCart = (idx: number) => {
@@ -213,10 +225,9 @@ export default function TablesPage() {
         setPaketLocationLng(null);
     };
 
-    const submitPaketOrder = async () => {
+    const doSubmitPaketOrder = async (): Promise<Order | null> => {
         if (!restaurantId || !paketCustomer.fullName || !paketCustomer.phone || !paketCustomer.addressDetail || paketCart.length === 0) {
-            alert('Lütfen tüm alanları doldurun ve en az bir ürün ekleyin.');
-            return;
+            return null;
         }
         setPaketSubmitting(true);
         try {
@@ -229,7 +240,7 @@ export default function TablesPage() {
                 price: x.finalPrice,
                 total_price: x.finalPrice * x.quantity,
                 selected_variants: x.selectedVariants.map(v => ({ id: v.id, name: v.name, price: v.price })),
-                excluded_ingredients: []
+                excluded_ingredients: x.excludedIngredients || []
             }));
 
             let customerId: string | undefined;
@@ -271,7 +282,7 @@ export default function TablesPage() {
                 }
             }
 
-            const { error } = await supabase.from('orders').insert({
+            const { data: newOrder, error } = await supabase.from('orders').insert({
                 restaurant_id: restaurantId,
                 customer_id: customerId,
                 customer_name: paketCustomer.fullName,
@@ -284,10 +295,10 @@ export default function TablesPage() {
                 payment_method: paketPayment,
                 status: 'pending',
                 source: 'system'
-            });
+            }).select().single();
             if (error) throw error;
-            alert('Paket siparişi alındı. Siparişler sayfasında görüntülenir.');
             setPaketModalOpen(false);
+            setPaketPreviewModal(false);
             setPaketCart([]);
             setPaketCustomer({ fullName: '', phone: '', addressDetail: '', notes: '' });
             setPaketLocationLat(null);
@@ -295,10 +306,20 @@ export default function TablesPage() {
             setSelectedPaketCustomer(null);
             setIsNewCustomerMode(false);
             setCustomerSearchQuery('');
+            setOrders(prev => [newOrder as Order, ...prev]);
+            return newOrder as Order;
         } catch (e: any) {
             alert('Sipariş gönderilirken hata: ' + (e?.message || 'Bilinmeyen'));
+            return null;
         } finally {
             setPaketSubmitting(false);
+        }
+    };
+
+    const confirmAndSubmitPaket = async () => {
+        const order = await doSubmitPaketOrder();
+        if (order) {
+            printPaketOrder(order);
         }
     };
 
@@ -308,7 +329,12 @@ export default function TablesPage() {
         openOrdersByTable[t] = [];
         closedOrdersByTable[t] = [];
     }
+    const paketOrders = orders.filter(o => o.source === 'system');
+    const openPaketOrders = paketOrders.filter(o => o.status === 'pending');
+    const closedPaketOrders = paketOrders.filter(o => o.status !== 'pending');
+
     orders.forEach((o) => {
+        if (o.source !== 'restaurant') return;
         const tn = o.table_number != null ? o.table_number : 0;
         if (tn >= 1 && tn <= tableCount) {
             if (o.status === 'pending') openOrdersByTable[tn].push(o);
@@ -323,7 +349,7 @@ export default function TablesPage() {
         return method;
     };
 
-    const printOrder = (order: Order) => {
+    const printOrder = (order: Order, isPaket = false) => {
         const iframe = printFrameRef.current;
         if (!iframe?.contentWindow?.document) return;
 
@@ -334,6 +360,7 @@ export default function TablesPage() {
         } else if (Array.isArray(order.items)) items = order.items;
 
         const dashLine = '------------------------------------------------';
+        const masaLine = isPaket ? '<div><strong>Paket Siparişi</strong></div>' : `<div><strong>Masa: ${order.table_number ?? '-'}</strong></div>`;
         const doc = iframe.contentWindow.document;
         doc.open();
         doc.write(`
@@ -356,7 +383,7 @@ export default function TablesPage() {
             <div class="center separator">${dashLine}</div>
             <div class="center rest-name">${restaurantName}</div>
             <div class="center separator">${dashLine}</div>
-            <div><strong>Masa: ${order.table_number ?? '-'}</strong></div>
+            ${masaLine}
             <div>${order.customer_name}</div>
             ${order.customer_phone ? `<div>Tel: ${order.customer_phone}</div>` : ''}
             <div class="center separator">${dashLine}</div>
@@ -378,6 +405,8 @@ export default function TablesPage() {
         doc.close();
         setTimeout(() => iframe.contentWindow?.print(), 500);
     };
+
+    const printPaketOrder = (order: Order) => printOrder(order, true);
 
     const closeOrder = (order: Order) => {
         setOrderToClose(order);
@@ -455,6 +484,39 @@ export default function TablesPage() {
                 {loading ? (
                     <div>Yükleniyor...</div>
                 ) : (
+                    <>
+                    {/* Paket siparişleri bölümü */}
+                    <div style={{ marginBottom: '32px', background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <div style={{ background: '#2563EB', color: 'white', padding: '12px 16px', fontWeight: 700, fontSize: '1.1rem' }}>Paket Siparişleri</div>
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {openPaketOrders.length === 0 && closedPaketOrders.length === 0 ? (
+                                <div style={{ color: '#9CA3AF', fontSize: '0.9rem', padding: '12px 0' }}>Paket siparişi yok</div>
+                            ) : (
+                                <>
+                                    {openPaketOrders.map((order) => (
+                                        <div key={order.id} style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '12px', background: '#EFF6FF' }}>
+                                            <div style={{ fontWeight: 600, color: '#111827' }}>{order.customer_name}</div>
+                                            <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>{formatTime(order.created_at)} · {order.total_amount} ₺</div>
+                                            <div style={{ fontSize: '0.85rem', color: '#374151', marginTop: '6px' }}>{(Array.isArray(order.items) ? order.items : []).map((it: OrderItem) => `${it.quantity}x ${it.name}`).join(', ')}</div>
+                                            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                                                <button type="button" onClick={() => printPaketOrder(order)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}><i className="fa-solid fa-print" style={{ marginRight: '4px' }} /> Yazdır</button>
+                                                <button type="button" onClick={() => closeOrder(order)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', background: '#2563EB', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Siparişi Kapat</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {closedPaketOrders.length > 0 && (
+                                        <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px dashed #E5E7EB' }}>
+                                            <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginBottom: '8px' }}>Geçmiş paket siparişleri</div>
+                                            {closedPaketOrders.map((order) => (
+                                                <div key={order.id} style={{ fontSize: '0.85rem', color: '#6B7280', padding: '8px', background: '#F9FAFB', borderRadius: '6px', marginBottom: '6px' }}>{order.customer_name} · {order.total_amount} ₺ · {formatTime(order.created_at)}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                         {Array.from({ length: tableCount }, (_, i) => i + 1).map((tableNum) => {
                             const openList = openOrdersByTable[tableNum] || [];
@@ -531,6 +593,7 @@ export default function TablesPage() {
                             );
                         })}
                     </div>
+                    </>
                 )}
 
                 {/* Paket siparişi al modal */}
@@ -570,22 +633,22 @@ export default function TablesPage() {
                                 {/* Sol: Ürünler */}
                                 <div>
                                     <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Ürünler</div>
-                                    <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px' }}>
+                                    <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                                         {paketCategories.map(cat => (
-                                            <div key={cat.id} style={{ marginBottom: '12px' }}>
+                                            <div key={cat.id} style={{ gridColumn: '1 / -1' }}>
                                                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>{cat.name}</div>
-                                                {paketProducts.filter(p => p.category_id === cat.id).map(prod => {
-                                                    const vars = paketVariants.filter(v => v.product_id === prod.id);
-                                                    return (
-                                                        <div key={prod.id} style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                                                            <button type="button" onClick={() => addToPaketCart(prod)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', background: 'white', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>{prod.name} ({prod.price} ₺)</button>
-                                                            {vars.map(v => (<button key={v.id} type="button" onClick={() => addToPaketCart(prod, v)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', background: '#F9FAFB', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ {v.name} (+{v.price} ₺)</button>))}
-                                                        </div>
-                                                    );
-                                                })}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                                    {paketProducts.filter(p => p.category_id === cat.id).map(prod => (
+                                                        <button key={prod.id} type="button" onClick={() => openProductForPaket(prod)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', textAlign: 'left', minHeight: '100px' }}>
+                                                            {prod.image_url ? <img src={prod.image_url} alt={prod.name} style={{ width: '100%', height: '70px', objectFit: 'cover', borderRadius: '8px', marginBottom: '6px' }} /> : <div style={{ width: '100%', height: '70px', background: '#F3F4F6', borderRadius: '8px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}><i className="fa-solid fa-image" /></div>}
+                                                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{prod.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>{prod.price} ₺</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         ))}
-                                        {paketCategories.length === 0 && <div style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Henüz ürün yok</div>}
+                                        {paketCategories.length === 0 && <div style={{ gridColumn: '1 / -1', color: '#9CA3AF', fontSize: '0.9rem' }}>Henüz ürün yok</div>}
                                     </div>
                                 </div>
 
@@ -594,8 +657,8 @@ export default function TablesPage() {
                                     <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Sepet</div>
                                     <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
                                         {paketCart.length === 0 ? <div style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Sepet boş</div> : paketCart.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: '0.9rem' }}>
-                                                <span>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' + ' + item.selectedVariants.map(v => v.name).join(', ') : ''} = {item.finalPrice * item.quantity} ₺</span>
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: '0.9rem' }}>
+                                                <span>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</span>
                                                 <button type="button" onClick={() => removeFromPaketCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '1rem' }}>&times;</button>
                                             </div>
                                         ))}
@@ -606,7 +669,7 @@ export default function TablesPage() {
                                         <button type="button" onClick={() => setPaketPayment('cash')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'cash' ? '2px solid #059669' : '1px solid #D1D5DB', background: paketPayment === 'cash' ? '#ECFDF5' : 'white', fontWeight: 600, cursor: 'pointer' }}>Nakit</button>
                                         <button type="button" onClick={() => setPaketPayment('credit_card')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'credit_card' ? '2px solid #2563EB' : '1px solid #D1D5DB', background: paketPayment === 'credit_card' ? '#EFF6FF' : 'white', fontWeight: 600, cursor: 'pointer' }}>Kart</button>
                                     </div>
-                                    <button type="button" onClick={submitPaketOrder} disabled={paketSubmitting} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: '#2563EB', color: 'white', fontWeight: 700, cursor: paketSubmitting ? 'not-allowed' : 'pointer', opacity: paketSubmitting ? 0.7 : 1 }}>{paketSubmitting ? 'Gönderiliyor...' : 'Siparişi Gönder'}</button>
+                                    <button type="button" onClick={() => { if (!paketCustomer.fullName || !paketCustomer.phone || !paketCustomer.addressDetail) { alert('Lütfen müşteri bilgilerini doldurun.'); return; } setPaketPreviewModal(true); }} disabled={paketSubmitting || paketCart.length === 0} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: '#2563EB', color: 'white', fontWeight: 700, cursor: paketSubmitting || paketCart.length === 0 ? 'not-allowed' : 'pointer', opacity: paketSubmitting || paketCart.length === 0 ? 0.7 : 1 }}>Siparişi Gönder</button>
                                 </div>
 
                                 {/* Sağ: Müşteri */}
@@ -636,6 +699,72 @@ export default function TablesPage() {
                                     <KonumMapModal isOpen={konumModalOpen} onClose={() => setKonumModalOpen(false)} onSelect={(lat, lng) => { setPaketLocationLat(lat); setPaketLocationLng(lng); setKonumModalOpen(false); }} onSelectCustomer={(id) => { const c = customerPinsMap[id] || customerSearchResults.find(x => x.id === id); if (c) { selectPaketCustomer(c); setKonumModalOpen(false); } }} themeColor={restaurantThemeColor} selectedLat={paketLocationLat} selectedLng={paketLocationLng} centerLat={restaurantLocationLat} centerLng={restaurantLocationLng} restaurantName={restaurantName} customerPins={customerPins} />
                                 </div>
                             </div>
+
+                            {/* Ürün seçenekleri modal */}
+                            {paketProductModal && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setPaketProductModal(null)}>
+                                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%', maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{paketProductModal.name}</h3>
+                                            <button type="button" onClick={() => setPaketProductModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280' }}>&times;</button>
+                                        </div>
+                                        {paketProductModal.image_url && <img src={paketProductModal.image_url} alt={paketProductModal.name} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px' }} />}
+                                        {paketVariants.filter(v => v.product_id === paketProductModal.id).length > 0 && (
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <div style={{ fontWeight: 600, marginBottom: '8px', color: '#374151', fontSize: '0.9rem' }}>Varyasyon</div>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                    {paketVariants.filter(v => v.product_id === paketProductModal.id).map(v => (
+                                                        <label key={v.id} style={{ padding: '10px 14px', borderRadius: '10px', border: paketTempVariants.some(x => x.id === v.id) ? `2px solid ${restaurantThemeColor}` : '1px solid #D1D5DB', background: paketTempVariants.some(x => x.id === v.id) ? '#EFF6FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                                                            <input type="checkbox" checked={paketTempVariants.some(x => x.id === v.id)} onChange={e => { if (e.target.checked) setPaketTempVariants(p => [...p, v]); else setPaketTempVariants(p => p.filter(x => x.id !== v.id)); }} style={{ display: 'none' }} />
+                                                            {v.name} (+{v.price} ₺)
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {paketProductModal.ingredients && paketProductModal.ingredients.length > 0 && (
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <div style={{ fontWeight: 600, marginBottom: '8px', color: '#374151', fontSize: '0.9rem' }}>Çıkarılacak malzemeler</div>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                    {paketProductModal.ingredients.map((ing, idx) => (
+                                                        <label key={idx} style={{ padding: '8px 12px', borderRadius: '20px', border: paketTempExcluded.includes(ing) ? '1px dashed #EF4444' : '1px solid #E5E7EB', background: paketTempExcluded.includes(ing) ? '#FEF2F2' : '#F3F4F6', color: paketTempExcluded.includes(ing) ? '#EF4444' : '#374151', textDecoration: paketTempExcluded.includes(ing) ? 'line-through' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                                            <input type="checkbox" checked={!paketTempExcluded.includes(ing)} onChange={e => { if (!e.target.checked) setPaketTempExcluded(p => [...p, ing]); else setPaketTempExcluded(p => p.filter(i => i !== ing)); }} style={{ display: 'none' }} />
+                                                            {ing}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button type="button" onClick={() => addToPaketCart(paketProductModal, paketTempVariants, paketTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
+                                            Sepete Ekle · {paketProductModal.price + paketTempVariants.reduce((a, v) => a + v.price, 0)} ₺
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Sipariş önizleme modal */}
+                            {paketPreviewModal && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setPaketPreviewModal(false)}>
+                                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+                                        <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '16px' }}>Sipariş Önizleme</div>
+                                        <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.9rem' }}>
+                                            <div style={{ fontWeight: 600, marginBottom: '8px' }}>{paketCustomer.fullName}</div>
+                                            <div style={{ color: '#6B7280' }}>{paketCustomer.phone}</div>
+                                            <div style={{ color: '#6B7280', marginTop: '4px' }}>{paketCustomer.addressDetail}</div>
+                                        </div>
+                                        <div style={{ marginBottom: '16px' }}>
+                                            {paketCart.map((item, idx) => (
+                                                <div key={idx} style={{ padding: '10px 0', borderBottom: '1px solid #E5E7EB', fontSize: '0.9rem' }}>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</div>
+                                            ))}
+                                        </div>
+                                        <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '16px' }}>Toplam: {paketCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺ · {paketPayment === 'cash' ? 'Nakit' : 'Kart'}</div>
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <button type="button" onClick={() => setPaketPreviewModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>İptal</button>
+                                            <button type="button" onClick={confirmAndSubmitPaket} disabled={paketSubmitting} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#059669', color: 'white', fontWeight: 700, cursor: paketSubmitting ? 'not-allowed' : 'pointer' }}>{paketSubmitting ? 'Gönderiliyor...' : 'Onayla ve Gönder'}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
