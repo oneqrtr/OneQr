@@ -32,6 +32,7 @@ interface Order {
     payment_method: string;
     status: string;
     created_at: string;
+    rejection_reason?: string | null;
     neighborhood?: string;
     street?: string;
     apartment?: string;
@@ -57,6 +58,9 @@ export default function OrdersPage() {
     const [restaurantName, setRestaurantName] = useState('');
     const [restaurantSlug, setRestaurantSlug] = useState('');
     const [orderToClose, setOrderToClose] = useState<Order | null>(null);
+    const [orderToReject, setOrderToReject] = useState<Order | null>(null);
+    const [rejectReason, setRejectReason] = useState('');
+    const [rejectReasonCustom, setRejectReasonCustom] = useState('');
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
@@ -421,6 +425,11 @@ export default function OrdersPage() {
     };
 
     const closeOrder = (order: Order) => setOrderToClose(order);
+    const openRejectModal = (order: Order) => {
+        setOrderToReject(order);
+        setRejectReason('');
+        setRejectReasonCustom('');
+    };
 
     const confirmCloseWithPayment = async (paymentMethod: 'cash' | 'credit_card') => {
         if (!orderToClose) return;
@@ -437,7 +446,45 @@ export default function OrdersPage() {
         setOrderToClose(null);
     };
 
+    const approveOrder = async (order: Order) => {
+        const supabase = createClient();
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'processing' })
+            .eq('id', order.id);
+        if (error) {
+            alert('Güncelleme hatası: ' + error.message);
+            return;
+        }
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'processing' } : o)));
+    };
+
+    const rejectOrder = async () => {
+        if (!orderToReject) return;
+        const reason = rejectReason === 'other' ? rejectReasonCustom : rejectReason;
+        const supabase = createClient();
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'cancelled', rejection_reason: reason || null })
+            .eq('id', orderToReject.id);
+        if (error) {
+            alert('Güncelleme hatası: ' + error.message);
+            return;
+        }
+        setOrders((prev) => prev.map((o) => (o.id === orderToReject.id ? { ...o, status: 'cancelled', rejection_reason: reason || null } : o)));
+        setOrderToReject(null);
+        setRejectReason('');
+        setRejectReasonCustom('');
+    };
+
     const externalOrders = orders.filter(o => o.source !== 'restaurant');
+    const REJECT_REASONS = [
+        { value: 'stock', label: 'Stok yok' },
+        { value: 'capacity', label: 'Kapasite dolu' },
+        { value: 'address', label: 'Adres teslimat dışı' },
+        { value: 'closed', label: 'İşletme kapalı' },
+        { value: 'other', label: 'Diğer' }
+    ];
 
     const renderOrderCard = (order: Order) => (
         <div key={order.id} style={{
@@ -472,14 +519,28 @@ export default function OrdersPage() {
                 <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#059669' }}>{order.total_amount} ₺</div>
                     <div style={{
-                        background: order.payment_method === 'cash' ? '#ECFDF5' : '#EFF6FF',
-                        color: order.payment_method === 'cash' ? '#047857' : '#1D4ED8',
+                        background: order.status === 'pending' ? '#FEF3C7' : order.status === 'processing' ? '#DBEAFE' : order.status === 'cancelled' ? '#FEE2E2' : '#ECFDF5',
+                        color: order.status === 'pending' ? '#B45309' : order.status === 'processing' ? '#1D4ED8' : order.status === 'cancelled' ? '#DC2626' : '#047857',
                         padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-block', marginTop: '4px'
                     }}>
-                        {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
+                        {order.status === 'pending' ? 'Beklemede' : order.status === 'processing' ? 'Onaylandı' : order.status === 'cancelled' ? 'İptal' : 'Tamamlandı'}
                     </div>
+                    {order.status !== 'cancelled' && (
+                        <div style={{
+                            background: order.payment_method === 'cash' ? '#ECFDF5' : '#EFF6FF',
+                            color: order.payment_method === 'cash' ? '#047857' : '#1D4ED8',
+                            padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-block', marginTop: '4px', marginLeft: '4px'
+                        }}>
+                            {order.payment_method === 'cash' ? 'Nakit' : 'Kredi Kartı'}
+                        </div>
+                    )}
                 </div>
             </div>
+            {order.status === 'cancelled' && order.rejection_reason && (
+                <div style={{ background: '#FEF2F2', padding: '10px 12px', borderRadius: '8px', fontSize: '0.9rem', color: '#B91C1C' }}>
+                    <i className="fa-solid fa-times-circle" style={{ marginRight: '8px' }} /> Red sebebi: {REJECT_REASONS.find(r => r.value === order.rejection_reason)?.label || order.rejection_reason}
+                </div>
+            )}
 
             <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '12px' }}>
                 <h4 style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>Sipariş Detayı</h4>
@@ -519,17 +580,42 @@ export default function OrdersPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
-                <button
-                    onClick={() => handlePrintClick(order)}
-                    style={{
-                        background: 'white', border: '1px solid #D1D5DB', padding: '10px 20px', borderRadius: '8px',
-                        color: '#374151', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
-                    }}
-                >
-                    <i className="fa-solid fa-print"></i> Yazdır
-                </button>
+                {order.status !== 'cancelled' && (
+                    <button
+                        onClick={() => handlePrintClick(order)}
+                        style={{
+                            background: 'white', border: '1px solid #D1D5DB', padding: '10px 20px', borderRadius: '8px',
+                            color: '#374151', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                        }}
+                    >
+                        <i className="fa-solid fa-print"></i> Yazdır
+                    </button>
+                )}
 
-                {order.status !== 'completed' && (
+                {order.status === 'pending' && (
+                    <>
+                        <button
+                            onClick={() => approveOrder(order)}
+                            style={{
+                                background: '#059669', border: 'none', padding: '10px 20px', borderRadius: '8px',
+                                color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                            }}
+                        >
+                            <i className="fa-solid fa-check"></i> Onayla
+                        </button>
+                        <button
+                            onClick={() => openRejectModal(order)}
+                            style={{
+                                background: '#DC2626', border: 'none', padding: '10px 20px', borderRadius: '8px',
+                                color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                            }}
+                        >
+                            <i className="fa-solid fa-times"></i> Reddet
+                        </button>
+                    </>
+                )}
+
+                {order.status === 'processing' && (
                     <button
                         onClick={() => closeOrder(order)}
                         style={{
@@ -541,7 +627,7 @@ export default function OrdersPage() {
                     </button>
                 )}
 
-                {order.location_lat && order.location_lng && (
+                {order.location_lat && order.location_lng && order.status !== 'cancelled' && (
                     <button
                         onClick={() => handleSendLocation(order)}
                         style={{
@@ -687,6 +773,76 @@ export default function OrdersPage() {
                         >
                             İptal
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Reddet modal */}
+            {orderToReject && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 100,
+                        background: 'rgba(0,0,0,0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '16px'
+                    }}
+                    onClick={() => setOrderToReject(null)}
+                >
+                    <div
+                        style={{
+                            background: 'white',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            maxWidth: '400px',
+                            width: '100%',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px' }}>Siparişi reddet</div>
+                        <div style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '16px' }}>
+                            {orderToReject.customer_name} · {orderToReject.total_amount} ₺
+                        </div>
+                        <div style={{ marginBottom: '12px', fontWeight: 600, fontSize: '0.9rem', color: '#374151' }}>Red sebebi (opsiyonel)</div>
+                        <select
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', marginBottom: '8px', fontSize: '0.9rem' }}
+                        >
+                            <option value="">Seçin...</option>
+                            {REJECT_REASONS.map((r) => (
+                                <option key={r.value} value={r.value}>{r.label}</option>
+                            ))}
+                        </select>
+                        {rejectReason === 'other' && (
+                            <input
+                                type="text"
+                                placeholder="Sebep yazın"
+                                value={rejectReasonCustom}
+                                onChange={(e) => setRejectReasonCustom(e.target.value)}
+                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', marginBottom: '12px', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                            />
+                        )}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                type="button"
+                                onClick={() => { setOrderToReject(null); setRejectReason(''); setRejectReasonCustom(''); }}
+                                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                                Vazgeç
+                            </button>
+                            <button
+                                type="button"
+                                onClick={rejectOrder}
+                                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#DC2626', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                                Reddet
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

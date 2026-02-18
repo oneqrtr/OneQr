@@ -95,6 +95,7 @@ export default function TablesPage() {
     const [masaTempExcluded, setMasaTempExcluded] = useState<string[]>([]);
     const [masaPreviewModal, setMasaPreviewModal] = useState(false);
     const [masaSubmitting, setMasaSubmitting] = useState(false);
+    const [tableStatusMap, setTableStatusMap] = useState<Record<number, 'empty' | 'occupied' | 'bill_requested'>>({});
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -142,6 +143,18 @@ export default function TablesPage() {
                 .order('created_at', { ascending: false });
 
             setOrders(ordersData || []);
+
+            const { data: statusRows } = await supabase
+                .from('table_status')
+                .select('table_number, status')
+                .eq('restaurant_id', rest.id);
+            const statusMap: Record<number, 'empty' | 'occupied' | 'bill_requested'> = {};
+            if (statusRows) {
+                statusRows.forEach((r: { table_number: number; status: string }) => {
+                    statusMap[r.table_number] = r.status as 'empty' | 'occupied' | 'bill_requested';
+                });
+            }
+            setTableStatusMap(statusMap);
             setLoading(false);
         };
 
@@ -380,6 +393,11 @@ export default function TablesPage() {
                 source: 'restaurant'
             }).select().single();
             if (error) throw error;
+            await supabase.from('table_status').upsert(
+                { restaurant_id: restaurantId, table_number: selectedTableNum, status: 'occupied', updated_at: new Date().toISOString() },
+                { onConflict: 'restaurant_id,table_number' }
+            );
+            setTableStatusMap(prev => ({ ...prev, [selectedTableNum]: 'occupied' }));
             setMasaModalOpen(false);
             setMasaPreviewModal(false);
             setMasaCart([]);
@@ -608,7 +626,32 @@ export default function TablesPage() {
             return;
         }
         setOrders((prev) => prev.map((o) => (o.id === orderToClose.id ? { ...o, status: 'completed', payment_method: paymentMethod } : o)));
+        const tableNum = orderToClose.source === 'restaurant' ? orderToClose.table_number : null;
+        if (restaurantId && tableNum != null && tableNum >= 1 && tableNum <= tableCount) {
+            const otherOpen = orders.filter(o => o.id !== orderToClose.id && o.source === 'restaurant' && o.table_number === tableNum && o.status === 'pending');
+            if (otherOpen.length === 0) {
+                await supabase.from('table_status').upsert(
+                    { restaurant_id: restaurantId, table_number: tableNum, status: 'empty', updated_at: new Date().toISOString() },
+                    { onConflict: 'restaurant_id,table_number' }
+                );
+                setTableStatusMap(prev => ({ ...prev, [tableNum]: 'empty' }));
+            }
+        }
         setOrderToClose(null);
+    };
+
+    const setTableStatusBillRequested = async (tableNum: number) => {
+        if (!restaurantId) return;
+        const supabase = createClient();
+        const { error } = await supabase.from('table_status').upsert(
+            { restaurant_id: restaurantId, table_number: tableNum, status: 'bill_requested', updated_at: new Date().toISOString() },
+            { onConflict: 'restaurant_id,table_number' }
+        );
+        if (error) {
+            alert('Güncelleme hatası: ' + error.message);
+            return;
+        }
+        setTableStatusMap(prev => ({ ...prev, [tableNum]: 'bill_requested' }));
     };
 
     const formatTime = (dateString: string) =>
@@ -726,21 +769,53 @@ export default function TablesPage() {
                         {Array.from({ length: tableCount }, (_, i) => i + 1).map((tableNum) => {
                             const openList = openOrdersByTable[tableNum] || [];
                             const closedList = closedOrdersByTable[tableNum] || [];
+                            const isOccupied = openList.length > 0;
+                            const billRequested = tableStatusMap[tableNum] === 'bill_requested';
+                            const tableStatusColor = billRequested ? '#DC2626' : isOccupied ? '#EA580C' : '#059669';
+                            const tableStatusLabel = billRequested ? 'Hesap istendi' : isOccupied ? 'Dolu' : 'Boş';
                             return (
                                 <div
                                     key={tableNum}
                                     style={{
                                         background: 'white',
                                         borderRadius: '12px',
-                                        border: '1px solid #E5E7EB',
+                                        border: `2px solid ${tableStatusColor}`,
                                         overflow: 'hidden',
                                         boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                                     }}
                                 >
-                                    <div style={{ background: '#059669', color: 'white', padding: '12px 16px', fontWeight: 700, fontSize: '1.1rem' }}>
-                                        Masa {tableNum}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => { setSelectedTableNum(tableNum); setMasaModalOpen(true); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTableNum(tableNum); setMasaModalOpen(true); } }}
+                                        style={{
+                                            background: tableStatusColor,
+                                            color: 'white',
+                                            padding: '12px 16px',
+                                            fontWeight: 700,
+                                            fontSize: '1.1rem',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
+                                        }}
+                                    >
+                                        <span>Masa {tableNum}</span>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.95 }}>
+                                            {tableStatusLabel}
+                                        </span>
                                     </div>
                                     <div style={{ padding: '12px' }}>
+                                        {isOccupied && !billRequested && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setTableStatusBillRequested(tableNum); }}
+                                                style={{ width: '100%', marginBottom: '10px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DC2626', background: '#FEF2F2', color: '#DC2626', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                                            >
+                                                <i className="fa-solid fa-receipt" style={{ marginRight: '6px' }} /> Hesap istendi
+                                            </button>
+                                        )}
                                         {openList.length === 0 && closedList.length === 0 ? (
                                             <div style={{ color: '#9CA3AF', fontSize: '0.9rem', padding: '12px 0' }}>Sipariş yok</div>
                                         ) : (
