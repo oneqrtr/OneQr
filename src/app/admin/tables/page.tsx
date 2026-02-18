@@ -14,6 +14,10 @@ interface OrderItem {
     excluded_ingredients?: string[];
 }
 
+interface CategoryRow { id: string; name: string; display_order?: number; }
+interface ProductRow { id: string; category_id: string; name: string; price: number; display_order?: number; }
+interface VariantRow { id: string; product_id: string; name: string; price: number; }
+
 interface Order {
     id: string;
     restaurant_id: string;
@@ -39,6 +43,16 @@ export default function TablesPage() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [orderToClose, setOrderToClose] = useState<Order | null>(null);
     const printFrameRef = useRef<HTMLIFrameElement>(null);
+
+    // Paket siparişi modal (sadece web/desktop)
+    const [paketModalOpen, setPaketModalOpen] = useState(false);
+    const [paketCategories, setPaketCategories] = useState<CategoryRow[]>([]);
+    const [paketProducts, setPaketProducts] = useState<ProductRow[]>([]);
+    const [paketVariants, setPaketVariants] = useState<VariantRow[]>([]);
+    const [paketCart, setPaketCart] = useState<{ product: ProductRow; quantity: number; selectedVariants: VariantRow[]; finalPrice: number }[]>([]);
+    const [paketCustomer, setPaketCustomer] = useState({ fullName: '', phone: '', addressDetail: '' });
+    const [paketPayment, setPaketPayment] = useState<'cash' | 'credit_card'>('cash');
+    const [paketSubmitting, setPaketSubmitting] = useState(false);
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -88,6 +102,77 @@ export default function TablesPage() {
 
         fetchData();
     }, [selectedDate]);
+
+    useEffect(() => {
+        if (!paketModalOpen || !restaurantId) return;
+        const fetch = async () => {
+            const supabase = createClient();
+            const { data: cats } = await supabase.from('categories').select('id, name, display_order').eq('restaurant_id', restaurantId).order('display_order', { ascending: true });
+            setPaketCategories(cats || []);
+            if (!cats?.length) { setPaketProducts([]); setPaketVariants([]); return; }
+            const catIds = cats.map(c => c.id);
+            const { data: prods } = await supabase.from('products').select('id, category_id, name, price, display_order').in('category_id', catIds).order('display_order', { ascending: true });
+            setPaketProducts(prods || []);
+            const prodIds = (prods || []).map(p => p.id);
+            const { data: vars } = await supabase.from('product_variants').select('id, product_id, name, price').in('product_id', prodIds);
+            setPaketVariants(vars || []);
+        };
+        fetch();
+    }, [paketModalOpen, restaurantId]);
+
+    const addToPaketCart = (product: ProductRow, variant?: VariantRow) => {
+        const price = product.price + (variant?.price || 0);
+        setPaketCart(prev => {
+            const existing = prev.find(x => x.product.id === product.id && JSON.stringify(x.selectedVariants.map(v => v.id)) === JSON.stringify(variant ? [variant.id] : []));
+            if (existing) return prev.map(x => x === existing ? { ...x, quantity: x.quantity + 1 } : x);
+            return [...prev, { product, quantity: 1, selectedVariants: variant ? [variant] : [], finalPrice: price }];
+        });
+    };
+
+    const removeFromPaketCart = (idx: number) => {
+        setPaketCart(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const submitPaketOrder = async () => {
+        if (!restaurantId || !paketCustomer.fullName || !paketCustomer.phone || !paketCustomer.addressDetail || paketCart.length === 0) {
+            alert('Lütfen tüm alanları doldurun ve en az bir ürün ekleyin.');
+            return;
+        }
+        setPaketSubmitting(true);
+        try {
+            const supabase = createClient();
+            const totalAmount = paketCart.reduce((acc, x) => acc + x.finalPrice * x.quantity, 0);
+            const orderItems = paketCart.map(x => ({
+                product_id: x.product.id,
+                name: x.product.name + (x.selectedVariants.length ? ' - ' + x.selectedVariants.map(v => v.name).join(', ') : ''),
+                quantity: x.quantity,
+                price: x.finalPrice,
+                total_price: x.finalPrice * x.quantity,
+                selected_variants: x.selectedVariants.map(v => ({ id: v.id, name: v.name, price: v.price })),
+                excluded_ingredients: []
+            }));
+            const { error } = await supabase.from('orders').insert({
+                restaurant_id: restaurantId,
+                customer_name: paketCustomer.fullName,
+                customer_phone: paketCustomer.phone,
+                address_detail: paketCustomer.addressDetail,
+                items: orderItems,
+                total_amount: totalAmount,
+                payment_method: paketPayment,
+                status: 'pending',
+                source: 'system'
+            });
+            if (error) throw error;
+            alert('Paket siparişi alındı. Siparişler sayfasında görüntülenir.');
+            setPaketModalOpen(false);
+            setPaketCart([]);
+            setPaketCustomer({ fullName: '', phone: '', addressDetail: '' });
+        } catch (e: any) {
+            alert('Sipariş gönderilirken hata: ' + (e?.message || 'Bilinmeyen'));
+        } finally {
+            setPaketSubmitting(false);
+        }
+    };
 
     const openOrdersByTable: Record<number, Order[]> = {};
     const closedOrdersByTable: Record<number, Order[]> = {};
@@ -190,10 +275,34 @@ export default function TablesPage() {
 
     return (
         <>
+            <style dangerouslySetInnerHTML={{ __html: '@media(max-width:768px){.paket-btn-desktop{display:none!important}}@media(max-width:600px){.paket-modal-grid{grid-template-columns:1fr!important}}' }} />
             <Topbar title="Restoran Siparişleri" />
             <div style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Masalar</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Masalar</h1>
+                        <button
+                            type="button"
+                            onClick={() => setPaketModalOpen(true)}
+                            className="paket-btn-desktop"
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                background: '#2563EB',
+                                color: 'white',
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <i className="fa-solid fa-box" />
+                            Paket siparişi al
+                        </button>
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #D1D5DB', borderRadius: '8px', overflow: 'hidden' }}>
                         <button
                             type="button"
@@ -293,6 +402,111 @@ export default function TablesPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Paket siparişi al modal */}
+                {paketModalOpen && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 100,
+                            background: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '16px'
+                        }}
+                        onClick={() => !paketSubmitting && setPaketModalOpen(false)}
+                    >
+                        <div
+                            style={{
+                                background: 'white',
+                                borderRadius: '16px',
+                                padding: '24px',
+                                maxWidth: '640px',
+                                width: '100%',
+                                maxHeight: '90vh',
+                                overflow: 'auto',
+                                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Paket siparişi al</h2>
+                                <button type="button" onClick={() => !paketSubmitting && setPaketModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280' }}>&times;</button>
+                            </div>
+
+                            <div className="paket-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div>
+                                    <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Ürünler</div>
+                                    <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px' }}>
+                                        {paketCategories.map(cat => (
+                                            <div key={cat.id} style={{ marginBottom: '12px' }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>{cat.name}</div>
+                                                {paketProducts.filter(p => p.category_id === cat.id).map(prod => {
+                                                    const vars = paketVariants.filter(v => v.product_id === prod.id);
+                                                    return (
+                                                        <div key={prod.id} style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addToPaketCart(prod)}
+                                                                style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', background: 'white', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                            >
+                                                                {prod.name} ({prod.price} ₺)
+                                                            </button>
+                                                            {vars.map(v => (
+                                                                <button
+                                                                    key={v.id}
+                                                                    type="button"
+                                                                    onClick={() => addToPaketCart(prod, v)}
+                                                                    style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', background: '#F9FAFB', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                                >
+                                                                    + {v.name} (+{v.price} ₺)
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+                                        {paketCategories.length === 0 && <div style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Henüz ürün yok</div>}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Sepet</div>
+                                    <div style={{ maxHeight: '140px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px', marginBottom: '16px' }}>
+                                        {paketCart.length === 0 ? (
+                                            <div style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Sepet boş</div>
+                                        ) : (
+                                            paketCart.map((item, idx) => (
+                                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: '0.9rem' }}>
+                                                    <span>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' + ' + item.selectedVariants.map(v => v.name).join(', ') : ''} = {item.finalPrice * item.quantity} ₺</span>
+                                                    <button type="button" onClick={() => removeFromPaketCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '1rem' }} title="Kaldır">&times;</button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <div style={{ fontWeight: 700, marginBottom: '16px', fontSize: '1.1rem' }}>
+                                        Toplam: {paketCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                                        <input type="text" placeholder="Müşteri adı *" value={paketCustomer.fullName} onChange={e => setPaketCustomer(p => ({ ...p, fullName: e.target.value }))} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} />
+                                        <input type="tel" placeholder="Telefon *" value={paketCustomer.phone} onChange={e => setPaketCustomer(p => ({ ...p, phone: e.target.value }))} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB' }} />
+                                        <textarea placeholder="Adres *" value={paketCustomer.addressDetail} onChange={e => setPaketCustomer(p => ({ ...p, addressDetail: e.target.value }))} rows={3} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', resize: 'vertical' }} />
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <button type="button" onClick={() => setPaketPayment('cash')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'cash' ? '2px solid #059669' : '1px solid #D1D5DB', background: paketPayment === 'cash' ? '#ECFDF5' : 'white', fontWeight: 600, cursor: 'pointer' }}>Nakit</button>
+                                            <button type="button" onClick={() => setPaketPayment('credit_card')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'credit_card' ? '2px solid #2563EB' : '1px solid #D1D5DB', background: paketPayment === 'credit_card' ? '#EFF6FF' : 'white', fontWeight: 600, cursor: 'pointer' }}>Kart</button>
+                                        </div>
+                                    </div>
+                                    <button type="button" onClick={submitPaketOrder} disabled={paketSubmitting} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: '#2563EB', color: 'white', fontWeight: 700, cursor: paketSubmitting ? 'not-allowed' : 'pointer', opacity: paketSubmitting ? 0.7 : 1 }}>
+                                        {paketSubmitting ? 'Gönderiliyor...' : 'Siparişi Gönder'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
