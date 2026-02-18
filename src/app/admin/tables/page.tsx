@@ -361,6 +361,93 @@ export default function TablesPage() {
 
         const dashLine = '------------------------------------------------';
         const masaLine = isPaket ? '<div><strong>Paket Siparişi</strong></div>' : `<div><strong>Masa: ${order.table_number ?? '-'}</strong></div>`;
+
+        if (isPaket) {
+            const itemRows = items.map((item: any) => {
+                const v = item.selected_variants?.map((x: { name: string }) => x.name).join(', ') || item.variantName || '';
+                const ex = item.excluded_ingredients?.join(', ') || '';
+                return `<div class="product-row"><div class="col-qty">${item.quantity}</div><div class="col-name">${item.name}${v ? `<div class="receipt-extra">+ ${v}</div>` : ''}${ex ? `<div class="receipt-extra receipt-excluded">Çıkar: ${ex}</div>` : ''}</div><div class="col-price">${item.price * item.quantity} ₺</div></div>`;
+            });
+            const kitchenRows = items.map((item: any) => {
+                const v = item.selected_variants?.map((x: { name: string }) => x.name).join(', ') || item.variantName || '';
+                const ex = item.excluded_ingredients?.join(', ') || '';
+                return `<div style="margin-bottom: 10px; font-size: 18px; font-weight: bold;">${item.quantity}x ${item.name}</div>${v ? `<div style="font-size: 16px; font-style: italic; margin-bottom: 4px;">+ ${v}</div>` : ''}${ex ? `<div style="font-size: 16px; text-decoration: line-through; margin-bottom: 8px;">Çıkar: ${ex}</div>` : ''}`;
+            });
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=H&data=${encodeURIComponent(restaurantSlug ? `https://${restaurantSlug}.oneqr.tr` : 'https://oneqr.tr')}`;
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(`
+            <html><head><title>Paket Sipariş Fişi</title>
+            <style>
+                @page { size: 80mm auto; margin: 0mm; }
+                body { width: 80mm; margin: 0 auto; padding: 5px; font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; color: #000; }
+                .center { text-align: center; }
+                .separator { white-space: pre; margin: 5px 0; font-weight: normal; }
+                .rest-name { font-size: 24px; font-weight: 900; text-transform: uppercase; margin: 10px 0; line-height: 1.2; }
+                .customer-block { font-size: 18px; font-weight: bold; line-height: 1.3; text-align: left; }
+                .customer-label { font-size: 16px; text-decoration: underline; margin-bottom: 5px; display: block; }
+                .product-row { font-size: 18px; font-weight: bold; margin-bottom: 6px; line-height: 1.2; }
+                .product-row .col-qty, .product-row .col-name, .product-row .col-price { display: inline-block; }
+                .col-qty { width: 18%; }
+                .col-name { width: 57%; }
+                .col-price { width: 25%; text-align: right; }
+                .receipt-extra { font-size: 18px; font-weight: bold; font-style: italic; margin-top: 2px; line-height: 1.2; }
+                .receipt-excluded { font-style: normal; }
+                .total-row { display: flex; justify-content: space-between; font-size: 26px; font-weight: 900; margin-top: 10px; }
+                .payment-row { font-size: 20px; font-weight: bold; margin-top: 5px; }
+                .footer { margin-top: 20px; text-align: center; }
+                .qr-wrap { position: relative; width: 120px; height: 120px; margin: 10px auto; }
+                .qr-wrap .qr-img { width: 100%; height: 100%; display: block; }
+                .qr-wrap .qr-logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; object-fit: contain; background: white; padding: 4px; box-sizing: border-box; }
+                .footer-text { font-size: 12px; margin-top: 2px; font-weight: normal; }
+                .page-break { page-break-after: always; }
+            </style></head><body>
+            <div class="center" style="font-size: 14px; font-weight: bold;">OneQR - Menü Sistemleri</div>
+            <div class="center separator">${dashLine}</div>
+            <div class="center rest-name">${restaurantName}</div>
+            <div class="center separator">${dashLine}</div>
+            ${masaLine}
+            <div class="customer-block" style="margin-top: 8px;">
+                <span class="customer-label">MÜŞTERİ BİLGİLERİ</span>
+                <div>${order.customer_name}</div>
+                ${order.customer_phone ? `<div>Tel: ${order.customer_phone}</div>` : ''}
+                <div style="margin-top: 5px; font-weight: normal;">${order.address_detail || 'Adres detayı yok'}</div>
+            </div>
+            <div class="center separator">${dashLine}</div>
+            <div class="product-row" style="font-size: 16px; border-bottom: 1px solid #000; padding-bottom: 2px;">
+                <div class="col-qty">Adet</div><div class="col-name">Ürün</div><div class="col-price">Tutar</div>
+            </div>
+            ${itemRows.join('')}
+            <div class="center separator">${dashLine}</div>
+            <div class="total-row"><span>TOPLAM</span><span>${order.total_amount} ₺</span></div>
+            <div class="center separator">${dashLine}</div>
+            <div class="payment-row">ÖDEME: ${getPaymentLabel(order.payment_method).toUpperCase()}</div>
+            <div class="center separator">${dashLine}</div>
+            <div class="footer">
+                <div style="font-size: 18px; font-weight: 900;">OneQR.tr</div>
+                <div class="qr-wrap">
+                    <img src="${qrUrl}" class="qr-img" alt="QR Code" />
+                    <img src="/oneqr-logo.png" class="qr-logo" alt="OneQR" />
+                </div>
+                <div class="footer-text">oneqr.tr ile oluşturuldu</div>
+                <div class="footer-text">${dateStr}</div>
+            </div>
+            <div class="page-break"></div>
+            <div class="center rest-name" style="font-size: 20px;">MUTFAK FİŞİ</div>
+            <div class="center" style="font-size: 14px; margin-bottom: 8px;">Paket Siparişi</div>
+            <div class="center separator">${dashLine}</div>
+            <div class="center rest-name">${restaurantName}</div>
+            <div class="center separator">${dashLine}</div>
+            ${kitchenRows.join('')}
+            <div class="center separator">${dashLine}</div>
+            <div class="footer-text">${dateStr}</div>
+            </body></html>
+            `);
+            doc.close();
+            setTimeout(() => iframe.contentWindow?.print(), 800);
+            return;
+        }
+
         const doc = iframe.contentWindow.document;
         doc.open();
         doc.write(`
