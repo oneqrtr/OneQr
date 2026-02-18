@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const DEFAULT_SIDEBAR_ORDER = [
-    '/admin', '/admin/orders', '/admin/tables', '/admin/menu', '/admin/report',
+    '/admin', '/admin/orders', '/admin/tables', '/admin/customers', '/admin/menu', '/admin/report',
     '/admin/qr', '/admin/theme', '/admin/settings/billing', '/admin/settings'
 ];
 
@@ -13,6 +13,7 @@ const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' |
     { path: '/admin', label: 'Panel', icon: 'fa-chart-pie' },
     { path: '/admin/orders', label: 'Siparişler', icon: 'fa-bell', badge: 'orders' },
     { path: '/admin/tables', label: 'Restoran Siparişleri', icon: 'fa-utensils', badge: 'restaurant' },
+    { path: '/admin/customers', label: 'Müşteriler', icon: 'fa-users' },
     { path: '/admin/menu', label: 'Menü Yönetimi', icon: 'fa-list' },
     { path: '/admin/report', label: 'Restoran Raporu', icon: 'fa-chart-bar' },
     { path: '/admin/qr', label: 'QR Kodlar', icon: 'fa-qrcode' },
