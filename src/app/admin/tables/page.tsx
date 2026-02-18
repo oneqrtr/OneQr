@@ -373,6 +373,11 @@ export default function TablesPage() {
                 const ex = item.excluded_ingredients?.join(', ') || '';
                 return `<div style="margin-bottom: 10px; font-size: 18px; font-weight: bold;">${item.quantity}x ${item.name}</div>${v ? `<div style="font-size: 16px; font-style: italic; margin-bottom: 4px;">+ ${v}</div>` : ''}${ex ? `<div style="font-size: 16px; text-decoration: line-through; margin-bottom: 8px;">Çıkar: ${ex}</div>` : ''}`;
             });
+            const courierRows = items.map((item: any) => {
+                const v = item.selected_variants?.map((x: { name: string }) => x.name).join(', ') || item.variantName || '';
+                const ex = item.excluded_ingredients?.join(', ') || '';
+                return `<div class="product-row"><div class="col-qty">${item.quantity}</div><div class="col-name">${item.name}${v ? ` + ${v}` : ''}${ex ? ` (Çıkar: ${ex})` : ''}</div><div class="col-price">${item.price * item.quantity} ₺</div></div>`;
+            });
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=H&data=${encodeURIComponent(restaurantSlug ? `https://${restaurantSlug}.oneqr.tr` : 'https://oneqr.tr')}`;
             const doc = iframe.contentWindow.document;
             doc.open();
@@ -439,6 +444,20 @@ export default function TablesPage() {
             <div class="center rest-name">${restaurantName}</div>
             <div class="center separator">${dashLine}</div>
             ${kitchenRows.join('')}
+            <div class="center separator">${dashLine}</div>
+            <div class="footer-text">${dateStr}</div>
+            <div class="page-break"></div>
+            <div class="center rest-name" style="font-size: 20px;">KURYE FİŞİ</div>
+            <div class="center" style="font-size: 14px; margin-bottom: 8px;">Paket Siparişi</div>
+            <div class="center separator">${dashLine}</div>
+            <div class="center rest-name">${restaurantName}</div>
+            <div class="center separator">${dashLine}</div>
+            <div class="product-row" style="font-size: 16px; border-bottom: 1px solid #000; padding-bottom: 2px;">
+                <div class="col-qty">Adet</div><div class="col-name">Ürün</div><div class="col-price">Tutar</div>
+            </div>
+            ${courierRows.join('')}
+            <div class="center separator">${dashLine}</div>
+            <div class="total-row"><span>TOPLAM</span><span>${order.total_amount} ₺</span></div>
             <div class="center separator">${dashLine}</div>
             <div class="footer-text">${dateStr}</div>
             </body></html>
