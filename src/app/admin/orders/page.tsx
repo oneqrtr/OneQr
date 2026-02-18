@@ -56,6 +56,7 @@ export default function OrdersPage() {
     const [whatsappNumber, setWhatsappNumber] = useState('');
     const [restaurantName, setRestaurantName] = useState('');
     const [restaurantSlug, setRestaurantSlug] = useState('');
+    const [orderToClose, setOrderToClose] = useState<Order | null>(null);
 
     const isSameDay = (d1: Date, d2: Date) => {
         return d1.getFullYear() === d2.getFullYear() &&
@@ -419,6 +420,23 @@ export default function OrdersPage() {
         });
     };
 
+    const closeOrder = (order: Order) => setOrderToClose(order);
+
+    const confirmCloseWithPayment = async (paymentMethod: 'cash' | 'credit_card') => {
+        if (!orderToClose) return;
+        const supabase = createClient();
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'completed', payment_method: paymentMethod })
+            .eq('id', orderToClose.id);
+        if (error) {
+            alert('Güncelleme hatası: ' + error.message);
+            return;
+        }
+        setOrders((prev) => prev.map((o) => (o.id === orderToClose.id ? { ...o, status: 'completed', payment_method: paymentMethod } : o)));
+        setOrderToClose(null);
+    };
+
     const externalOrders = orders.filter(o => o.source !== 'restaurant');
 
     const renderOrderCard = (order: Order) => (
@@ -500,7 +518,7 @@ export default function OrdersPage() {
                 )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
                 <button
                     onClick={() => handlePrintClick(order)}
                     style={{
@@ -510,6 +528,18 @@ export default function OrdersPage() {
                 >
                     <i className="fa-solid fa-print"></i> Yazdır
                 </button>
+
+                {order.status !== 'completed' && (
+                    <button
+                        onClick={() => closeOrder(order)}
+                        style={{
+                            background: '#059669', border: 'none', padding: '10px 20px', borderRadius: '8px',
+                            color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                        }}
+                    >
+                        <i className="fa-solid fa-check"></i> Siparişi Kapat
+                    </button>
+                )}
 
                 {order.location_lat && order.location_lng && (
                     <button
@@ -572,6 +602,92 @@ export default function OrdersPage() {
                     ) : (
                         externalOrders.map(renderOrderCard)
                     )}
+                </div>
+            )}
+
+            {/* Ödeme yöntemi seç modal - Siparişi kapat */}
+            {orderToClose && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 100,
+                        background: 'rgba(0,0,0,0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '16px'
+                    }}
+                    onClick={() => setOrderToClose(null)}
+                >
+                    <div
+                        style={{
+                            background: 'white',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            maxWidth: '360px',
+                            width: '100%',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '8px' }}>Siparişi kapat</div>
+                        <div style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '16px' }}>
+                            {orderToClose.customer_name} · {orderToClose.total_amount} ₺ — Ödeme nasıl alındı?
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                type="button"
+                                onClick={() => confirmCloseWithPayment('cash')}
+                                style={{
+                                    flex: 1,
+                                    padding: '14px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: '#ECFDF5',
+                                    color: '#047857',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontSize: '1rem'
+                                }}
+                            >
+                                <i className="fa-solid fa-money-bill-wave" style={{ marginRight: '8px' }} /> Nakit
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => confirmCloseWithPayment('credit_card')}
+                                style={{
+                                    flex: 1,
+                                    padding: '14px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: '#EFF6FF',
+                                    color: '#1D4ED8',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontSize: '1rem'
+                                }}
+                            >
+                                <i className="fa-solid fa-credit-card" style={{ marginRight: '8px' }} /> Kart
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setOrderToClose(null)}
+                            style={{
+                                marginTop: '12px',
+                                width: '100%',
+                                padding: '10px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#6B7280',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            İptal
+                        </button>
+                    </div>
                 </div>
             )}
 

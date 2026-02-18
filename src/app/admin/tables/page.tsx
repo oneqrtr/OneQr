@@ -85,6 +85,16 @@ export default function TablesPage() {
     const [paketTempVariants, setPaketTempVariants] = useState<VariantRow[]>([]);
     const [paketTempExcluded, setPaketTempExcluded] = useState<string[]>([]);
     const [paketPreviewModal, setPaketPreviewModal] = useState(false);
+    // Masa siparişi modal
+    const [masaModalOpen, setMasaModalOpen] = useState(false);
+    const [selectedTableNum, setSelectedTableNum] = useState<number | null>(null);
+    const [masaCart, setMasaCart] = useState<{ product: ProductRow; quantity: number; selectedVariants: VariantRow[]; excludedIngredients: string[]; finalPrice: number }[]>([]);
+    const [masaPayment, setMasaPayment] = useState<'cash' | 'credit_card'>('cash');
+    const [masaProductModal, setMasaProductModal] = useState<ProductRow | null>(null);
+    const [masaTempVariants, setMasaTempVariants] = useState<VariantRow[]>([]);
+    const [masaTempExcluded, setMasaTempExcluded] = useState<string[]>([]);
+    const [masaPreviewModal, setMasaPreviewModal] = useState(false);
+    const [masaSubmitting, setMasaSubmitting] = useState(false);
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -139,7 +149,7 @@ export default function TablesPage() {
     }, [selectedDate]);
 
     useEffect(() => {
-        if (!paketModalOpen || !restaurantId) return;
+        if ((!paketModalOpen && !masaModalOpen) || !restaurantId) return;
         const fetch = async () => {
             const supabase = createClient();
             const { data: cats } = await supabase.from('categories').select('id, name, display_order').eq('restaurant_id', restaurantId).order('display_order', { ascending: true });
@@ -153,7 +163,7 @@ export default function TablesPage() {
             setPaketVariants(vars || []);
         };
         fetch();
-    }, [paketModalOpen, restaurantId]);
+    }, [paketModalOpen, masaModalOpen, restaurantId]);
 
     useEffect(() => {
         if (!restaurantId || !customerSearchQuery.trim()) { setCustomerSearchResults([]); return; }
@@ -320,6 +330,74 @@ export default function TablesPage() {
         const order = await doSubmitPaketOrder();
         if (order) {
             printPaketOrder(order);
+        }
+    };
+
+    const openProductForMasa = (product: ProductRow) => {
+        setMasaProductModal(product);
+        setMasaTempVariants([]);
+        setMasaTempExcluded([]);
+    };
+
+    const addToMasaCart = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
+        const price = product.price + selectedVariants.reduce((a, v) => a + v.price, 0);
+        setMasaCart(prev => {
+            const key = JSON.stringify({ v: selectedVariants.map(x => x.id).sort(), e: excludedIngredients.sort() });
+            const existing = prev.find(x => x.product.id === product.id && JSON.stringify({ v: x.selectedVariants.map(v => v.id).sort(), e: x.excludedIngredients.sort() }) === key);
+            if (existing) return prev.map(x => x === existing ? { ...x, quantity: x.quantity + 1 } : x);
+            return [...prev, { product, quantity: 1, selectedVariants, excludedIngredients, finalPrice: price }];
+        });
+        setMasaProductModal(null);
+    };
+
+    const removeFromMasaCart = (idx: number) => {
+        setMasaCart(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const doSubmitMasaOrder = async (): Promise<Order | null> => {
+        if (!restaurantId || selectedTableNum == null || masaCart.length === 0) return null;
+        setMasaSubmitting(true);
+        try {
+            const supabase = createClient();
+            const totalAmount = masaCart.reduce((acc, x) => acc + x.finalPrice * x.quantity, 0);
+            const orderItems = masaCart.map(x => ({
+                product_id: x.product.id,
+                name: x.product.name + (x.selectedVariants.length ? ' - ' + x.selectedVariants.map(v => v.name).join(', ') : ''),
+                quantity: x.quantity,
+                price: x.finalPrice,
+                total_price: x.finalPrice * x.quantity,
+                selected_variants: x.selectedVariants.map(v => ({ id: v.id, name: v.name, price: v.price })),
+                excluded_ingredients: x.excludedIngredients || []
+            }));
+            const { data: newOrder, error } = await supabase.from('orders').insert({
+                restaurant_id: restaurantId,
+                customer_name: `Masa ${selectedTableNum}`,
+                table_number: selectedTableNum,
+                items: orderItems,
+                total_amount: totalAmount,
+                payment_method: masaPayment,
+                status: 'pending',
+                source: 'restaurant'
+            }).select().single();
+            if (error) throw error;
+            setMasaModalOpen(false);
+            setMasaPreviewModal(false);
+            setMasaCart([]);
+            setSelectedTableNum(null);
+            setOrders(prev => [newOrder as Order, ...prev]);
+            return newOrder as Order;
+        } catch (e: any) {
+            alert('Sipariş gönderilirken hata: ' + (e?.message || 'Bilinmeyen'));
+            return null;
+        } finally {
+            setMasaSubmitting(false);
+        }
+    };
+
+    const confirmAndSubmitMasa = async () => {
+        const order = await doSubmitMasaOrder();
+        if (order) {
+            printOrder(order, false);
         }
     };
 
@@ -544,6 +622,27 @@ export default function TablesPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                         <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: 0 }}>Masalar</h1>
+                        <button
+                            type="button"
+                            onClick={() => setMasaModalOpen(true)}
+                            className="paket-btn-desktop"
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                border: '1px solid #059669',
+                                background: 'white',
+                                color: '#059669',
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <i className="fa-solid fa-utensils" />
+                            Masa siparişi al
+                        </button>
                         <button
                             type="button"
                             onClick={() => setPaketModalOpen(true)}
@@ -867,6 +966,182 @@ export default function TablesPage() {
                                         <div style={{ display: 'flex', gap: '12px' }}>
                                             <button type="button" onClick={() => setPaketPreviewModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>İptal</button>
                                             <button type="button" onClick={confirmAndSubmitPaket} disabled={paketSubmitting} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#059669', color: 'white', fontWeight: 700, cursor: paketSubmitting ? 'not-allowed' : 'pointer' }}>{paketSubmitting ? 'Gönderiliyor...' : 'Onayla ve Gönder'}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Masa siparişi al modal */}
+                {masaModalOpen && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 100,
+                            background: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '16px'
+                        }}
+                        onClick={() => !masaSubmitting && setMasaModalOpen(false)}
+                    >
+                        <div
+                            style={{
+                                background: 'white',
+                                borderRadius: '16px',
+                                padding: '24px',
+                                maxWidth: '1100px',
+                                width: '100%',
+                                maxHeight: '90vh',
+                                overflow: 'auto',
+                                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Masa siparişi al</h2>
+                                <button type="button" onClick={() => !masaSubmitting && setMasaModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280' }}>&times;</button>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', minHeight: '480px' }}>
+                                {/* Sol: Ürünler */}
+                                <div>
+                                    <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Ürünler</div>
+                                    <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                                        {paketCategories.map(cat => (
+                                            <div key={cat.id} style={{ gridColumn: '1 / -1' }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6B7280', marginBottom: '8px' }}>{cat.name}</div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                                    {paketProducts.filter(p => p.category_id === cat.id).map(prod => (
+                                                        <button key={prod.id} type="button" onClick={() => openProductForMasa(prod)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', textAlign: 'left', minHeight: '100px' }}>
+                                                            {prod.image_url ? <img src={prod.image_url} alt={prod.name} style={{ width: '100%', height: '70px', objectFit: 'cover', borderRadius: '8px', marginBottom: '6px' }} /> : <div style={{ width: '100%', height: '70px', background: '#F3F4F6', borderRadius: '8px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}><i className="fa-solid fa-image" /></div>}
+                                                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{prod.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>{prod.price} ₺</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {paketCategories.length === 0 && <div style={{ gridColumn: '1 / -1', color: '#9CA3AF', fontSize: '0.9rem' }}>Henüz ürün yok</div>}
+                                    </div>
+                                </div>
+
+                                {/* Orta: Sepet + Ödeme */}
+                                <div>
+                                    <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Sepet</div>
+                                    <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
+                                        {masaCart.length === 0 ? <div style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Sepet boş</div> : masaCart.map((item, idx) => (
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: '0.9rem' }}>
+                                                <span>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</span>
+                                                <button type="button" onClick={() => removeFromMasaCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '1rem' }}>&times;</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ fontWeight: 700, marginBottom: '16px', fontSize: '1.2rem' }}>Toplam: {masaCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺</div>
+                                    <div style={{ fontWeight: 600, marginBottom: '8px', color: '#374151' }}>Ödeme</div>
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                        <button type="button" onClick={() => setMasaPayment('cash')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: masaPayment === 'cash' ? '2px solid #059669' : '1px solid #D1D5DB', background: masaPayment === 'cash' ? '#ECFDF5' : 'white', fontWeight: 600, cursor: 'pointer' }}>Nakit</button>
+                                        <button type="button" onClick={() => setMasaPayment('credit_card')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: masaPayment === 'credit_card' ? '2px solid #2563EB' : '1px solid #D1D5DB', background: masaPayment === 'credit_card' ? '#EFF6FF' : 'white', fontWeight: 600, cursor: 'pointer' }}>Kart</button>
+                                    </div>
+                                    <button type="button" onClick={() => { if (selectedTableNum == null) { alert('Lütfen masa seçin.'); return; } setMasaPreviewModal(true); }} disabled={masaSubmitting || masaCart.length === 0} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: '#059669', color: 'white', fontWeight: 700, cursor: masaSubmitting || masaCart.length === 0 ? 'not-allowed' : 'pointer', opacity: masaSubmitting || masaCart.length === 0 ? 0.7 : 1 }}>Siparişi Gönder</button>
+                                </div>
+
+                                {/* Sağ: Masa seçimi */}
+                                <div>
+                                    <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Masa seçin</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))', gap: '10px' }}>
+                                        {Array.from({ length: tableCount }, (_, i) => i + 1).map((num) => (
+                                            <button
+                                                key={num}
+                                                type="button"
+                                                onClick={() => setSelectedTableNum(num)}
+                                                style={{
+                                                    width: '100%',
+                                                    aspectRatio: '1',
+                                                    borderRadius: '12px',
+                                                    border: selectedTableNum === num ? '2px solid #059669' : '1px solid #E5E7EB',
+                                                    background: selectedTableNum === num ? '#ECFDF5' : 'white',
+                                                    color: selectedTableNum === num ? '#047857' : '#374151',
+                                                    fontWeight: 700,
+                                                    fontSize: '1.1rem',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    boxShadow: selectedTableNum === num ? '0 0 0 2px #059669' : 'none'
+                                                }}
+                                            >
+                                                {num}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {selectedTableNum != null && <div style={{ marginTop: '12px', fontSize: '0.9rem', color: '#059669', fontWeight: 600 }}><i className="fa-solid fa-check" style={{ marginRight: '6px' }} />Masa {selectedTableNum} seçildi</div>}
+                                </div>
+                            </div>
+
+                            {/* Masa ürün seçenekleri modal */}
+                            {masaProductModal && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setMasaProductModal(null)}>
+                                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%', maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{masaProductModal.name}</h3>
+                                            <button type="button" onClick={() => setMasaProductModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280' }}>&times;</button>
+                                        </div>
+                                        {masaProductModal.image_url && <img src={masaProductModal.image_url} alt={masaProductModal.name} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px' }} />}
+                                        {paketVariants.filter(v => v.product_id === masaProductModal.id).length > 0 && (
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <div style={{ fontWeight: 600, marginBottom: '8px', color: '#374151', fontSize: '0.9rem' }}>Varyasyon</div>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                    {paketVariants.filter(v => v.product_id === masaProductModal.id).map(v => (
+                                                        <label key={v.id} style={{ padding: '10px 14px', borderRadius: '10px', border: masaTempVariants.some(x => x.id === v.id) ? `2px solid ${restaurantThemeColor}` : '1px solid #D1D5DB', background: masaTempVariants.some(x => x.id === v.id) ? '#EFF6FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                                                            <input type="checkbox" checked={masaTempVariants.some(x => x.id === v.id)} onChange={e => { if (e.target.checked) setMasaTempVariants(p => [...p, v]); else setMasaTempVariants(p => p.filter(x => x.id !== v.id)); }} style={{ display: 'none' }} />
+                                                            {v.name} (+{v.price} ₺)
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {masaProductModal.ingredients && masaProductModal.ingredients.length > 0 && (
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <div style={{ fontWeight: 600, marginBottom: '8px', color: '#374151', fontSize: '0.9rem' }}>Çıkarılacak malzemeler</div>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                    {masaProductModal.ingredients.map((ing, idx) => (
+                                                        <label key={idx} style={{ padding: '8px 12px', borderRadius: '20px', border: masaTempExcluded.includes(ing) ? '1px dashed #EF4444' : '1px solid #E5E7EB', background: masaTempExcluded.includes(ing) ? '#FEF2F2' : '#F3F4F6', color: masaTempExcluded.includes(ing) ? '#EF4444' : '#374151', textDecoration: masaTempExcluded.includes(ing) ? 'line-through' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                                            <input type="checkbox" checked={!masaTempExcluded.includes(ing)} onChange={e => { if (!e.target.checked) setMasaTempExcluded(p => [...p, ing]); else setMasaTempExcluded(p => p.filter(i => i !== ing)); }} style={{ display: 'none' }} />
+                                                            {ing}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button type="button" onClick={() => addToMasaCart(masaProductModal, masaTempVariants, masaTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
+                                            Sepete Ekle · {masaProductModal.price + masaTempVariants.reduce((a, v) => a + v.price, 0)} ₺
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Masa sipariş önizleme modal */}
+                            {masaPreviewModal && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setMasaPreviewModal(false)}>
+                                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+                                        <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '16px' }}>Sipariş Önizleme</div>
+                                        <div style={{ background: '#ECFDF5', padding: '16px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.9rem', fontWeight: 600 }}>
+                                            Masa {selectedTableNum}
+                                        </div>
+                                        <div style={{ marginBottom: '16px' }}>
+                                            {masaCart.map((item, idx) => (
+                                                <div key={idx} style={{ padding: '10px 0', borderBottom: '1px solid #E5E7EB', fontSize: '0.9rem' }}>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</div>
+                                            ))}
+                                        </div>
+                                        <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '16px' }}>Toplam: {masaCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺ · {masaPayment === 'cash' ? 'Nakit' : 'Kart'}</div>
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <button type="button" onClick={() => setMasaPreviewModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>İptal</button>
+                                            <button type="button" onClick={confirmAndSubmitMasa} disabled={masaSubmitting} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: '#059669', color: 'white', fontWeight: 700, cursor: masaSubmitting ? 'not-allowed' : 'pointer' }}>{masaSubmitting ? 'Gönderiliyor...' : 'Onayla ve Gönder'}</button>
                                         </div>
                                     </div>
                                 </div>
