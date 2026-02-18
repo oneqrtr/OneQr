@@ -43,6 +43,8 @@ export default function TablesPage() {
     const [restaurantName, setRestaurantName] = useState('');
     const [restaurantSlug, setRestaurantSlug] = useState('');
     const [restaurantThemeColor, setRestaurantThemeColor] = useState('#2563EB');
+    const [restaurantLocationLat, setRestaurantLocationLat] = useState<number | null>(null);
+    const [restaurantLocationLng, setRestaurantLocationLng] = useState<number | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [orderToClose, setOrderToClose] = useState<Order | null>(null);
@@ -75,7 +77,7 @@ export default function TablesPage() {
 
             const { data: rest, error: restError } = await supabase
                 .from('restaurants')
-                .select('id, name, slug, table_count, theme_color')
+                .select('id, name, slug, table_count, theme_color, location_lat, location_lng')
                 .eq('owner_id', user.id)
                 .single();
 
@@ -88,6 +90,8 @@ export default function TablesPage() {
             setRestaurantName(rest.name || '');
             setRestaurantSlug(rest.slug || '');
             setRestaurantThemeColor(rest.theme_color || '#2563EB');
+            setRestaurantLocationLat(rest.location_lat ?? null);
+            setRestaurantLocationLng(rest.location_lng ?? null);
             setTableCount(Math.max(1, rest.table_count ?? 10));
 
             const startOfDay = new Date(selectedDate);
@@ -514,7 +518,7 @@ export default function TablesPage() {
                                     {paketLocationLat != null && paketLocationLng != null && (
                                         <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '4px' }}><i className="fa-solid fa-check" style={{ marginRight: '6px' }} />Konum kaydedildi: {paketLocationLat.toFixed(5)}, {paketLocationLng.toFixed(5)}</div>
                                     )}
-                                    <KonumMapModal isOpen={konumModalOpen} onClose={() => setKonumModalOpen(false)} onSelect={(lat, lng) => { setPaketLocationLat(lat); setPaketLocationLng(lng); setKonumModalOpen(false); }} themeColor={restaurantThemeColor} selectedLat={paketLocationLat} selectedLng={paketLocationLng} />
+                                    <KonumMapModal isOpen={konumModalOpen} onClose={() => setKonumModalOpen(false)} onSelect={(lat, lng) => { setPaketLocationLat(lat); setPaketLocationLng(lng); setKonumModalOpen(false); }} themeColor={restaurantThemeColor} selectedLat={paketLocationLat} selectedLng={paketLocationLng} centerLat={restaurantLocationLat} centerLng={restaurantLocationLng} restaurantName={restaurantName} />
                                         <div style={{ display: 'flex', gap: '12px' }}>
                                             <button type="button" onClick={() => setPaketPayment('cash')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'cash' ? '2px solid #059669' : '1px solid #D1D5DB', background: paketPayment === 'cash' ? '#ECFDF5' : 'white', fontWeight: 600, cursor: 'pointer' }}>Nakit</button>
                                             <button type="button" onClick={() => setPaketPayment('credit_card')} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: paketPayment === 'credit_card' ? '2px solid #2563EB' : '1px solid #D1D5DB', background: paketPayment === 'credit_card' ? '#EFF6FF' : 'white', fontWeight: 600, cursor: 'pointer' }}>Kart</button>

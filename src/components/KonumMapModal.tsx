@@ -3,8 +3,7 @@
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 
-const LARA_CENTER: [number, number] = [36.855, 30.76];
-const LARA_BOUNDS: [[number, number], [number, number]] = [[36.82, 30.70], [36.89, 30.82]];
+const FALLBACK_CENTER: [number, number] = [36.855, 30.76];
 
 interface KonumMapModalProps {
     isOpen: boolean;
@@ -13,9 +12,12 @@ interface KonumMapModalProps {
     themeColor?: string;
     selectedLat?: number | null;
     selectedLng?: number | null;
+    centerLat?: number | null;
+    centerLng?: number | null;
+    restaurantName?: string;
 }
 
-export default function KonumMapModal({ isOpen, onClose, onSelect, themeColor = '#2563EB', selectedLat, selectedLng }: KonumMapModalProps) {
+export default function KonumMapModal({ isOpen, onClose, onSelect, themeColor = '#2563EB', selectedLat, selectedLng, centerLat, centerLng, restaurantName }: KonumMapModalProps) {
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const markerRef = useRef<any>(null);
@@ -34,19 +36,27 @@ export default function KonumMapModal({ isOpen, onClose, onSelect, themeColor = 
                 mapInstanceRef.current.remove();
             }
 
+            const mapCenter: [number, number] = (centerLat != null && centerLng != null) ? [centerLat, centerLng] : FALLBACK_CENTER;
             const map = L.map(el, {
-                center: LARA_CENTER,
-                zoom: 15,
-                maxBounds: LARA_BOUNDS,
-                maxBoundsViscosity: 1,
-                minZoom: 14,
-                maxZoom: 18,
+                center: mapCenter,
+                zoom: 13,
+                minZoom: 10,
+                maxZoom: 19,
                 scrollWheelZoom: true,
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20,
             }).addTo(map);
+
+            map.attributionControl.setPrefix(false);
+            map.attributionControl.remove();
+            const attrDiv = L.DomUtil.create('div', 'leaflet-custom-attribution');
+            attrDiv.innerHTML = '<a href="https://oneqr.tr" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#666;font-size:11px;"><img src="/logo-qr.png" alt="OneQR" style="width:20px;height:20px;object-fit:contain;" /></a><span style="font-size:9px;color:#999;margin-left:6px">© CARTO</span>';
+            attrDiv.style.cssText = 'position:absolute;bottom:6px;right:6px;z-index:1000;background:rgba(255,255,255,0.9);padding:4px 8px;border-radius:4px;';
+            map.getContainer().appendChild(attrDiv);
 
             const iconHtml = `
                 <div style="
@@ -121,7 +131,7 @@ export default function KonumMapModal({ isOpen, onClose, onSelect, themeColor = 
                 onClick={(e) => e.stopPropagation()}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>Konum seç (Antalya Lara)</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>Konum seç {restaurantName ? `(${restaurantName})` : ''}</h3>
                     <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#6B7280' }}>&times;</button>
                 </div>
                 <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: '#6B7280' }}>Haritada bir noktaya tıklayarak teslimat adresini işaretleyin</p>
