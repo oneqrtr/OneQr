@@ -13,6 +13,7 @@ export default function SettingsPage() {
     // Notification & Printer States
     const [isOrdersEnabled, setIsOrdersEnabled] = useState(true);
     const [tableCount, setTableCount] = useState(10);
+    const [waiterPin, setWaiterPin] = useState('');
     const [notificationSound, setNotificationSound] = useState('ding');
     const [printerHeader, setPrinterHeader] = useState('');
     const [printerFooter, setPrinterFooter] = useState('');
@@ -83,6 +84,7 @@ export default function SettingsPage() {
                 // Orders
                 setIsOrdersEnabled(rest.is_order_enabled ?? true);
                 setTableCount(rest.table_count ?? 10);
+                setWaiterPin(rest.waiter_pin ?? '');
 
                 // Notification & Printer
                 setNotificationSound(rest.notification_sound || 'ding');
@@ -150,6 +152,7 @@ export default function SettingsPage() {
                 // theme_color managed in /admin/theme
                 is_order_enabled: isOrdersEnabled,
                 table_count: tableCount,
+                waiter_pin: waiterPin.trim() || null,
                 notification_sound: notificationSound,
                 printer_header: printerHeader,
                 printer_footer: printerFooter,
@@ -317,6 +320,23 @@ export default function SettingsPage() {
                                     style={{ maxWidth: '120px' }}
                                 />
                                 <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Restoran Siparişleri ekranında gösterilecek masa adedi (1–99).</div>
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: '16px' }}>
+                                <label className="form-label">Garson paneli PIN (4–8 rakam)</label>
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    minLength={4}
+                                    maxLength={8}
+                                    placeholder="Boş bırakılırsa garson paneli kapalı olur"
+                                    value={waiterPin}
+                                    onChange={(e) => setWaiterPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                    className="form-input"
+                                    style={{ maxWidth: '160px' }}
+                                />
+                                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Garsonlar <strong>/garson/{'{slug}'}</strong> adresine bu PIN ile giriş yapar. Sadece masalar ekranı açılır.</div>
                             </div>
 
                             {/* Payment Methods Sub-Section */}

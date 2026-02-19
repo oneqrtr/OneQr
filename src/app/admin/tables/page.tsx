@@ -770,6 +770,20 @@ export default function TablesPage() {
                     </div>
                 </div>
 
+                {activeTab === 'masa' && !loading && (() => {
+                    const billRequestedTables = Object.entries(tableStatusMap)
+                        .filter(([, status]) => status === 'bill_requested')
+                        .map(([num]) => Number(num))
+                        .sort((a, b) => a - b);
+                    if (billRequestedTables.length === 0) return null;
+                    return (
+                        <div style={{ marginBottom: '16px', padding: '14px 18px', borderRadius: '12px', background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <i className="fa-solid fa-receipt" style={{ fontSize: '1.1rem' }} />
+                            <span>Hesap istendi: Masa {billRequestedTables.join(', ')}</span>
+                        </div>
+                    );
+                })()}
+
                 {loading ? (
                     <div>Yükleniyor...</div>
                 ) : activeTab === 'paket' ? (

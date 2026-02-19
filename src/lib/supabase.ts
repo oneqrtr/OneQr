@@ -21,4 +21,13 @@ export const createClient = () => {
     }
 
     return supabaseInstance;
+};
+
+/** Server-only: bypasses RLS. Use for garson API and other trusted server actions. */
+export function createServiceClient() {
+    if (typeof window !== 'undefined') throw new Error('createServiceClient is only for server');
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('SUPABASE_SERVICE_ROLE_KEY required for service client');
+    return createSupabaseClient(url, key);
 }
