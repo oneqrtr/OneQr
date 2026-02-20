@@ -12,7 +12,16 @@ export async function POST(request: Request) {
         if (!slug || typeof pin !== 'string') {
             return NextResponse.json({ error: 'slug ve pin gerekli' }, { status: 400 });
         }
-        const supabase = createServiceClient();
+        let supabase;
+        try {
+            supabase = createServiceClient();
+        } catch (err) {
+            console.error('Garson verify: createServiceClient failed', err);
+            return NextResponse.json(
+                { error: 'Sunucu yapılandırma hatası (SUPABASE_SERVICE_ROLE_KEY eksik)' },
+                { status: 503 }
+            );
+        }
         const { data: rest, error } = await supabase
             .from('restaurants')
             .select('id, waiter_pin')
