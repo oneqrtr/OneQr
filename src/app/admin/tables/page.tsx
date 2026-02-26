@@ -112,6 +112,7 @@ export default function TablesPage() {
 
     useEffect(() => {
         let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+        let statusChannel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
 
         const fetchData = async () => {
             const supabase = createClient();
@@ -169,6 +170,7 @@ export default function TablesPage() {
             setTableStatusMap(statusMap);
 
             if (channel) supabase.removeChannel(channel);
+            if (statusChannel) supabase.removeChannel(statusChannel);
             if (isSameDay(selectedDate, new Date())) {
                 channel = supabase
                     .channel('tables-orders-channel')
@@ -203,6 +205,36 @@ export default function TablesPage() {
                         }
                     )
                     .subscribe();
+
+                statusChannel = supabase
+                    .channel('tables-status-channel')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'table_status',
+                            filter: `restaurant_id=eq.${rest.id}`
+                        },
+                        (payload) => {
+                            const row = payload.new as { table_number: number; status: string };
+                            setTableStatusMap(prev => ({ ...prev, [row.table_number]: row.status as 'empty' | 'occupied' | 'bill_requested' }));
+                        }
+                    )
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'table_status',
+                            filter: `restaurant_id=eq.${rest.id}`
+                        },
+                        (payload) => {
+                            const row = payload.new as { table_number: number; status: string };
+                            setTableStatusMap(prev => ({ ...prev, [row.table_number]: row.status as 'empty' | 'occupied' | 'bill_requested' }));
+                        }
+                    )
+                    .subscribe();
             }
 
             setLoading(false);
@@ -211,10 +243,9 @@ export default function TablesPage() {
         fetchData();
 
         return () => {
-            if (channel) {
-                const supabase = createClient();
-                supabase.removeChannel(channel);
-            }
+            const supabase = createClient();
+            if (channel) supabase.removeChannel(channel);
+            if (statusChannel) supabase.removeChannel(statusChannel);
         };
     }, [selectedDate]);
 

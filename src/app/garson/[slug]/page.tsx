@@ -310,7 +310,6 @@ export default function GarsonPage() {
         setSelectedTableNum(null);
         setOrders((prev) => [order, ...prev]);
         setTableStatusMap((prev) => ({ ...prev, [selectedTableNum]: 'occupied' }));
-        printOrder(order);
         fetchData();
     };
 
@@ -402,7 +401,6 @@ export default function GarsonPage() {
                                                 <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>{formatTime(order.created_at)} · {order.total_amount} ₺</div>
                                                 <div style={{ fontSize: '0.85rem', color: '#374151', marginTop: '4px' }}>{(Array.isArray(order.items) ? order.items : []).map((it: OrderItem) => `${it.quantity}x ${it.name}`).join(', ')}</div>
                                                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                                    <button type="button" onClick={() => printOrder(order)} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}><i className="fa-solid fa-print" style={{ marginRight: '4px' }} /> Yazdır</button>
                                                     <button type="button" onClick={() => setOrderToClose(order)} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: 'none', background: '#059669', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>Kapat</button>
                                                 </div>
                                             </div>
