@@ -67,7 +67,6 @@ export default function GarsonPage() {
     const [presetOptions, setPresetOptions] = useState<{ id: string; label: string; display_order: number }[]>([]);
     const [masaOrderNote, setMasaOrderNote] = useState('');
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [orderToClose, setOrderToClose] = useState<Order | null>(null);
     const [masaModalOpen, setMasaModalOpen] = useState(false);
     const [selectedTableNum, setSelectedTableNum] = useState<number | null>(null);
     const [masaCart, setMasaCart] = useState<{ product: ProductRow; quantity: number; selectedVariants: VariantRow[]; excludedIngredients: string[]; finalPrice: number }[]>([]);
@@ -199,22 +198,6 @@ export default function GarsonPage() {
         `);
         doc.close();
         setTimeout(() => iframe.contentWindow?.print(), 500);
-    };
-
-    const confirmCloseOrder = async (paymentMethod: 'cash' | 'credit_card') => {
-        if (!orderToClose) return;
-        const res = await fetch('/api/garson/order/close', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug, orderId: orderToClose.id, paymentMethod })
-        });
-        if (!res.ok) {
-            alert('Kapatılamadı');
-            return;
-        }
-        setOrders((prev) => prev.map((o) => (o.id === orderToClose.id ? { ...o, status: 'completed', payment_method: paymentMethod } : o)));
-        setOrderToClose(null);
-        fetchData();
     };
 
     const setBillRequested = async (tableNum: number) => {
@@ -400,9 +383,6 @@ export default function GarsonPage() {
                                                 <div style={{ fontWeight: 600, color: '#111827' }}>{order.customer_name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>{formatTime(order.created_at)} · {order.total_amount} ₺</div>
                                                 <div style={{ fontSize: '0.85rem', color: '#374151', marginTop: '4px' }}>{(Array.isArray(order.items) ? order.items : []).map((it: OrderItem) => `${it.quantity}x ${it.name}`).join(', ')}</div>
-                                                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                                    <button type="button" onClick={() => setOrderToClose(order)} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: 'none', background: '#059669', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.8rem' }}>Kapat</button>
-                                                </div>
                                             </div>
                                         ))
                                     )}
@@ -412,19 +392,6 @@ export default function GarsonPage() {
                     })}
                 </div>
             </div>
-
-            {orderToClose && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setOrderToClose(null)}>
-                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '360px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }} onClick={(e) => e.stopPropagation()}>
-                        <div style={{ fontWeight: 700, marginBottom: '8px' }}>Siparişi kapat</div>
-                        <div style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '16px' }}>{orderToClose.customer_name} · {orderToClose.total_amount} ₺</div>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button type="button" onClick={() => setOrderToClose(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>İptal</button>
-                            <button type="button" onClick={() => confirmCloseOrder('cash')} style={{ flex: 1, padding: '14px', borderRadius: '10px', border: 'none', background: themeColor, color: 'white', fontWeight: 700, cursor: 'pointer' }}>Kapat</button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {masaModalOpen && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => { if (!masaSubmitting) { setMasaModalOpen(false); setMasaOrderNote(''); } }}>
