@@ -284,7 +284,7 @@ export default function MenuManagementPage() {
         let error;
         if (isEditModeProduct && editingProduct.id) {
             // Update
-            const stockVal = editingProduct.stock_quantity !== undefined && editingProduct.stock_quantity !== '' && Number(editingProduct.stock_quantity) >= 0
+            const stockVal = editingProduct.stock_quantity != null && Number(editingProduct.stock_quantity) >= 0
                 ? Number(editingProduct.stock_quantity)
                 : null;
             const { error: err } = await supabase
@@ -305,7 +305,7 @@ export default function MenuManagementPage() {
             error = err;
         } else {
             // Create
-            const stockValInsert = editingProduct.stock_quantity !== undefined && editingProduct.stock_quantity !== '' && Number(editingProduct.stock_quantity) >= 0
+            const stockValInsert = editingProduct.stock_quantity != null && Number(editingProduct.stock_quantity) >= 0
                 ? Number(editingProduct.stock_quantity)
                 : null;
             const { error: err } = await supabase
