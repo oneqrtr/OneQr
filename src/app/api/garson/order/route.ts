@@ -4,7 +4,7 @@ import { getGarsonSession } from '@/lib/garson-session';
 
 export async function POST(request: Request) {
     const body = await request.json();
-    const { slug, tableNumber, items, totalAmount, paymentMethod } = body;
+    const { slug, tableNumber, items, totalAmount, paymentMethod, orderNote } = body;
     if (!slug || tableNumber == null || !Array.isArray(items) || items.length === 0 || totalAmount == null) {
         return NextResponse.json({ error: 'slug, tableNumber, items ve totalAmount gerekli' }, { status: 400 });
     }
@@ -33,7 +33,8 @@ export async function POST(request: Request) {
                 total_amount: Number(totalAmount),
                 payment_method: method,
                 status: 'pending',
-                source: 'restaurant'
+                source: 'restaurant',
+                ...(orderNote != null && orderNote !== '' && { order_note: String(orderNote) })
             })
             .select()
             .single();

@@ -36,6 +36,12 @@ interface Variant {
     is_available: boolean;
 }
 
+interface MenuPresetOption {
+    id: string;
+    label: string;
+    display_order: number;
+}
+
 export default function MenuManagementPage() {
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -69,6 +75,12 @@ export default function MenuManagementPage() {
     // Bulk Edit States
     const [isBulkMode, setIsBulkMode] = useState(false);
     const [bulkPrices, setBulkPrices] = useState<{ [key: string]: number }>({});
+
+    // Hazır menü ayarları (preset options for garson / masa / paket)
+    const [presetOptions, setPresetOptions] = useState<MenuPresetOption[]>([]);
+    const [presetLabel, setPresetLabel] = useState('');
+    const [presetSaving, setPresetSaving] = useState(false);
+    const [presetSectionOpen, setPresetSectionOpen] = useState(false);
 
     const supabase = createClient();
 
@@ -119,6 +131,13 @@ export default function MenuManagementPage() {
                     setProducts([]);
                     setAllVariants([]);
                 }
+                // Hazır menü ayarları
+                const { data: presets } = await supabase
+                    .from('menu_preset_options')
+                    .select('id, label, display_order')
+                    .eq('restaurant_id', rest.id)
+                    .order('display_order', { ascending: true });
+                setPresetOptions(presets || []);
             }
         } catch (error) {
             console.error(error);
@@ -455,6 +474,43 @@ export default function MenuManagementPage() {
         }
     };
 
+    // --- HAZIR MENÜ AYARLARI ---
+    const handleAddPreset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!restaurantId || !presetLabel.trim()) return;
+        setPresetSaving(true);
+        try {
+            const { data, error } = await supabase
+                .from('menu_preset_options')
+                .insert({
+                    restaurant_id: restaurantId,
+                    label: presetLabel.trim(),
+                    display_order: presetOptions.length
+                })
+                .select('id, label, display_order')
+                .single();
+            if (error) throw error;
+            if (data) {
+                setPresetOptions((prev) => [...prev, data as MenuPresetOption]);
+                setPresetLabel('');
+            }
+        } catch (err: any) {
+            alert('Eklenirken hata: ' + (err?.message || 'Bilinmeyen'));
+        } finally {
+            setPresetSaving(false);
+        }
+    };
+
+    const handleDeletePreset = async (id: string) => {
+        if (!confirm('Bu hazır ayarı kaldırmak istiyor musunuz?')) return;
+        const { error } = await supabase.from('menu_preset_options').delete().eq('id', id);
+        if (error) {
+            alert('Silme hatası: ' + error.message);
+        } else {
+            setPresetOptions((prev) => prev.filter((p) => p.id !== id));
+        }
+    };
+
     return (
         <>
             <Topbar title="Menü Yönetimi" />
@@ -595,6 +651,64 @@ export default function MenuManagementPage() {
                                 </div>
                             </div>
                         ))}
+
+                        {/* Hazır menü ayarları */}
+                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setPresetSectionOpen(!presetSectionOpen)}
+                                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, color: '#374151', padding: 0 }}
+                            >
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <i className="fa-solid fa-list-check" style={{ color: '#059669' }}></i>
+                                    Hazır menü ayarları
+                                </span>
+                                <i className={`fa-solid ${presetSectionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ fontSize: '0.8rem', color: '#9CA3AF' }}></i>
+                            </button>
+                            <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '6px', marginBottom: 0 }}>
+                                Masa veya paket siparişinde ürün seçildikten sonra gösterilecek hazır seçenekler (örn. Soğansız, Az pişmiş). Seçilenler sipariş notuna ve fişe yazılır.
+                            </p>
+                            {presetSectionOpen && (
+                                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #F3F4F6' }}>
+                                    <form onSubmit={handleAddPreset} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                                        <input
+                                            className="form-input"
+                                            value={presetLabel}
+                                            onChange={(e) => setPresetLabel(e.target.value)}
+                                            placeholder="Örn: Soğansız, Az pişmiş, Ekstra sos"
+                                            style={{ flex: 1, padding: '10px 12px' }}
+                                        />
+                                        <button type="submit" disabled={presetSaving || !presetLabel.trim()} className="btn btn-primary btn-sm">
+                                            {presetSaving ? 'Ekleniyor...' : 'Ekle'}
+                                        </button>
+                                    </form>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {presetOptions.length === 0 && (
+                                            <span style={{ fontSize: '0.9rem', color: '#9CA3AF', fontStyle: 'italic' }}>Henüz hazır ayar eklenmedi.</span>
+                                        )}
+                                        {presetOptions.map((p) => (
+                                            <span
+                                                key={p.id}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    padding: '8px 12px',
+                                                    background: '#F0FDF4',
+                                                    border: '1px solid #BBF7D0',
+                                                    borderRadius: '8px',
+                                                    fontSize: '0.9rem',
+                                                    color: '#166534'
+                                                }}
+                                            >
+                                                {p.label}
+                                                <button type="button" onClick={() => handleDeletePreset(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', padding: '0 4px', fontSize: '0.9rem' }} title="Kaldır">&times;</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

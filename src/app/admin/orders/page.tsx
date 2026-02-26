@@ -33,6 +33,7 @@ interface Order {
     status: string;
     created_at: string;
     rejection_reason?: string | null;
+    order_note?: string | null;
     neighborhood?: string;
     street?: string;
     apartment?: string;
@@ -310,6 +311,7 @@ export default function OrdersPage() {
                     </div>
                 `;
                 }).join('')}
+                ${order.order_note ? `<div class="center separator">${dashLine}</div><div style="font-size: 16px; text-align: left;">Not: ${order.order_note}</div>` : ''}
                 
                 <div class="center separator">${dashLine}</div>
                 
@@ -561,6 +563,11 @@ export default function OrdersPage() {
                         </div>
                     ))}
                 </div>
+                {order.order_note && (
+                    <div style={{ marginTop: '10px', padding: '8px 10px', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '6px', fontSize: '0.9rem', color: '#92400E' }}>
+                        <strong>Not:</strong> {order.order_note}
+                    </div>
+                )}
             </div>
 
             <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', color: '#4B5563' }}>

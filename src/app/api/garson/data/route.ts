@@ -75,6 +75,12 @@ export async function GET(request: Request) {
             }
         }
 
+        const { data: presets } = await supabase
+            .from('menu_preset_options')
+            .select('id, label, display_order')
+            .eq('restaurant_id', rest.id)
+            .order('display_order', { ascending: true });
+
         return NextResponse.json({
             restaurant: rest,
             tableCount,
@@ -82,7 +88,8 @@ export async function GET(request: Request) {
             tableStatusMap,
             categories: cats || [],
             products: prods,
-            variants: vars
+            variants: vars,
+            presetOptions: presets || []
         });
     } catch (e) {
         console.error(e);

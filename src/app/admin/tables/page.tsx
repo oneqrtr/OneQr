@@ -34,6 +34,7 @@ interface Order {
     payment_method: string;
     status: string;
     created_at: string;
+    order_note?: string | null;
 }
 
 interface Customer {
@@ -97,6 +98,14 @@ export default function TablesPage() {
     const [masaSubmitting, setMasaSubmitting] = useState(false);
     const [tableStatusMap, setTableStatusMap] = useState<Record<number, 'empty' | 'occupied' | 'bill_requested'>>({});
     const [activeTab, setActiveTab] = useState<'masa' | 'paket'>('masa');
+    const [presetOptions, setPresetOptions] = useState<{ id: string; label: string; display_order: number }[]>([]);
+    const [masaOrderNote, setMasaOrderNote] = useState('');
+    const [masaPresetModalOpen, setMasaPresetModalOpen] = useState(false);
+    const [masaPresetSelected, setMasaPresetSelected] = useState<Set<string>>(new Set());
+    const [masaPendingAdd, setMasaPendingAdd] = useState<{ product: ProductRow; selectedVariants: VariantRow[]; excludedIngredients: string[] } | null>(null);
+    const [paketPresetModalOpen, setPaketPresetModalOpen] = useState(false);
+    const [paketPresetSelected, setPaketPresetSelected] = useState<Set<string>>(new Set());
+    const [paketPendingAdd, setPaketPendingAdd] = useState<{ product: ProductRow; selectedVariants: VariantRow[]; excludedIngredients: string[] } | null>(null);
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -175,6 +184,8 @@ export default function TablesPage() {
             const prodIds = (prods || []).map(p => p.id);
             const { data: vars } = await supabase.from('product_variants').select('id, product_id, name, price').in('product_id', prodIds);
             setPaketVariants(vars || []);
+            const { data: presets } = await supabase.from('menu_preset_options').select('id, label, display_order').eq('restaurant_id', restaurantId).order('display_order', { ascending: true });
+            setPresetOptions(presets || []);
         };
         fetch();
     }, [paketModalOpen, masaModalOpen, restaurantId]);
@@ -221,6 +232,34 @@ export default function TablesPage() {
             return [...prev, { product, quantity: 1, selectedVariants, excludedIngredients, finalPrice: price }];
         });
         setPaketProductModal(null);
+    };
+
+    const onPaketProductAddClick = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
+        if (presetOptions.length > 0) {
+            setPaketPendingAdd({ product, selectedVariants, excludedIngredients });
+            setPaketPresetSelected(new Set());
+            setPaketPresetModalOpen(true);
+        } else {
+            addToPaketCart(product, selectedVariants, excludedIngredients);
+        }
+    };
+
+    const confirmPaketPreset = () => {
+        if (paketPendingAdd) {
+            const selectedLabels = presetOptions.filter(p => paketPresetSelected.has(p.id)).map(p => p.label);
+            if (selectedLabels.length > 0) setPaketCustomer(prev => ({ ...prev, notes: prev.notes ? `${prev.notes}, ${selectedLabels.join(', ')}` : selectedLabels.join(', ') }));
+            addToPaketCart(paketPendingAdd.product, paketPendingAdd.selectedVariants, paketPendingAdd.excludedIngredients);
+            setPaketPendingAdd(null);
+            setPaketPresetModalOpen(false);
+        }
+    };
+
+    const skipPaketPreset = () => {
+        if (paketPendingAdd) {
+            addToPaketCart(paketPendingAdd.product, paketPendingAdd.selectedVariants, paketPendingAdd.excludedIngredients);
+            setPaketPendingAdd(null);
+            setPaketPresetModalOpen(false);
+        }
     };
 
     const removeFromPaketCart = (idx: number) => {
@@ -319,7 +358,8 @@ export default function TablesPage() {
                 total_amount: totalAmount,
                 payment_method: paketPayment,
                 status: 'pending',
-                source: 'system'
+                source: 'system',
+                ...(paketCustomer.notes?.trim() && { order_note: paketCustomer.notes.trim() })
             }).select().single();
             if (error) throw error;
             setPaketModalOpen(false);
@@ -365,6 +405,34 @@ export default function TablesPage() {
         setMasaProductModal(null);
     };
 
+    const onMasaProductAddClick = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
+        if (presetOptions.length > 0) {
+            setMasaPendingAdd({ product, selectedVariants, excludedIngredients });
+            setMasaPresetSelected(new Set());
+            setMasaPresetModalOpen(true);
+        } else {
+            addToMasaCart(product, selectedVariants, excludedIngredients);
+        }
+    };
+
+    const confirmMasaPreset = () => {
+        if (masaPendingAdd) {
+            const selectedLabels = presetOptions.filter(p => masaPresetSelected.has(p.id)).map(p => p.label);
+            if (selectedLabels.length > 0) setMasaOrderNote(prev => prev ? `${prev}, ${selectedLabels.join(', ')}` : selectedLabels.join(', '));
+            addToMasaCart(masaPendingAdd.product, masaPendingAdd.selectedVariants, masaPendingAdd.excludedIngredients);
+            setMasaPendingAdd(null);
+            setMasaPresetModalOpen(false);
+        }
+    };
+
+    const skipMasaPreset = () => {
+        if (masaPendingAdd) {
+            addToMasaCart(masaPendingAdd.product, masaPendingAdd.selectedVariants, masaPendingAdd.excludedIngredients);
+            setMasaPendingAdd(null);
+            setMasaPresetModalOpen(false);
+        }
+    };
+
     const removeFromMasaCart = (idx: number) => {
         setMasaCart(prev => prev.filter((_, i) => i !== idx));
     };
@@ -392,7 +460,8 @@ export default function TablesPage() {
                 total_amount: totalAmount,
                 payment_method: masaPayment,
                 status: 'pending',
-                source: 'restaurant'
+                source: 'restaurant',
+                ...(masaOrderNote?.trim() && { order_note: masaOrderNote.trim() })
             }).select().single();
             if (error) throw error;
             await supabase.from('table_status').upsert(
@@ -403,6 +472,7 @@ export default function TablesPage() {
             setMasaModalOpen(false);
             setMasaPreviewModal(false);
             setMasaCart([]);
+            setMasaOrderNote('');
             setSelectedTableNum(null);
             setOrders(prev => [newOrder as Order, ...prev]);
             return newOrder as Order;
@@ -521,6 +591,7 @@ export default function TablesPage() {
                 <div class="col-qty">Adet</div><div class="col-name">Ürün</div><div class="col-price">Tutar</div>
             </div>
             ${itemRows.join('')}
+            ${order.order_note ? `<div class="center separator">${dashLine}</div><div style="font-size: 16px;">Not: ${order.order_note}</div>` : ''}
             <div class="center separator">${dashLine}</div>
             <div class="total-row"><span>TOPLAM</span><span>${order.total_amount} ₺</span></div>
             <div class="center separator">${dashLine}</div>
@@ -599,6 +670,7 @@ export default function TablesPage() {
                 const ex = item.excluded_ingredients?.join(', ') || '';
                 return `<div class="product-row"><div class="col-qty">${item.quantity}</div><div class="col-name">${item.name}${v ? `<div class="receipt-extra">+ ${v}</div>` : ''}${ex ? `<div class="receipt-extra">Çıkar: ${ex}</div>` : ''}</div><div class="col-price">${item.price * item.quantity} ₺</div></div>`;
             }).join('')}
+            ${order.order_note ? `<div class="center separator">${dashLine}</div><div style="font-size: 16px;">Not: ${order.order_note}</div>` : ''}
             <div class="center separator">${dashLine}</div>
             <div class="total-row"><span>TOPLAM</span><span>${order.total_amount} ₺</span></div>
             <div class="center separator">${dashLine}</div>
@@ -1072,9 +1144,31 @@ export default function TablesPage() {
                                                 </div>
                                             </div>
                                         )}
-                                        <button type="button" onClick={() => addToPaketCart(paketProductModal, paketTempVariants, paketTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
+                                        <button type="button" onClick={() => onPaketProductAddClick(paketProductModal, paketTempVariants, paketTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
                                             Sepete Ekle · {getPaketPrice(paketProductModal) + paketTempVariants.reduce((a, v) => a + v.price, 0)} ₺
                                         </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Paket hazır ayarlar modal */}
+                            {paketPresetModalOpen && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 160, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={skipPaketPreset}>
+                                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '360px', width: '100%' }} onClick={e => e.stopPropagation()}>
+                                        <div style={{ fontWeight: 700, marginBottom: '8px' }}>Hazır ayarlar</div>
+                                        <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>Seçenekler sipariş notuna ve fişe yazılır.</p>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                            {presetOptions.map(p => (
+                                                <label key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', border: paketPresetSelected.has(p.id) ? `2px solid ${restaurantThemeColor}` : '1px solid #E5E7EB', background: paketPresetSelected.has(p.id) ? '#ECFDF5' : 'white', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                                    <input type="checkbox" checked={paketPresetSelected.has(p.id)} onChange={e => setPaketPresetSelected(prev => { const next = new Set(prev); if (e.target.checked) next.add(p.id); else next.delete(p.id); return next; })} style={{ display: 'none' }} />
+                                                    {p.label}
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button type="button" onClick={skipPaketPreset} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Atla</button>
+                                            <button type="button" onClick={confirmPaketPreset} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer' }}>Tamam</button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1119,7 +1213,7 @@ export default function TablesPage() {
                             justifyContent: 'center',
                             padding: '16px'
                         }}
-                        onClick={() => !masaSubmitting && setMasaModalOpen(false)}
+                        onClick={() => { if (!masaSubmitting) { setMasaModalOpen(false); setMasaOrderNote(''); } }}
                     >
                         <div
                             style={{
@@ -1136,7 +1230,7 @@ export default function TablesPage() {
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Masa siparişi al</h2>
-                                <button type="button" onClick={() => !masaSubmitting && setMasaModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280' }}>&times;</button>
+                                <button type="button" onClick={() => { setMasaModalOpen(false); setMasaOrderNote(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280' }}>&times;</button>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', minHeight: '480px' }}>
@@ -1250,9 +1344,31 @@ export default function TablesPage() {
                                                 </div>
                                             </div>
                                         )}
-                                        <button type="button" onClick={() => addToMasaCart(masaProductModal, masaTempVariants, masaTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
+                                        <button type="button" onClick={() => onMasaProductAddClick(masaProductModal, masaTempVariants, masaTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
                                             Sepete Ekle · {masaProductModal.price + masaTempVariants.reduce((a, v) => a + v.price, 0)} ₺
                                         </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Masa hazır ayarlar modal */}
+                            {masaPresetModalOpen && (
+                                <div style={{ position: 'fixed', inset: 0, zIndex: 160, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={skipMasaPreset}>
+                                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '360px', width: '100%' }} onClick={e => e.stopPropagation()}>
+                                        <div style={{ fontWeight: 700, marginBottom: '8px' }}>Hazır ayarlar</div>
+                                        <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>Seçenekler sipariş notuna ve fişe yazılır.</p>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                                            {presetOptions.map(p => (
+                                                <label key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', border: masaPresetSelected.has(p.id) ? `2px solid ${restaurantThemeColor}` : '1px solid #E5E7EB', background: masaPresetSelected.has(p.id) ? '#ECFDF5' : 'white', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                                    <input type="checkbox" checked={masaPresetSelected.has(p.id)} onChange={e => setMasaPresetSelected(prev => { const next = new Set(prev); if (e.target.checked) next.add(p.id); else next.delete(p.id); return next; })} style={{ display: 'none' }} />
+                                                    {p.label}
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button type="button" onClick={skipMasaPreset} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>Atla</button>
+                                            <button type="button" onClick={confirmMasaPreset} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer' }}>Tamam</button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -1270,6 +1386,7 @@ export default function TablesPage() {
                                                 <div key={idx} style={{ padding: '10px 0', borderBottom: '1px solid #E5E7EB', fontSize: '0.9rem' }}>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</div>
                                             ))}
                                         </div>
+                                        {masaOrderNote && <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '12px' }}>Not: {masaOrderNote}</div>}
                                         <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '16px' }}>Toplam: {masaCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺ · {masaPayment === 'cash' ? 'Nakit' : 'Kart'}</div>
                                         <div style={{ display: 'flex', gap: '12px' }}>
                                             <button type="button" onClick={() => setMasaPreviewModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>İptal</button>
