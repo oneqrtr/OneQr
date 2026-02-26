@@ -61,6 +61,18 @@ export default function SettingsPage() {
         }
     });
 
+    type GeneralSubTab = 'isletme' | 'siparis' | 'odeme' | 'bildirim' | 'baglanti' | 'wifi' | 'iletisim';
+    const [generalSubTab, setGeneralSubTab] = useState<GeneralSubTab>('isletme');
+    const GENERAL_SUB_TABS: { id: GeneralSubTab; label: string }[] = [
+        { id: 'isletme', label: 'İşletme' },
+        { id: 'siparis', label: 'Sipariş' },
+        { id: 'odeme', label: 'Ödeme' },
+        { id: 'bildirim', label: 'Bildirim & Yazıcı' },
+        { id: 'baglanti', label: 'Bağlantılar' },
+        { id: 'wifi', label: 'Wifi' },
+        { id: 'iletisim', label: 'İletişim' },
+    ];
+
     const router = useRouter();
 
     const supabase = createClient();
@@ -261,88 +273,85 @@ export default function SettingsPage() {
             <div className="content-wrapper">
                 <div style={{ background: 'white', padding: '32px', borderRadius: '12px', border: '1px solid var(--border-color)', maxWidth: '700px' }}>
                     <form onSubmit={handleSave}>
-                        {/* General Info */}
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>Genel Bilgiler</h3>
-
-                        <div className="form-group">
-                            <label className="form-label">İşletme Adı</label>
-                            <input
-                                className="form-input"
-                                value={businessName}
-                                onChange={e => setBusinessName(e.target.value)}
-                                required
-                            />
+                        {/* Alt yapraklar - Genel sekmesi bölümleri */}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                            {GENERAL_SUB_TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setGeneralSubTab(tab.id)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '999px',
+                                        border: 'none',
+                                        background: generalSubTab === tab.id ? '#2563EB' : '#F3F4F6',
+                                        color: generalSubTab === tab.id ? 'white' : '#374151',
+                                        fontWeight: 600,
+                                        fontSize: '0.85rem',
+                                        cursor: 'pointer',
+                                        boxShadow: generalSubTab === tab.id ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
+                                    }}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">İşletme Açıklaması</label>
-                            <textarea
-                                className="form-input"
-                                value={description}
-                                onChange={e => setDescription(e.target.value)}
-                                placeholder="Lezzetli yemeklerimizin tadına bakın..."
-                                rows={3}
-                                style={{ resize: 'vertical' }}
-                            />
-                        </div>
-
-
-
-
-                        {/* Order Settings Wrapper */}
-                        <div style={{ marginTop: '40px', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', background: '#fff' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #f3f4f6' }}>
-                                <div>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827' }}>Sipariş Yönetimi</h3>
-                                    <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: 0 }}>Sipariş alımını buradan yönetebilirsiniz.</p>
-                                </div>
-                                <div className="toggle-switch" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '0.9rem', fontWeight: 500, color: isOrdersEnabled ? '#10B981' : '#EF4444' }}>
-                                        {isOrdersEnabled ? 'AÇIK' : 'KAPALI'}
-                                    </span>
+                        {generalSubTab === 'isletme' && (
+                            <>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>İşletme Bilgileri</h3>
+                                <div className="form-group">
+                                    <label className="form-label">İşletme Adı</label>
                                     <input
-                                        type="checkbox"
-                                        checked={isOrdersEnabled}
-                                        onChange={(e) => setIsOrdersEnabled(e.target.checked)}
+                                        className="form-input"
+                                        value={businessName}
+                                        onChange={e => setBusinessName(e.target.value)}
+                                        required
                                     />
                                 </div>
-                            </div>
+                                <div className="form-group">
+                                    <label className="form-label">İşletme Açıklaması</label>
+                                    <textarea
+                                        className="form-input"
+                                        value={description}
+                                        onChange={e => setDescription(e.target.value)}
+                                        placeholder="Lezzetli yemeklerimizin tadına bakın..."
+                                        rows={3}
+                                        style={{ resize: 'vertical' }}
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                            <div className="form-group" style={{ marginTop: '16px' }}>
-                                <label className="form-label">Masa Sayısı (Restoran içi sipariş)</label>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={99}
-                                    value={tableCount}
-                                    onChange={(e) => setTableCount(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                                    className="form-input"
-                                    style={{ maxWidth: '120px' }}
-                                />
-                                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Restoran Siparişleri ekranında gösterilecek masa adedi (1–99).</div>
+                        {generalSubTab === 'siparis' && (
+                            <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', background: '#fff' }}>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>Sipariş Yönetimi</h3>
+                                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '24px' }}>Sipariş alımını buradan yönetebilirsiniz.</p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #f3f4f6' }}>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Sipariş alımı</span>
+                                    <div className="toggle-switch" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 500, color: isOrdersEnabled ? '#10B981' : '#EF4444' }}>{isOrdersEnabled ? 'AÇIK' : 'KAPALI'}</span>
+                                        <input type="checkbox" checked={isOrdersEnabled} onChange={(e) => setIsOrdersEnabled(e.target.checked)} />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Masa Sayısı (Restoran içi sipariş)</label>
+                                    <input type="number" min={1} max={99} value={tableCount} onChange={(e) => setTableCount(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))} className="form-input" style={{ maxWidth: '120px' }} />
+                                    <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Restoran Siparişleri ekranında gösterilecek masa adedi (1–99).</div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Garson paneli PIN (4–8 rakam)</label>
+                                    <input type="password" inputMode="numeric" pattern="[0-9]*" minLength={4} maxLength={8} placeholder="Boş bırakılırsa garson paneli kapalı olur" value={waiterPin} onChange={(e) => setWaiterPin(e.target.value.replace(/\D/g, '').slice(0, 8))} className="form-input" style={{ maxWidth: '160px' }} />
+                                    <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Garsonlar <strong>/garson/{'{slug}'}</strong> adresine bu PIN ile giriş yapar.</div>
+                                </div>
                             </div>
+                        )}
 
-                            <div className="form-group" style={{ marginTop: '16px' }}>
-                                <label className="form-label">Garson paneli PIN (4–8 rakam)</label>
-                                <input
-                                    type="password"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    minLength={4}
-                                    maxLength={8}
-                                    placeholder="Boş bırakılırsa garson paneli kapalı olur"
-                                    value={waiterPin}
-                                    onChange={(e) => setWaiterPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                                    className="form-input"
-                                    style={{ maxWidth: '160px' }}
-                                />
-                                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>Garsonlar <strong>/garson/{'{slug}'}</strong> adresine bu PIN ile giriş yapar. Sadece masalar ekranı açılır.</div>
-                            </div>
-
-                            {/* Payment Methods Sub-Section */}
-                            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fa-solid fa-wallet"></i> Ödeme Yöntemleri
-                            </h4>
+                        {generalSubTab === 'odeme' && (
+                            <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', background: '#fff' }}>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <i className="fa-solid fa-wallet"></i> Ödeme Yöntemleri
+                                </h4>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                                 {/* Cash & Credit Card */}
@@ -463,12 +472,14 @@ export default function SettingsPage() {
                                     )}
                                 </div>
                             </div>
+                            </div>
+                        )}
 
-                            {/* Notification & Printer Sub-Section */}
-                            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <i className="fa-solid fa-print"></i> Bildirim ve Yazıcı
-                            </h4>
-
+                        {generalSubTab === 'bildirim' && (
+                            <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', background: '#fff' }}>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <i className="fa-solid fa-print"></i> Bildirim ve Yazıcı
+                                </h4>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
                                 <div className="form-group">
                                     <label className="form-label">Bildirim Sesi</label>
@@ -528,12 +539,7 @@ export default function SettingsPage() {
                             </div>
 
                             <div style={{ margin: '24px 0 0 0', textAlign: 'right' }}>
-                                <button
-                                    type="button"
-                                    onClick={handleTestPrint}
-                                    className="btn btn-outline"
-                                    style={{ fontSize: '0.9rem' }}
-                                >
+                                <button type="button" onClick={handleTestPrint} className="btn btn-outline" style={{ fontSize: '0.9rem' }}>
                                     <i className="fa-solid fa-print"></i> Test Çıktısı Al
                                 </button>
                             </div>
@@ -578,13 +584,14 @@ export default function SettingsPage() {
                                 </div>
                             ))}
                         </div>
+                        )}
 
-                        {/* Social & Wifi Section */}
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {generalSubTab === 'baglanti' && (
+                            <>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             Dijital Kartvizit & Bağlantılar
                             {!isEligibleForAdvanced && <span style={{ fontSize: '0.7rem', background: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '4px' }}><i className="fa-solid fa-lock"></i> Plusimum</span>}
                         </h3>
-
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
                             {/* Instagram */}
                             <div className="form-group" style={{ opacity: isEligibleForAdvanced ? 1 : 0.6, background: '#F9FAFB', padding: '12px', borderRadius: '8px' }}>
@@ -702,37 +709,31 @@ export default function SettingsPage() {
                                 )}
                             </div>
                         </div>
+                            </>
+                        )}
 
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '24px', marginBottom: '16px', color: '#4B5563', display: 'flex', alignItems: 'center', gap: '8px', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
+                        {generalSubTab === 'wifi' && (
+                            <>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '16px', color: '#4B5563', display: 'flex', alignItems: 'center', gap: '8px', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
                             Wifi Bilgileri (Müşterileriniz için)
                             {!isEligibleForAdvanced && <i className="fa-solid fa-lock" style={{ color: '#D97706' }}></i>}
                         </h4>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', opacity: isEligibleForAdvanced ? 1 : 0.6 }}>
                             <div className="form-group">
                                 <label className="form-label">Wifi Adı (SSID)</label>
-                                <input
-                                    className="form-input"
-                                    value={wifiSsid}
-                                    onChange={e => setWifiSsid(e.target.value)}
-                                    placeholder="Örn: Kafe_Misafir"
-                                    disabled={!isEligibleForAdvanced}
-                                />
+                                <input className="form-input" value={wifiSsid} onChange={e => setWifiSsid(e.target.value)} placeholder="Örn: Kafe_Misafir" disabled={!isEligibleForAdvanced} />
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Wifi Şifresi</label>
-                                <input
-                                    className="form-input"
-                                    value={wifiPassword}
-                                    onChange={e => setWifiPassword(e.target.value)}
-                                    placeholder="Wifi şifreniz"
-                                    disabled={!isEligibleForAdvanced}
-                                />
+                                <input className="form-input" value={wifiPassword} onChange={e => setWifiPassword(e.target.value)} placeholder="Wifi şifreniz" disabled={!isEligibleForAdvanced} />
                             </div>
                         </div>
+                            </>
+                        )}
 
-
-                        {/* Contact Info */}
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '40px', marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>İletişim Butonları</h3>
+                        {generalSubTab === 'iletisim' && (
+                            <>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '24px', borderBottom: '1px solid #eee', paddingBottom: '12px' }}>İletişim Butonları</h3>
                         <p style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '16px' }}>Bu butonlar menünüzde ve dijital kartvizitinizde görünür.</p>
 
                         <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
@@ -831,6 +832,8 @@ export default function SettingsPage() {
                                 </div>
                             )}
                         </div>
+                            </>
+                        )}
 
                         <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end' }}>
                             <button type="submit" className="btn btn-primary" disabled={loading}>
