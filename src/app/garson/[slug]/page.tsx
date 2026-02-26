@@ -74,7 +74,6 @@ export default function GarsonPage() {
     const [masaProductModal, setMasaProductModal] = useState<ProductRow | null>(null);
     const [masaTempVariants, setMasaTempVariants] = useState<VariantRow[]>([]);
     const [masaTempExcluded, setMasaTempExcluded] = useState<string[]>([]);
-    const [masaPreviewModal, setMasaPreviewModal] = useState(false);
     const [masaSubmitting, setMasaSubmitting] = useState(false);
     const [masaPresetModalOpen, setMasaPresetModalOpen] = useState(false);
     const [masaPresetSelected, setMasaPresetSelected] = useState<Set<string>>(new Set());
@@ -287,7 +286,6 @@ export default function GarsonPage() {
         }
         const { order } = await res.json();
         setMasaModalOpen(false);
-        setMasaPreviewModal(false);
         setMasaCart([]);
         setMasaOrderNote('');
         setSelectedTableNum(null);
@@ -439,7 +437,7 @@ export default function GarsonPage() {
                                         ))}
                                     </div>
                                     <div style={{ fontWeight: 700, marginBottom: '12px' }}>Toplam: {masaCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺</div>
-                                    <button type="button" onClick={() => setMasaPreviewModal(true)} disabled={masaSubmitting || masaCart.length === 0} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: themeColor, color: 'white', fontWeight: 700, cursor: masaSubmitting || masaCart.length === 0 ? 'not-allowed' : 'pointer', opacity: masaSubmitting || masaCart.length === 0 ? 0.7 : 1 }}>Siparişi Gönder</button>
+                                    <button type="button" onClick={submitMasaOrder} disabled={masaSubmitting || masaCart.length === 0} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: themeColor, color: 'white', fontWeight: 700, cursor: masaSubmitting || masaCart.length === 0 ? 'not-allowed' : 'pointer', opacity: masaSubmitting || masaCart.length === 0 ? 0.7 : 1 }}>Siparişi Gönder</button>
                                 </div>
                             </div>
                         )}
@@ -483,25 +481,6 @@ export default function GarsonPage() {
                         <button type="button" onClick={() => onMasaProductAddClick(masaProductModal, masaTempVariants, masaTempExcluded)} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: themeColor, color: 'white', fontWeight: 700, cursor: 'pointer' }}>
                             Sepete ekle · {masaProductModal.price + masaTempVariants.reduce((a, v) => a + v.price, 0)} ₺
                         </button>
-                    </div>
-                </div>
-            )}
-
-            {masaPreviewModal && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setMasaPreviewModal(false)}>
-                    <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '400px', width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                        <div style={{ fontWeight: 700, marginBottom: '16px' }}>Önizleme — Masa {selectedTableNum}</div>
-                        <div style={{ marginBottom: '16px', fontSize: '0.9rem' }}>
-                            {masaCart.map((item, idx) => (
-                                <div key={idx} style={{ padding: '8px 0', borderBottom: '1px solid #E5E7EB' }}>{item.quantity}x {item.product.name} = {item.finalPrice * item.quantity} ₺</div>
-                            ))}
-                        </div>
-                        {masaOrderNote && <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '12px' }}>Not: {masaOrderNote}</div>}
-                        <div style={{ fontWeight: 700, marginBottom: '16px' }}>Toplam: {masaCart.reduce((a, x) => a + x.finalPrice * x.quantity, 0)} ₺</div>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button type="button" onClick={() => setMasaPreviewModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', background: 'white', fontWeight: 600, cursor: 'pointer' }}>İptal</button>
-                            <button type="button" onClick={submitMasaOrder} disabled={masaSubmitting} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: 'none', background: themeColor, color: 'white', fontWeight: 700, cursor: masaSubmitting ? 'not-allowed' : 'pointer' }}>{masaSubmitting ? 'Gönderiliyor...' : 'Onayla'}</button>
-                        </div>
                     </div>
                 </div>
             )}
