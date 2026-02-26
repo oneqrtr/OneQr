@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const DEFAULT_SIDEBAR_ORDER = [
-    '/admin', '/admin/orders', '/admin/tables', '/admin/customers', '/admin/menu', '/admin/report',
-    '/admin/qr', '/admin/theme', '/admin/settings/billing', '/admin/settings'
+    '/admin', '/admin/orders', '/admin/tables', '/admin/customers', '/admin/menu', '/admin/report', '/admin/stock', '/admin/settings'
 ];
 
 const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' | 'restaurant' }[] = [
@@ -16,9 +15,7 @@ const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' |
     { path: '/admin/customers', label: 'Müşteriler', icon: 'fa-users' },
     { path: '/admin/menu', label: 'Menü Yönetimi', icon: 'fa-list' },
     { path: '/admin/report', label: 'Restoran Raporu', icon: 'fa-chart-bar' },
-    { path: '/admin/qr', label: 'QR Kodlar', icon: 'fa-qrcode' },
-    { path: '/admin/theme', label: 'Tema', icon: 'fa-palette' },
-    { path: '/admin/settings/billing', label: 'Abonelik', icon: 'fa-credit-card' },
+    { path: '/admin/stock', label: 'Stok Yönetimi', icon: 'fa-boxes-stacked' },
     { path: '/admin/settings', label: 'Ayarlar', icon: 'fa-gear' },
 ];
 
@@ -192,7 +189,7 @@ export default function Sidebar() {
 
     const isActive = (path: string) => {
         if (path === '/admin') return pathname === '/admin';
-        if (path === '/admin/settings') return pathname?.startsWith('/admin/settings') && pathname !== '/admin/settings/billing';
+        if (path === '/admin/settings') return pathname?.startsWith('/admin/settings');
         return pathname?.startsWith(path);
     };
 

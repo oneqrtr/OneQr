@@ -22,6 +22,9 @@ interface Product {
     display_order: number;
     is_visible?: boolean;
     ingredients?: string[];
+    stock_quantity?: number | null;
+    stock_updated_at?: string | null;
+    paket_price?: number | null;
 }
 
 interface Variant {
@@ -49,7 +52,7 @@ export default function MenuManagementPage() {
     const [categoryName, setCategoryName] = useState(''); // For Create/Edit name
     const [categoryDescription, setCategoryDescription] = useState(''); // For Create/Edit desc
 
-    const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true });
+    const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true, stock_quantity: null, paket_price: null });
     const [productImage, setProductImage] = useState<File | null>(null);
     const [productIngredientsInput, setProductIngredientsInput] = useState('');
 
@@ -236,7 +239,7 @@ export default function MenuManagementPage() {
             setProductIngredientsInput(product.ingredients ? product.ingredients.join(', ') : '');
             setIsEditModeProduct(true);
         } else {
-            setEditingProduct({ category_id: categories.length > 0 ? categories[0].id : '', name: '', price: 0, description: '', is_available: true });
+            setEditingProduct({ category_id: categories.length > 0 ? categories[0].id : '', name: '', price: 0, description: '', is_available: true, stock_quantity: null, paket_price: null });
             setProductIngredientsInput('');
             setIsEditModeProduct(false);
         }
@@ -281,6 +284,9 @@ export default function MenuManagementPage() {
         let error;
         if (isEditModeProduct && editingProduct.id) {
             // Update
+            const stockVal = editingProduct.stock_quantity !== undefined && editingProduct.stock_quantity !== '' && Number(editingProduct.stock_quantity) >= 0
+                ? Number(editingProduct.stock_quantity)
+                : null;
             const { error: err } = await supabase
                 .from('products')
                 .update({
@@ -290,12 +296,18 @@ export default function MenuManagementPage() {
                     description: editingProduct.description,
                     image_url: imageUrl,
                     is_available: editingProduct.is_available,
-                    ingredients: ingredientsArray // Save array
+                    ingredients: ingredientsArray,
+                    stock_quantity: stockVal,
+                    stock_updated_at: stockVal !== null ? new Date().toISOString() : null,
+                    paket_price: editingProduct.paket_price != null && Number(editingProduct.paket_price) >= 0 ? Number(editingProduct.paket_price) : null
                 })
                 .eq('id', editingProduct.id);
             error = err;
         } else {
             // Create
+            const stockValInsert = editingProduct.stock_quantity !== undefined && editingProduct.stock_quantity !== '' && Number(editingProduct.stock_quantity) >= 0
+                ? Number(editingProduct.stock_quantity)
+                : null;
             const { error: err } = await supabase
                 .from('products')
                 .insert({
@@ -305,8 +317,11 @@ export default function MenuManagementPage() {
                     description: editingProduct.description,
                     image_url: imageUrl,
                     is_available: true,
-                    display_order: 1, // simplified logic
-                    ingredients: ingredientsArray // Save array
+                    display_order: 1,
+                    ingredients: ingredientsArray,
+                    stock_quantity: stockValInsert,
+                    stock_updated_at: stockValInsert !== null ? new Date().toISOString() : null,
+                    paket_price: editingProduct.paket_price != null && Number(editingProduct.paket_price) >= 0 ? Number(editingProduct.paket_price) : null
                 });
             error = err;
         }
@@ -314,7 +329,7 @@ export default function MenuManagementPage() {
         setIsSaving(false);
 
         if (!error) {
-            setEditingProduct({ category_id: '', name: '', price: 0, description: '', is_available: true });
+            setEditingProduct({ category_id: '', name: '', price: 0, description: '', is_available: true, stock_quantity: null, paket_price: null });
             setProductImage(null);
             setIsProductModalOpen(false);
             fetchData();
@@ -657,6 +672,42 @@ export default function MenuManagementPage() {
                                     onChange={e => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })}
                                     required
                                 />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Stok (opsiyonel)</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    className="form-input"
+                                    placeholder="Boş = stok takibi yok"
+                                    value={editingProduct.stock_quantity != null ? editingProduct.stock_quantity : ''}
+                                    onChange={e => {
+                                        const v = e.target.value;
+                                        setEditingProduct({ ...editingProduct, stock_quantity: v === '' ? null : (parseInt(v, 10) || 0) });
+                                    }}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '8px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={editingProduct.paket_price != null}
+                                        onChange={e => setEditingProduct({ ...editingProduct, paket_price: e.target.checked ? (editingProduct.paket_price != null ? editingProduct.paket_price : editingProduct.price ?? 0) : null })}
+                                    />
+                                    <span className="form-label" style={{ marginBottom: 0 }}>Online/Paket fiyatı kullan</span>
+                                </label>
+                                {editingProduct.paket_price != null && (
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        className="form-input"
+                                        placeholder="Paket fiyatı"
+                                        value={editingProduct.paket_price}
+                                        onChange={e => setEditingProduct({ ...editingProduct, paket_price: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
+                                    />
+                                )}
+                                <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>Paket ve online siparişte bu fiyat gösterilir. Boş bırakılırsa normal fiyat kullanılır.</p>
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Açıklama</label>

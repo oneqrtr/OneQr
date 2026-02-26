@@ -11,7 +11,8 @@ export default function AdminDashboard() {
         categoryCount: 0,
         dailyVisitors: 0,
         mostViewedProduct: null as { product_name: string; view_count: number } | null,
-        topOrderedProducts: [] as { name: string; totalQuantity: number }[]
+        topOrderedProducts: [] as { name: string; totalQuantity: number }[],
+        lastStockUpdate: null as string | null
     });
     const [subscription, setSubscription] = useState<{
         plan: string;
@@ -109,13 +110,28 @@ export default function AdminDashboard() {
                         .sort((a, b) => b.totalQuantity - a.totalQuantity)
                         .slice(0, 10);
 
+                    // E. Son stok güncellemesi (max stock_updated_at)
+                    let lastStockUpdate: string | null = null;
+                    if (categoryIds.length > 0) {
+                        const { data: stockDates } = await supabase
+                            .from('products')
+                            .select('stock_updated_at')
+                            .in('category_id', categoryIds)
+                            .not('stock_updated_at', 'is', null);
+                        if (stockDates && stockDates.length > 0) {
+                            const dates = (stockDates as { stock_updated_at: string }[]).map((d) => d.stock_updated_at).filter(Boolean);
+                            if (dates.length > 0) lastStockUpdate = dates.sort().pop()!;
+                        }
+                    }
+
                     setStats({
                         totalViews: viewCount || 0,
                         activeProducts: realProductCount,
                         categoryCount: categoryIds.length,
                         dailyVisitors: dailyCount || 0,
                         mostViewedProduct: topProduct,
-                        topOrderedProducts
+                        topOrderedProducts,
+                        lastStockUpdate
                     });
                 }
             } catch (error) {
@@ -231,6 +247,15 @@ export default function AdminDashboard() {
                                     </div>
                                     <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>Toplam Erişim</div>
                                 </div>
+                                <Link href="/admin/stock" style={{ textDecoration: 'none' }}>
+                                    <div style={{ padding: '16px', border: '1px solid #E5E7EB', borderRadius: '8px', cursor: 'pointer' }}>
+                                        <div style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '8px' }}>Son stok güncellemesi</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#111827' }}>
+                                            {(stats as any).lastStockUpdate ? new Date((stats as any).lastStockUpdate).toLocaleString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Henüz yok'}
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: '4px' }}>Stok Yönetimi →</div>
+                                    </div>
+                                </Link>
                             </div>
 
                             {/* En çok sipariş verilen ürünler */}

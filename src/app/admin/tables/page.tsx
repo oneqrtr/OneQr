@@ -18,7 +18,7 @@ interface OrderItem {
 }
 
 interface CategoryRow { id: string; name: string; display_order?: number; }
-interface ProductRow { id: string; category_id: string; name: string; price: number; display_order?: number; image_url?: string; ingredients?: string[]; }
+interface ProductRow { id: string; category_id: string; name: string; price: number; paket_price?: number | null; display_order?: number; image_url?: string; ingredients?: string[]; }
 interface VariantRow { id: string; product_id: string; name: string; price: number; }
 
 interface Order {
@@ -211,8 +211,9 @@ export default function TablesPage() {
         setPaketTempExcluded([]);
     };
 
+    const getPaketPrice = (p: ProductRow) => (p.paket_price != null && p.paket_price > 0 ? p.paket_price : p.price);
     const addToPaketCart = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
-        const price = product.price + selectedVariants.reduce((a, v) => a + v.price, 0);
+        const price = getPaketPrice(product) + selectedVariants.reduce((a, v) => a + v.price, 0);
         setPaketCart(prev => {
             const key = JSON.stringify({ v: selectedVariants.map(x => x.id).sort(), e: excludedIngredients.sort() });
             const existing = prev.find(x => x.product.id === product.id && JSON.stringify({ v: x.selectedVariants.map(v => v.id).sort(), e: x.excludedIngredients.sort() }) === key);
@@ -978,7 +979,7 @@ export default function TablesPage() {
                                                         <button key={prod.id} type="button" onClick={() => openProductForPaket(prod)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', textAlign: 'left', minHeight: '100px' }}>
                                                             {prod.image_url ? <img src={prod.image_url} alt={prod.name} style={{ width: '100%', height: '70px', objectFit: 'cover', borderRadius: '8px', marginBottom: '6px' }} /> : <div style={{ width: '100%', height: '70px', background: '#F3F4F6', borderRadius: '8px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}><i className="fa-solid fa-image" /></div>}
                                                             <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{prod.name}</div>
-                                                            <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>{prod.price} ₺</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>{getPaketPrice(prod)} ₺</div>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -1072,7 +1073,7 @@ export default function TablesPage() {
                                             </div>
                                         )}
                                         <button type="button" onClick={() => addToPaketCart(paketProductModal, paketTempVariants, paketTempExcluded)} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: 'none', background: restaurantThemeColor, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '1rem' }}>
-                                            Sepete Ekle · {paketProductModal.price + paketTempVariants.reduce((a, v) => a + v.price, 0)} ₺
+                                            Sepete Ekle · {getPaketPrice(paketProductModal) + paketTempVariants.reduce((a, v) => a + v.price, 0)} ₺
                                         </button>
                                     </div>
                                 </div>

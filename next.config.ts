@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/admin/theme', destination: '/admin/settings/theme', permanent: true },
+      { source: '/admin/qr', destination: '/admin/settings/qr', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

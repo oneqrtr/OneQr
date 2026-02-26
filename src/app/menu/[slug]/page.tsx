@@ -60,9 +60,10 @@ interface Product {
     name: string;
     description?: string;
     price: number;
+    paket_price?: number | null;
     image_url?: string;
     is_available: boolean;
-    ingredients?: string[]; // Added
+    ingredients?: string[];
 }
 
 interface Variant {
@@ -299,13 +300,15 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
         });
     };
 
+    const getProductPrice = (p: Product) => isRestaurantMode ? p.price : (p.paket_price != null && p.paket_price > 0 ? p.paket_price : p.price);
+
     const addToCart = (product: Product, selectedVars: Variant[], excludedIngs: string[]) => {
         if (!isOrderEnabled) return;
 
         console.log("Adding to cart:", { product, selectedVars, excludedIngs }); // DEBUG
 
         const variantsPrice = selectedVars.reduce((acc, v) => acc + v.price, 0);
-        const finalUnitPrice = product.price + variantsPrice;
+        const finalUnitPrice = getProductPrice(product) + variantsPrice;
 
         setCart(prev => {
             // Check for existing item with exact same configuration
@@ -323,7 +326,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                 return [...prev, {
                     id: product.id,
                     name: product.name,
-                    basePrice: product.price,
+                    basePrice: getProductPrice(product),
                     finalPrice: finalUnitPrice,
                     quantity: 1,
                     selectedVariants: [...selectedVars], // Ensure copy
@@ -1057,7 +1060,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
 
                                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
                                                         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: restaurant.theme_color }}>
-                                                            {product.price} {restaurant.currency}
+                                                            {getProductPrice(product)} {restaurant.currency}
                                                         </div>
                                                         {isOrderEnabled && (
                                                             <button
@@ -1230,7 +1233,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>Sepete Ekle</span>
                                 <span>
-                                    {(selectedProductForOptions.price + tempSelectedVariants.reduce((acc, v) => acc + v.price, 0))} {restaurant?.currency}
+                                    {(getProductPrice(selectedProductForOptions) + tempSelectedVariants.reduce((acc, v) => acc + v.price, 0))} {restaurant?.currency}
                                 </span>
                             </div>
                         </button>

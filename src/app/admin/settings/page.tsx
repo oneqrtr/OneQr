@@ -149,7 +149,7 @@ export default function SettingsPage() {
                 name: businessName,
                 description: description,
 
-                // theme_color managed in /admin/theme
+                // theme_color managed in /admin/settings/theme
                 is_order_enabled: isOrdersEnabled,
                 table_count: tableCount,
                 waiter_pin: waiterPin.trim() || null,
