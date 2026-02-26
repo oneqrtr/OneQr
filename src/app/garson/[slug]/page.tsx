@@ -111,6 +111,23 @@ export default function GarsonPage() {
         if (slug) fetchData();
     }, [slug, selectedDate.toISOString().slice(0, 10)]);
 
+    // Admin hesap kapattığında masa durumu ve sipariş listesinin garsonda güncellenmesi (polling)
+    useEffect(() => {
+        if (!authorized || !slug) return;
+        const dateStr = selectedDate.toISOString().slice(0, 10);
+        const poll = async () => {
+            const res = await fetch(`/api/garson/data?slug=${encodeURIComponent(slug)}&date=${dateStr}`);
+            if (res.ok) {
+                const data = await res.json();
+                setOrders(data.orders || []);
+                setTableStatusMap(data.tableStatusMap || {});
+            }
+        };
+        const interval = setInterval(poll, 3000);
+        poll();
+        return () => clearInterval(interval);
+    }, [authorized, slug, selectedDate.toISOString().slice(0, 10)]);
+
     const handlePinSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setPinError('');
