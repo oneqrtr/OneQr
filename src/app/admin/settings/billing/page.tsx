@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Topbar from '@/components/Topbar';
+import SettingsNav from '../SettingsNav';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -90,7 +91,7 @@ export default function BillingPage() {
 
     return (
         <>
-            <Topbar title="Abonelik ve Ödeme" />
+            <Topbar titleContent={<SettingsNav />} />
             <div className="content-wrapper">
                 {/* Current Plan Card */}
                 <div style={{ background: 'white', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>

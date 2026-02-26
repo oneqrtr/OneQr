@@ -80,7 +80,7 @@ export default function MenuManagementPage() {
     const [presetOptions, setPresetOptions] = useState<MenuPresetOption[]>([]);
     const [presetLabel, setPresetLabel] = useState('');
     const [presetSaving, setPresetSaving] = useState(false);
-    const [presetSectionOpen, setPresetSectionOpen] = useState(false);
+    const [presetSectionOpen, setPresetSectionOpen] = useState(true);
 
     const supabase = createClient();
 
@@ -588,6 +588,64 @@ export default function MenuManagementPage() {
                 ) : (
                     // NORMAL VIEW
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                        {/* Hazır menü ayarları - sipariş notu seçenekleri (garson / masa / paket) */}
+                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setPresetSectionOpen(!presetSectionOpen)}
+                                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, color: '#374151', padding: 0 }}
+                            >
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <i className="fa-solid fa-list-check" style={{ color: '#059669' }}></i>
+                                    Hazır menü ayarları (sipariş notu seçenekleri)
+                                </span>
+                                <i className={`fa-solid ${presetSectionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ fontSize: '0.8rem', color: '#9CA3AF' }}></i>
+                            </button>
+                            <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '6px', marginBottom: 0 }}>
+                                Masa veya paket siparişinde ürün seçildikten sonra gösterilecek hazır seçenekler (örn. Soğansız, Az pişmiş). Seçilenler sipariş notuna ve fişe yazılır.
+                            </p>
+                            {presetSectionOpen && (
+                                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #F3F4F6' }}>
+                                    <form onSubmit={handleAddPreset} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                                        <input
+                                            className="form-input"
+                                            value={presetLabel}
+                                            onChange={(e) => setPresetLabel(e.target.value)}
+                                            placeholder="Örn: Soğansız, Az pişmiş, Ekstra sos"
+                                            style={{ flex: 1, padding: '10px 12px' }}
+                                        />
+                                        <button type="submit" disabled={presetSaving || !presetLabel.trim()} className="btn btn-primary btn-sm">
+                                            {presetSaving ? 'Ekleniyor...' : 'Ekle'}
+                                        </button>
+                                    </form>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {presetOptions.length === 0 && (
+                                            <span style={{ fontSize: '0.9rem', color: '#9CA3AF', fontStyle: 'italic' }}>Henüz hazır ayar eklenmedi.</span>
+                                        )}
+                                        {presetOptions.map((p) => (
+                                            <span
+                                                key={p.id}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    padding: '8px 12px',
+                                                    background: '#F0FDF4',
+                                                    border: '1px solid #BBF7D0',
+                                                    borderRadius: '8px',
+                                                    fontSize: '0.9rem',
+                                                    color: '#166534'
+                                                }}
+                                            >
+                                                {p.label}
+                                                <button type="button" onClick={() => handleDeletePreset(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', padding: '0 4px', fontSize: '0.9rem' }} title="Kaldır">&times;</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         {categories.map(cat => (
                             <div key={cat.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F3F4F6', paddingBottom: '12px' }}>
@@ -651,64 +709,6 @@ export default function MenuManagementPage() {
                                 </div>
                             </div>
                         ))}
-
-                        {/* Hazır menü ayarları */}
-                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '24px' }}>
-                            <button
-                                type="button"
-                                onClick={() => setPresetSectionOpen(!presetSectionOpen)}
-                                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700, color: '#374151', padding: 0 }}
-                            >
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <i className="fa-solid fa-list-check" style={{ color: '#059669' }}></i>
-                                    Hazır menü ayarları
-                                </span>
-                                <i className={`fa-solid ${presetSectionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ fontSize: '0.8rem', color: '#9CA3AF' }}></i>
-                            </button>
-                            <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '6px', marginBottom: 0 }}>
-                                Masa veya paket siparişinde ürün seçildikten sonra gösterilecek hazır seçenekler (örn. Soğansız, Az pişmiş). Seçilenler sipariş notuna ve fişe yazılır.
-                            </p>
-                            {presetSectionOpen && (
-                                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #F3F4F6' }}>
-                                    <form onSubmit={handleAddPreset} style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-                                        <input
-                                            className="form-input"
-                                            value={presetLabel}
-                                            onChange={(e) => setPresetLabel(e.target.value)}
-                                            placeholder="Örn: Soğansız, Az pişmiş, Ekstra sos"
-                                            style={{ flex: 1, padding: '10px 12px' }}
-                                        />
-                                        <button type="submit" disabled={presetSaving || !presetLabel.trim()} className="btn btn-primary btn-sm">
-                                            {presetSaving ? 'Ekleniyor...' : 'Ekle'}
-                                        </button>
-                                    </form>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                        {presetOptions.length === 0 && (
-                                            <span style={{ fontSize: '0.9rem', color: '#9CA3AF', fontStyle: 'italic' }}>Henüz hazır ayar eklenmedi.</span>
-                                        )}
-                                        {presetOptions.map((p) => (
-                                            <span
-                                                key={p.id}
-                                                style={{
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    padding: '8px 12px',
-                                                    background: '#F0FDF4',
-                                                    border: '1px solid #BBF7D0',
-                                                    borderRadius: '8px',
-                                                    fontSize: '0.9rem',
-                                                    color: '#166534'
-                                                }}
-                                            >
-                                                {p.label}
-                                                <button type="button" onClick={() => handleDeletePreset(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', padding: '0 4px', fontSize: '0.9rem' }} title="Kaldır">&times;</button>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 )}
             </div>

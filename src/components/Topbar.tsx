@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-export default function Topbar({ title }: { title: string }) {
+export default function Topbar({ title, titleContent }: { title?: string; titleContent?: React.ReactNode }) {
     const [slug, setSlug] = useState('');
     const [plan, setPlan] = useState('freemium');
 
@@ -29,7 +29,7 @@ export default function Topbar({ title }: { title: string }) {
 
     return (
         <header className="topbar">
-            <div className="page-title">{title}</div>
+            <div className="page-title">{titleContent ?? title ?? ''}</div>
             <div className="topbar-actions">
                 {slug && (
                     <>

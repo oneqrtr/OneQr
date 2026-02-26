@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Topbar from '@/components/Topbar';
+import SettingsNav from './SettingsNav';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -269,7 +270,7 @@ export default function SettingsPage() {
 
     return (
         <>
-            <Topbar title="İşletme Ayarları" />
+            <Topbar titleContent={<SettingsNav />} />
             <div className="content-wrapper">
                 <div style={{ background: 'white', padding: '32px', borderRadius: '12px', border: '1px solid var(--border-color)', maxWidth: '700px' }}>
                     <form onSubmit={handleSave}>

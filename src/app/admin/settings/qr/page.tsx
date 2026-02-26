@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import Topbar from '@/components/Topbar';
+import SettingsNav from '../SettingsNav';
 import { createClient } from '@/lib/supabase';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
@@ -127,7 +128,7 @@ export default function QrPage() {
 
     return (
         <>
-            <Topbar title="QR Kod İşlemleri" />
+            <Topbar titleContent={<SettingsNav />} />
             <div className="content-wrapper">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                     <div style={{ background: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #E5E7EB', display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>

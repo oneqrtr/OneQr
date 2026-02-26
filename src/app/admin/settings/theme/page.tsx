@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Topbar from '@/components/Topbar';
+import SettingsNav from '../SettingsNav';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -110,7 +111,7 @@ export default function ThemePage() {
 
     return (
         <>
-            <Topbar title="Görünüm ve Tema" />
+            <Topbar titleContent={<SettingsNav />} />
             <div className="content-wrapper">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '40px', maxWidth: '1200px' }}>
                     <div style={{ background: 'white', padding: '32px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
