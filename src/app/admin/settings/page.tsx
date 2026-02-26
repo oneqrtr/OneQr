@@ -476,6 +476,7 @@ export default function SettingsPage() {
                         )}
 
                         {generalSubTab === 'bildirim' && (
+                            <>
                             <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px', background: '#fff' }}>
                                 <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <i className="fa-solid fa-print"></i> Bildirim ve Yazıcı
@@ -584,6 +585,7 @@ export default function SettingsPage() {
                                 </div>
                             ))}
                         </div>
+                            </>
                         )}
 
                         {generalSubTab === 'baglanti' && (
