@@ -156,6 +156,19 @@ export default function OrdersPage() {
                                 }
                             }
                         )
+                        .on(
+                            'postgres_changes',
+                            {
+                                event: 'UPDATE',
+                                schema: 'public',
+                                table: 'orders',
+                                filter: `restaurant_id=eq.${restId}`
+                            },
+                            (payload) => {
+                                const updated = payload.new as Order;
+                                setOrders(prev => prev.map(o => o.id === updated.id ? { ...o, ...updated } : o));
+                            }
+                        )
                         .subscribe();
                 }
             }

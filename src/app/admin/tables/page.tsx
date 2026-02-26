@@ -111,6 +111,8 @@ export default function TablesPage() {
         d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 
     useEffect(() => {
+        let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null;
+
         const fetchData = async () => {
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
@@ -165,10 +167,55 @@ export default function TablesPage() {
                 });
             }
             setTableStatusMap(statusMap);
+
+            if (channel) supabase.removeChannel(channel);
+            if (isSameDay(selectedDate, new Date())) {
+                channel = supabase
+                    .channel('tables-orders-channel')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'orders',
+                            filter: `restaurant_id=eq.${rest.id}`
+                        },
+                        (payload) => {
+                            const newOrder = payload.new as Order;
+                            const src = (newOrder as { source?: string }).source;
+                            if (src !== 'restaurant' && src !== 'system') return;
+                            const orderDate = new Date(newOrder.created_at);
+                            if (!isSameDay(orderDate, selectedDate)) return;
+                            setOrders(prev => [newOrder as Order, ...prev]);
+                        }
+                    )
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'orders',
+                            filter: `restaurant_id=eq.${rest.id}`
+                        },
+                        (payload) => {
+                            const updated = payload.new as Order;
+                            setOrders(prev => prev.map(o => o.id === updated.id ? { ...o, ...updated } : o));
+                        }
+                    )
+                    .subscribe();
+            }
+
             setLoading(false);
         };
 
         fetchData();
+
+        return () => {
+            if (channel) {
+                const supabase = createClient();
+                supabase.removeChannel(channel);
+            }
+        };
     }, [selectedDate]);
 
     useEffect(() => {
