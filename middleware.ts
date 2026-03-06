@@ -2,14 +2,16 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
     const url = request.nextUrl
-    // Vercel/proxy can send original host in x-forwarded-host
-    const hostRaw = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
-    const hostname = hostRaw.replace(/:\d+$/, '') // Remove port
+    // Orijinal host: Farklı ağ/cihazda Host bazen oneqr.tr geliyor; x-forwarded-host istemcinin açtığı adres (slug.oneqr.tr).
+    const forwarded = (request.headers.get('x-forwarded-host') || '').split(',')[0].trim()
+    const hostHeader = (request.headers.get('host') || '').split(',')[0].trim()
+    const hostRaw = forwarded || hostHeader
+    const hostname = hostRaw.replace(/:\d+$/, '')
 
     const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1')
     const rootDomain = isLocal ? 'localhost' : 'oneqr.tr'
 
-    // Check if we are on a custom subdomain (e.g. restoran.oneqr.tr)
+    // Subdomain kontrolü: restoran.oneqr.tr gibi
     const isSubdomain = hostname !== rootDomain && hostname !== `www.${rootDomain}`
 
     if (isSubdomain) {

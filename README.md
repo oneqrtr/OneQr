@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Restoran subdomain (örn. burger34.oneqr.tr)
+
+`slug.oneqr.tr` adreslerinin restoran menüsüne gitmesi için Vercel projesinde **wildcard domain** eklenmelidir:
+
+1. Vercel Dashboard → Proje → **Settings** → **Domains**
+2. **Add** → `*.oneqr.tr` yazıp ekleyin
+3. DNS’te `*.oneqr.tr` (veya `oneqr.tr` için kullandığınız A/CNAME) aynı Vercel projesine işaret etmeli
+
+Aksi halde `burger34.oneqr.tr` gibi adresler ana siteye (oneqr.tr) yönlenebilir veya 404 verebilir.
