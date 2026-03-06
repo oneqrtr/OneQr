@@ -72,7 +72,8 @@ interface Variant {
     name: string;
     description?: string;
     price: number;
-    is_available: boolean;
+    is_available?: boolean;
+    paket_price?: number | null;
 }
 
 export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp }: { slug?: string; restaurantMode?: boolean } = {}) {
@@ -301,13 +302,14 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
     };
 
     const getProductPrice = (p: Product) => isRestaurantMode ? p.price : (p.paket_price != null && p.paket_price > 0 ? p.paket_price : p.price);
+    const getVariantPrice = (v: Variant) => isRestaurantMode ? v.price : (v.paket_price != null && v.paket_price > 0 ? v.paket_price : v.price);
 
     const addToCart = (product: Product, selectedVars: Variant[], excludedIngs: string[]) => {
         if (!isOrderEnabled) return;
 
         console.log("Adding to cart:", { product, selectedVars, excludedIngs }); // DEBUG
 
-        const variantsPrice = selectedVars.reduce((acc, v) => acc + v.price, 0);
+        const variantsPrice = selectedVars.reduce((acc, v) => acc + getVariantPrice(v), 0);
         const finalUnitPrice = getProductPrice(product) + variantsPrice;
 
         setCart(prev => {
@@ -1052,7 +1054,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                                                                     alignItems: 'center'
                                                                 }}>
                                                                     <strong style={{ fontWeight: 600, marginRight: '4px' }}>{variant.name}</strong>
-                                                                    {variant.price > 0 ? ('+ ' + variant.price + ' ' + (restaurant?.currency || '')) : ''}
+                                                                    {getVariantPrice(variant) > 0 ? ('+ ' + getVariantPrice(variant) + ' ' + (restaurant?.currency || '')) : ''}
                                                                 </span>
                                                             ))}
                                                         </div>
@@ -1180,7 +1182,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                                                     <span style={{ fontWeight: 500 }}>{variant.name}</span>
                                                 </div>
                                                 <span style={{ fontWeight: 600, color: restaurant?.theme_color }}>
-                                                    {variant.price > 0 ? ('+ ' + variant.price + ' ' + (restaurant?.currency || '')) : ''}
+                                                    {getVariantPrice(variant) > 0 ? ('+ ' + getVariantPrice(variant) + ' ' + (restaurant?.currency || '')) : ''}
                                                 </span>
                                             </label>
                                         );
@@ -1233,7 +1235,7 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>Sepete Ekle</span>
                                 <span>
-                                    {(getProductPrice(selectedProductForOptions) + tempSelectedVariants.reduce((acc, v) => acc + v.price, 0))} {restaurant?.currency}
+                                    {(getProductPrice(selectedProductForOptions) + tempSelectedVariants.reduce((acc, v) => acc + getVariantPrice(v), 0))} {restaurant?.currency}
                                 </span>
                             </div>
                         </button>

@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const DEFAULT_SIDEBAR_ORDER = [
-    '/admin', '/admin/orders', '/admin/tables', '/admin/customers', '/admin/menu', '/admin/report', '/admin/stock', '/admin/settings'
+    '/admin', '/admin/orders', '/admin/tables', '/admin/paket', '/admin/customers', '/admin/menu', '/admin/report', '/admin/stock', '/admin/settings'
 ];
 
-const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' | 'restaurant' }[] = [
+const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' | 'restaurant' | 'paket' }[] = [
     { path: '/admin', label: 'Panel', icon: 'fa-chart-pie' },
     { path: '/admin/orders', label: 'Online Sipariş', icon: 'fa-bell', badge: 'orders' },
     { path: '/admin/tables', label: 'Restoran Siparişleri', icon: 'fa-utensils', badge: 'restaurant' },
+    { path: '/admin/paket', label: 'Paket Siparişleri', icon: 'fa-motorcycle', badge: 'paket' },
     { path: '/admin/customers', label: 'Müşteriler', icon: 'fa-users' },
     { path: '/admin/menu', label: 'Menü Yönetimi', icon: 'fa-list' },
     { path: '/admin/report', label: 'Restoran Raporu', icon: 'fa-chart-bar' },
@@ -33,6 +34,7 @@ export default function Sidebar() {
 
     const [unreadCount, setUnreadCount] = useState(0);
     const [unreadRestaurantCount, setUnreadRestaurantCount] = useState(0);
+    const [unreadPaketCount, setUnreadPaketCount] = useState(0);
     const [notificationSound, setNotificationSound] = useState('ding');
     const notificationSoundRef = useRef('ding');
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -48,6 +50,7 @@ export default function Sidebar() {
     useEffect(() => {
         if (pathname === '/admin/orders') setUnreadCount(0);
         if (pathname === '/admin/tables') setUnreadRestaurantCount(0);
+        if (pathname === '/admin/paket') setUnreadPaketCount(0);
     }, [pathname]);
 
     const playNotificationSound = () => {
@@ -155,14 +158,18 @@ export default function Sidebar() {
                                 setTimeout(() => playNotificationSound(), i * DELAY_MS);
                             }
 
-                            // Badge: online (dışarıdan) → Online Sipariş; restoran/paket → Restoran Siparişleri
+                            // Badge: online → Online Sipariş; restaurant → Restoran; system → Paket
                             if (isOnlineOrder) {
                                 if (window.location.pathname !== '/admin/orders') {
                                     setUnreadCount(prev => prev + 1);
                                 }
-                            } else if (isRestaurantOrder) {
+                            } else if (newOrder?.source === 'restaurant') {
                                 if (window.location.pathname !== '/admin/tables') {
                                     setUnreadRestaurantCount(prev => prev + 1);
+                                }
+                            } else if (newOrder?.source === 'system') {
+                                if (window.location.pathname !== '/admin/paket') {
+                                    setUnreadPaketCount(prev => prev + 1);
                                 }
                             }
                         }
@@ -255,7 +262,7 @@ export default function Sidebar() {
 
                 <nav className="sidebar-nav" style={{ marginTop: '20px' }}>
                     {orderedNavItems.map((item, index) => {
-                        const badgeCount = item.badge === 'orders' ? unreadCount : item.badge === 'restaurant' ? unreadRestaurantCount : 0;
+                        const badgeCount = item.badge === 'orders' ? unreadCount : item.badge === 'restaurant' ? unreadRestaurantCount : item.badge === 'paket' ? unreadPaketCount : 0;
                         const content = (
                             <Link
                                 href={item.path}

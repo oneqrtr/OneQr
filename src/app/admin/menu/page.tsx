@@ -33,7 +33,8 @@ interface Variant {
     name: string;
     description?: string;
     price: number;
-    is_available: boolean;
+    is_available?: boolean;
+    paket_price?: number | null;
 }
 
 interface MenuPresetOption {
@@ -65,6 +66,7 @@ export default function MenuManagementPage() {
     // Variant Form States
     const [variantName, setVariantName] = useState('');
     const [variantPrice, setVariantPrice] = useState<number | string>(0);
+    const [variantPaketPrice, setVariantPaketPrice] = useState<number | string>('');
     const [variantDesc, setVariantDesc] = useState('');
 
     const [isSavingVariant, setIsSavingVariant] = useState(false);
@@ -386,13 +388,15 @@ export default function MenuManagementPage() {
         setIsSavingVariant(true);
 
         try {
+            const paketPriceVal = variantPaketPrice === '' || variantPaketPrice == null ? null : (parseFloat(String(variantPaketPrice)) || null);
             const { data, error } = await supabase
                 .from('product_variants')
                 .insert({
                     product_id: editingProduct.id,
                     name: variantName,
                     price: parseFloat(variantPrice.toString()) || 0,
-                    description: variantDesc
+                    description: variantDesc,
+                    ...(paketPriceVal != null && { paket_price: paketPriceVal })
                 })
                 .select()
                 .single();
@@ -403,6 +407,7 @@ export default function MenuManagementPage() {
                 setAllVariants([...allVariants, data]);
                 setVariantName('');
                 setVariantPrice(0);
+                setVariantPaketPrice('');
                 setVariantDesc('');
             }
         } catch (error: any) {
@@ -886,6 +891,7 @@ export default function MenuManagementPage() {
                                                             <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>
                                                                 {variant.description ? `${variant.description} • ` : ''}
                                                                 {variant.price > 0 ? `+${variant.price}₺` : 'Fiyat Farkı Yok'}
+                                                                {variant.paket_price != null && variant.paket_price > 0 ? ` • Paket: +${variant.paket_price}₺` : ''}
                                                             </div>
                                                         </div>
                                                         <button type="button" onClick={() => handleDeleteVariant(variant.id)} className="btn btn-ghost btn-xs" style={{ color: '#EF4444' }}>
@@ -916,6 +922,16 @@ export default function MenuManagementPage() {
                                                             style={{ padding: '6px 10px 6px 8px', fontSize: '0.85rem' }}
                                                             value={variantPrice}
                                                             onChange={e => setVariantPrice(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div style={{ flex: 1, position: 'relative' }}>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Paket ek ücret (isteğe bağlı)"
+                                                            className="form-input"
+                                                            style={{ padding: '6px 10px 6px 8px', fontSize: '0.85rem' }}
+                                                            value={variantPaketPrice}
+                                                            onChange={e => setVariantPaketPrice(e.target.value)}
                                                         />
                                                     </div>
                                                     <button
