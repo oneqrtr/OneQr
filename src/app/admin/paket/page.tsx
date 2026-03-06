@@ -166,7 +166,11 @@ export default function PaketPage() {
                             if ((newOrder as { source?: string }).source !== 'system') return;
                             const orderDate = new Date(newOrder.created_at);
                             if (!isSameDay(orderDate, selectedDate)) return;
-                            setOrders(prev => [newOrder as Order, ...prev]);
+                            setOrders(prev => {
+                                const exists = prev.some(o => o.id === (newOrder as { id?: string }).id);
+                                if (exists) return prev;
+                                return [newOrder as Order, ...prev];
+                            });
                         }
                     )
                     .on(

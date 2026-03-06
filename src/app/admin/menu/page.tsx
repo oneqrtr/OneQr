@@ -1,7 +1,22 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Topbar from '@/components/Topbar';
 import { createClient } from '@/lib/supabase';
+
+interface RawMaterial {
+    id: string;
+    restaurant_id: string;
+    name: string;
+    unit: string;
+    current_stock: number;
+}
+
+interface RecipeLine {
+    id: string;
+    product_id: string;
+    raw_material_id: string;
+    quantity_per_serving: number;
+}
 
 interface Category {
     id: string;
@@ -84,7 +99,28 @@ export default function MenuManagementPage() {
     const [presetSaving, setPresetSaving] = useState(false);
     const [presetSectionOpen, setPresetSectionOpen] = useState(true);
 
+    const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+    const [recipeLines, setRecipeLines] = useState<RecipeLine[]>([]);
+    const [newRecipeRawMaterialId, setNewRecipeRawMaterialId] = useState('');
+    const [newRecipeQuantity, setNewRecipeQuantity] = useState<string>('');
+    const [recipeSectionOpen, setRecipeSectionOpen] = useState(true);
+    const [isSavingRecipe, setIsSavingRecipe] = useState(false);
+
     const supabase = createClient();
+
+    const producibleByProductId = useMemo(() => {
+        const map: Record<string, number> = {};
+        const stockByRm: Record<string, number> = {};
+        rawMaterials.forEach((rm) => { stockByRm[rm.id] = Number(rm.current_stock); });
+        recipeLines.forEach((rl) => {
+            const stock = stockByRm[rl.raw_material_id] ?? 0;
+            const qty = Number(rl.quantity_per_serving);
+            const canMake = qty > 0 ? Math.floor(stock / qty) : 0;
+            if (!(rl.product_id in map)) map[rl.product_id] = canMake;
+            else map[rl.product_id] = Math.min(map[rl.product_id], canMake);
+        });
+        return map;
+    }, [rawMaterials, recipeLines]);
 
     const fetchData = async () => {
         try {
@@ -122,16 +158,26 @@ export default function MenuManagementPage() {
                         setProducts(prods);
 
                         // 4. Get Variants
-                        const prodIds = prods.map(p => p.id);
+                        const prodIds = prods.map((p: { id: string }) => p.id);
                         const { data: vars } = await supabase
                             .from('product_variants')
                             .select('*')
                             .in('product_id', prodIds);
                         if (vars) setAllVariants(vars);
+
+                        // 5. Recipe lines (for producible count)
+                        const { data: recipe } = await supabase
+                            .from('recipe_lines')
+                            .select('id, product_id, raw_material_id, quantity_per_serving')
+                            .in('product_id', prodIds);
+                        setRecipeLines(recipe || []);
+                    } else {
+                        setRecipeLines([]);
                     }
                 } else {
                     setProducts([]);
                     setAllVariants([]);
+                    setRecipeLines([]);
                 }
                 // Hazır menü ayarları
                 const { data: presets } = await supabase
@@ -140,6 +186,13 @@ export default function MenuManagementPage() {
                     .eq('restaurant_id', rest.id)
                     .order('display_order', { ascending: true });
                 setPresetOptions(presets || []);
+
+                // Ham maddeler
+                const { data: rawMats } = await supabase
+                    .from('raw_materials')
+                    .select('id, restaurant_id, name, unit, current_stock')
+                    .eq('restaurant_id', rest.id);
+                setRawMaterials(rawMats || []);
             }
         } catch (error) {
             console.error(error);
@@ -422,6 +475,39 @@ export default function MenuManagementPage() {
         const { error } = await supabase.from('product_variants').delete().eq('id', id);
         if (!error) {
             setAllVariants(allVariants.filter(v => v.id !== id));
+        } else {
+            alert('Silme hatası: ' + error.message);
+        }
+    };
+
+    const handleAddRecipeLine = async () => {
+        if (!editingProduct.id || !newRecipeRawMaterialId || !newRecipeQuantity) return;
+        const qty = parseFloat(newRecipeQuantity);
+        if (isNaN(qty) || qty <= 0) return;
+        setIsSavingRecipe(true);
+        try {
+            const { data, error } = await supabase
+                .from('recipe_lines')
+                .insert({ product_id: editingProduct.id, raw_material_id: newRecipeRawMaterialId, quantity_per_serving: qty })
+                .select()
+                .single();
+            if (!error && data) {
+                setRecipeLines((prev) => [...prev, data as RecipeLine]);
+                setNewRecipeRawMaterialId('');
+                setNewRecipeQuantity('');
+            } else {
+                alert(error?.message || 'Reçete satırı eklenemedi.');
+            }
+        } finally {
+            setIsSavingRecipe(false);
+        }
+    };
+
+    const handleDeleteRecipeLine = async (id: string) => {
+        if (!confirm('Bu reçete satırını silmek istiyor musunuz?')) return;
+        const { error } = await supabase.from('recipe_lines').delete().eq('id', id);
+        if (!error) {
+            setRecipeLines((prev) => prev.filter((r) => r.id !== id));
         } else {
             alert('Silme hatası: ' + error.message);
         }
@@ -793,18 +879,31 @@ export default function MenuManagementPage() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Stok (opsiyonel)</label>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    className="form-input"
-                                    placeholder="Boş = stok takibi yok"
-                                    value={editingProduct.stock_quantity != null ? editingProduct.stock_quantity : ''}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        setEditingProduct({ ...editingProduct, stock_quantity: v === '' ? null : (parseInt(v, 10) || 0) });
-                                    }}
-                                />
+                                {editingProduct.id && recipeLines.filter(r => r.product_id === editingProduct.id).length > 0 ? (
+                                    <>
+                                        <label className="form-label">Üretilebilir adet (reçeteden)</label>
+                                        <div style={{ padding: '10px 12px', background: '#ECFDF5', borderRadius: '8px', fontWeight: 600, color: '#059669' }}>
+                                            {producibleByProductId[editingProduct.id] ?? 0} adet
+                                        </div>
+                                        <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>Ham madde stoklarına göre hesaplanır. Reçeteyi aşağıdan düzenleyebilirsiniz.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <label className="form-label">Stok (opsiyonel)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            className="form-input"
+                                            placeholder="Boş = stok takibi yok"
+                                            value={editingProduct.stock_quantity != null ? editingProduct.stock_quantity : ''}
+                                            onChange={e => {
+                                                const v = e.target.value;
+                                                setEditingProduct({ ...editingProduct, stock_quantity: v === '' ? null : (parseInt(v, 10) || 0) });
+                                            }}
+                                        />
+                                        <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>Reçete tanımlarsanız stok reçeteden hesaplanır.</p>
+                                    </>
+                                )}
                             </div>
                             <div className="form-group">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '8px' }}>
@@ -956,6 +1055,96 @@ export default function MenuManagementPage() {
                                                     * Fiyat farkı ana fiyata eklenir. 0 girerseniz fiyat değişmez.
                                                 </p>
                                             </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Reçete bölümü */}
+                            {isEditModeProduct && editingProduct.id && (
+                                <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '20px', background: '#F9FAFB', overflow: 'hidden' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRecipeSectionOpen(!recipeSectionOpen)}
+                                        style={{
+                                            width: '100%',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '12px 16px',
+                                            background: '#F3F4F6',
+                                            border: 'none',
+                                            borderBottom: recipeSectionOpen ? '1px solid #E5E7EB' : 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '0.95rem',
+                                            fontWeight: 600,
+                                            color: '#374151'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <i className="fa-solid fa-flask" style={{ marginRight: '8px', color: '#4B5563' }}></i>
+                                            Reçete (ham madde kullanımı)
+                                        </div>
+                                        <i className={`fa-solid ${recipeSectionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ fontSize: '0.8rem' }}></i>
+                                    </button>
+                                    {recipeSectionOpen && (
+                                        <div style={{ padding: '16px' }}>
+                                            <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {recipeLines.filter(r => r.product_id === editingProduct.id).map((rl) => {
+                                                    const rm = rawMaterials.find(m => m.id === rl.raw_material_id);
+                                                    return (
+                                                        <div key={rl.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
+                                                            <div>
+                                                                <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{rm?.name ?? '—'}</span>
+                                                                <span style={{ fontSize: '0.85rem', color: '#6B7280', marginLeft: '8px' }}>{rl.quantity_per_serving} {rm?.unit ?? ''} / porsiyon</span>
+                                                            </div>
+                                                            <button type="button" onClick={() => handleDeleteRecipeLine(rl.id)} className="btn btn-ghost btn-xs" style={{ color: '#EF4444' }}>
+                                                                <i className="fa-solid fa-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {recipeLines.filter(r => r.product_id === editingProduct.id).length === 0 && (
+                                                    <div style={{ fontSize: '0.85rem', color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', padding: '8px' }}>Reçete satırı yok. Aşağıdan ekleyin.</div>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'flex-end' }}>
+                                                <div style={{ minWidth: '160px' }}>
+                                                    <label className="form-label" style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Ham madde</label>
+                                                    <select
+                                                        value={newRecipeRawMaterialId}
+                                                        onChange={e => setNewRecipeRawMaterialId(e.target.value)}
+                                                        style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '0.9rem' }}
+                                                    >
+                                                        <option value="">Seçin</option>
+                                                        {rawMaterials.map(m => (
+                                                            <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div style={{ width: '100px' }}>
+                                                    <label className="form-label" style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem' }}>Miktar / porsiyon</label>
+                                                    <input
+                                                        type="number"
+                                                        step="any"
+                                                        min="0.01"
+                                                        placeholder="0"
+                                                        value={newRecipeQuantity}
+                                                        onChange={e => setNewRecipeQuantity(e.target.value)}
+                                                        style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '0.9rem' }}
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddRecipeLine}
+                                                    disabled={isSavingRecipe || !newRecipeRawMaterialId || !newRecipeQuantity}
+                                                    className="btn btn-primary btn-xs"
+                                                    style={{ whiteSpace: 'nowrap' }}
+                                                >
+                                                    {isSavingRecipe ? 'Ekleniyor...' : 'Reçete satırı ekle'}
+                                                </button>
+                                            </div>
+                                            <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '8px' }}>Üretilebilir adet = ham madde stoklarına göre en kısıtlayıcı malzemeden hesaplanır.</p>
                                         </div>
                                     )}
                                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Topbar from '@/components/Topbar';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
@@ -16,6 +16,17 @@ interface Product {
     name: string;
     stock_quantity: number | null;
     stock_updated_at: string | null;
+}
+
+interface RawMaterial {
+    id: string;
+    current_stock: number;
+}
+
+interface RecipeLine {
+    product_id: string;
+    raw_material_id: string;
+    quantity_per_serving: number;
 }
 
 interface ProductRow {
@@ -35,8 +46,24 @@ export default function StockPage() {
     const [isBulkStock, setIsBulkStock] = useState(false);
     const [bulkStocks, setBulkStocks] = useState<Record<string, number | ''>>({});
     const [savingBulk, setSavingBulk] = useState(false);
+    const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+    const [recipeLines, setRecipeLines] = useState<RecipeLine[]>([]);
 
     const supabase = createClient();
+
+    const producibleByProductId = useMemo(() => {
+        const map: Record<string, number> = {};
+        const stockByRm: Record<string, number> = {};
+        rawMaterials.forEach((rm) => { stockByRm[rm.id] = Number(rm.current_stock); });
+        recipeLines.forEach((rl) => {
+            const stock = stockByRm[rl.raw_material_id] ?? 0;
+            const qty = Number(rl.quantity_per_serving);
+            const canMake = qty > 0 ? Math.floor(stock / qty) : 0;
+            if (!(rl.product_id in map)) map[rl.product_id] = canMake;
+            else map[rl.product_id] = Math.min(map[rl.product_id], canMake);
+        });
+        return map;
+    }, [rawMaterials, recipeLines]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,6 +105,16 @@ export default function StockPage() {
                 .order('display_order', { ascending: true });
             setProducts(prods || []);
 
+            const prodIds = (prods || []).map((p: { id: string }) => p.id);
+            const { data: rawMats } = await supabase.from('raw_materials').select('id, current_stock').eq('restaurant_id', rest.id);
+            setRawMaterials(rawMats || []);
+            if (prodIds.length > 0) {
+                const { data: recipe } = await supabase.from('recipe_lines').select('product_id, raw_material_id, quantity_per_serving').in('product_id', prodIds);
+                setRecipeLines(recipe || []);
+            } else {
+                setRecipeLines([]);
+            }
+
             const { data: ordersData } = await supabase
                 .from('orders')
                 .select('items')
@@ -106,13 +143,20 @@ export default function StockPage() {
         sold: soldByProduct[p.id] || 0
     }));
 
-    const lowStockRows = rows.filter((r) => r.product.stock_quantity != null && r.product.stock_quantity <= LOW_STOCK_THRESHOLD);
+    const hasRecipe = (productId: string) => recipeLines.some((rl) => rl.product_id === productId);
+    const displayStock = (p: Product) => hasRecipe(p.id) ? (producibleByProductId[p.id] ?? 0) : (p.stock_quantity ?? null);
+    const lowStockRows = rows.filter((r) => {
+        const val = hasRecipe(r.product.id) ? (producibleByProductId[r.product.id] ?? 0) : r.product.stock_quantity;
+        return val != null && val <= LOW_STOCK_THRESHOLD;
+    });
     const topSold = [...rows].sort((a, b) => b.sold - a.sold).slice(0, 10);
     const maxSold = Math.max(1, ...topSold.map((r) => r.sold));
 
     const enterBulkMode = () => {
         const initial: Record<string, number | ''> = {};
-        products.forEach((p) => { initial[p.id] = p.stock_quantity != null ? p.stock_quantity : ''; });
+        products.forEach((p) => {
+            if (!hasRecipe(p.id)) initial[p.id] = p.stock_quantity != null ? p.stock_quantity : '';
+        });
         setBulkStocks(initial);
         setIsBulkStock(true);
     };
@@ -125,6 +169,7 @@ export default function StockPage() {
         setSavingBulk(true);
         const toUpdate: { id: string; stock_quantity: number | null }[] = [];
         products.forEach((p) => {
+            if (hasRecipe(p.id)) return;
             const v = bulkStocks[p.id];
             const newVal = v === '' ? null : (typeof v === 'number' ? (v >= 0 ? v : null) : (parseInt(String(v), 10) >= 0 ? parseInt(String(v), 10) : null));
             const cur = p.stock_quantity;
@@ -192,7 +237,7 @@ export default function StockPage() {
                         <div style={{ fontWeight: 700, color: '#B91C1C', marginBottom: '10px' }}><i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '8px' }} />Stok azalan ürünler ({LOW_STOCK_THRESHOLD} ve altı)</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                             {lowStockRows.map((r) => (
-                                <span key={r.product.id} style={{ padding: '6px 12px', background: 'white', borderRadius: '8px', border: '1px solid #FECACA', fontSize: '0.9rem' }}>{r.product.name}: <strong>{r.product.stock_quantity}</strong></span>
+                                <span key={r.product.id} style={{ padding: '6px 12px', background: 'white', borderRadius: '8px', border: '1px solid #FECACA', fontSize: '0.9rem' }}>{r.product.name}: <strong>{displayStock(r.product)}</strong>{hasRecipe(r.product.id) ? ' (üretilebilir)' : ''}</span>
                             ))}
                         </div>
                     </div>
@@ -236,17 +281,27 @@ export default function StockPage() {
                                         <tr key={r.product.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
                                             <td style={{ padding: '12px 16px', color: '#111827' }}>{r.product.name}</td>
                                             <td style={{ padding: '12px 16px', color: '#6B7280' }}>{r.categoryName}</td>
-                                            <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 500 }}>{r.product.stock_quantity != null ? r.product.stock_quantity : '—'}</td>
+                                            <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 500 }}>
+                                                {hasRecipe(r.product.id) ? (
+                                                    <span title="Reçeteden hesaplanan üretilebilir adet">{displayStock(r.product)} <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>(üretilebilir)</span></span>
+                                                ) : (
+                                                    r.product.stock_quantity != null ? r.product.stock_quantity : '—'
+                                                )}
+                                            </td>
                                             {isBulkStock && (
                                                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                                    <input
-                                                        type="number"
-                                                        min={0}
-                                                        style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', textAlign: 'right' }}
-                                                        value={bulkStocks[r.product.id] ?? (r.product.stock_quantity ?? '')}
-                                                        onChange={(e) => handleBulkStockChange(r.product.id, e.target.value)}
-                                                        placeholder="—"
-                                                    />
+                                                    {hasRecipe(r.product.id) ? (
+                                                        <span style={{ color: '#6B7280', fontSize: '0.85rem' }}>—</span>
+                                                    ) : (
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            style={{ width: '80px', padding: '6px 10px', borderRadius: '6px', border: '1px solid #D1D5DB', textAlign: 'right' }}
+                                                            value={bulkStocks[r.product.id] ?? (r.product.stock_quantity ?? '')}
+                                                            onChange={(e) => handleBulkStockChange(r.product.id, e.target.value)}
+                                                            placeholder="—"
+                                                        />
+                                                    )}
                                                 </td>
                                             )}
                                             <td style={{ padding: '12px 16px', textAlign: 'right', color: '#059669', fontWeight: 600 }}>{r.sold}</td>

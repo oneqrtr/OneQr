@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const DEFAULT_SIDEBAR_ORDER = [
-    '/admin', '/admin/orders', '/admin/tables', '/admin/paket', '/admin/customers', '/admin/menu', '/admin/report', '/admin/stock', '/admin/settings'
+    '/admin', '/admin/orders', '/admin/tables', '/admin/paket', '/admin/customers', '/admin/menu', '/admin/report', '/admin/stock', '/admin/raw-materials', '/admin/settings'
 ];
 
 const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' | 'restaurant' | 'paket' }[] = [
@@ -17,6 +17,7 @@ const NAV_ITEMS: { path: string; label: string; icon: string; badge?: 'orders' |
     { path: '/admin/menu', label: 'Menü Yönetimi', icon: 'fa-list' },
     { path: '/admin/report', label: 'Restoran Raporu', icon: 'fa-chart-bar' },
     { path: '/admin/stock', label: 'Stok Yönetimi', icon: 'fa-boxes-stacked' },
+    { path: '/admin/raw-materials', label: 'Ham Maddeler', icon: 'fa-flask' },
     { path: '/admin/settings', label: 'Ayarlar', icon: 'fa-gear' },
 ];
 
