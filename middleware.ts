@@ -2,29 +2,29 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
     const url = request.nextUrl
-    const hostname = request.headers.get('host') || ''
+    // Vercel/proxy can send original host in x-forwarded-host
+    const hostRaw = request.headers.get('x-forwarded-host') || request.headers.get('host') || ''
+    const hostname = hostRaw.replace(/:\d+$/, '') // Remove port
 
-    // Define main domain (for development use localhost)
-    const currentHost = hostname.replace(/:\d+$/, '') // Remove port
     const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1')
     const rootDomain = isLocal ? 'localhost' : 'oneqr.tr'
 
-    // Check if we are on a custom subdomain
-    const isSubdomain = currentHost !== rootDomain && currentHost !== `www.${rootDomain}`
+    // Check if we are on a custom subdomain (e.g. restoran.oneqr.tr)
+    const isSubdomain = hostname !== rootDomain && hostname !== `www.${rootDomain}`
 
     if (isSubdomain) {
-        const subdomain = currentHost.split('.')[0]
+        const subdomain = hostname.split('.')[0]
 
         // Exclude reserved subdomains
-        const reservedSubdomains = ['www', 'admin', 'app', 'api', 'supabase', 'mail', 'smtp', 'secure']
+        const reservedSubdomains = ['www', 'admin', 'app', 'api', 'supabase', 'mail', 'smtp', 'secure', 'demo']
         if (reservedSubdomains.includes(subdomain)) {
             return NextResponse.next()
         }
 
-        // Rewrite calls to subdomain to /menu/[slug]
-        // Example: user.oneqr.tr -> /menu/user
-        console.log(`Rewriting subdomain ${subdomain} to /menu/${subdomain}${url.pathname}`)
-        url.pathname = `/menu/${subdomain}${url.pathname}`
+        // Rewrite subdomain to restoran sayfası: slug.oneqr.tr -> /menu/[slug]
+        const basePath = `/menu/${subdomain}`
+        const pathname = url.pathname === '/' || url.pathname === '' ? basePath : `${basePath}${url.pathname}`
+        url.pathname = pathname
         return NextResponse.rewrite(url)
     }
 

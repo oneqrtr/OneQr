@@ -17,7 +17,7 @@ interface OrderItem {
     excluded_ingredients?: string[];
 }
 
-interface CategoryRow { id: string; name: string; display_order?: number; }
+interface CategoryRow { id: string; name: string; display_order?: number; show_preset_options?: boolean; }
 interface ProductRow { id: string; category_id: string; name: string; price: number; paket_price?: number | null; display_order?: number; image_url?: string; ingredients?: string[]; }
 interface VariantRow { id: string; product_id: string; name: string; price: number; paket_price?: number | null; }
 
@@ -205,7 +205,7 @@ export default function PaketPage() {
         if (!paketModalOpen || !restaurantId) return;
         const fetchModal = async () => {
             const supabase = createClient();
-            const { data: cats } = await supabase.from('categories').select('id, name, display_order').eq('restaurant_id', restaurantId).order('display_order', { ascending: true });
+            const { data: cats } = await supabase.from('categories').select('id, name, display_order, show_preset_options').eq('restaurant_id', restaurantId).order('display_order', { ascending: true });
             setModalCategories(cats || []);
             if (!cats?.length) { setModalProducts([]); setModalVariants([]); setPresetOptions([]); return; }
             const catIds = cats.map(c => c.id);
@@ -253,7 +253,9 @@ export default function PaketPage() {
     };
 
     const onPaketProductAddClick = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
-        if (presetOptions.length > 0) {
+        const cat = modalCategories.find(c => c.id === product.category_id);
+        const showPreset = presetOptions.length > 0 && (cat?.show_preset_options !== false);
+        if (showPreset) {
             setPaketPendingAdd({ product, selectedVariants, excludedIngredients });
             setPaketPresetSelected(new Set());
             setPaketPresetModalOpen(true);
@@ -282,6 +284,16 @@ export default function PaketPage() {
 
     const removeFromPaketCart = (idx: number) => {
         setPaketCart(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const updatePaketCartQuantity = (idx: number, delta: number) => {
+        setPaketCart(prev => {
+            const item = prev[idx];
+            if (!item) return prev;
+            const newQty = item.quantity + delta;
+            if (newQty <= 0) return prev.filter((_, i) => i !== idx);
+            return prev.map((x, i) => i === idx ? { ...x, quantity: newQty } : x);
+        });
     };
 
     const doSubmitPaketOrder = async (): Promise<Order | null> => {
@@ -773,9 +785,14 @@ export default function PaketPage() {
                                     <div style={{ fontWeight: 600, marginBottom: '12px', color: '#374151' }}>Sepet</div>
                                     <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
                                         {paketCart.length === 0 ? <div style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Sepet boş</div> : paketCart.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: '0.9rem' }}>
-                                                <span>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</span>
-                                                <button type="button" onClick={() => removeFromPaketCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '1rem' }}>&times;</button>
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F3F4F6', fontSize: '0.9rem', gap: '8px' }}>
+                                                <span style={{ flex: 1 }}>{item.quantity}x {item.product.name}{item.selectedVariants.length ? ' (+ ' + item.selectedVariants.map(v => v.name).join(', ') + ')' : ''}{item.excludedIngredients.length ? ' [Çıkar: ' + item.excludedIngredients.join(', ') + ']' : ''} = {item.finalPrice * item.quantity} ₺</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <button type="button" onClick={() => updatePaketCartQuantity(idx, -1)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}>−</button>
+                                                    <span style={{ minWidth: '24px', textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
+                                                    <button type="button" onClick={() => updatePaketCartQuantity(idx, 1)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}>+</button>
+                                                    <button type="button" onClick={() => removeFromPaketCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '1.1rem', marginLeft: '4px' }}>&times;</button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

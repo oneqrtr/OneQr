@@ -24,6 +24,7 @@ interface Category {
     description?: string;
     display_order: number;
     is_visible?: boolean;
+    show_preset_options?: boolean;
 }
 
 interface Product {
@@ -73,6 +74,7 @@ export default function MenuManagementPage() {
     const [editingCategory, setEditingCategory] = useState<Category | null>(null); // For Edit
     const [categoryName, setCategoryName] = useState(''); // For Create/Edit name
     const [categoryDescription, setCategoryDescription] = useState(''); // For Create/Edit desc
+    const [categoryShowPresetOptions, setCategoryShowPresetOptions] = useState(true);
 
     const [editingProduct, setEditingProduct] = useState<Partial<Product>>({ category_id: '', name: '', price: 0, description: '', is_available: true, stock_quantity: null, paket_price: null });
     const [productImage, setProductImage] = useState<File | null>(null);
@@ -214,10 +216,12 @@ export default function MenuManagementPage() {
             setEditingCategory(category);
             setCategoryName(category.name);
             setCategoryDescription(category.description || '');
+            setCategoryShowPresetOptions(category.show_preset_options !== false);
         } else {
             setEditingCategory(null);
             setCategoryName('');
             setCategoryDescription('');
+            setCategoryShowPresetOptions(true);
         }
         setIsCatModalOpen(true);
     };
@@ -232,8 +236,8 @@ export default function MenuManagementPage() {
             let error;
             if (editingCategory) {
                 // Edit
-                const payload: any = { name: categoryName };
-                if (categoryDescription) payload.description = categoryDescription;
+                const payload: any = { name: categoryName, show_preset_options: categoryShowPresetOptions };
+                if (categoryDescription !== undefined) payload.description = categoryDescription;
 
                 const { error: err } = await supabase
                     .from('categories')
@@ -245,7 +249,8 @@ export default function MenuManagementPage() {
                 const payload: any = {
                     restaurant_id: restaurantId,
                     name: categoryName,
-                    display_order: categories.length + 1
+                    display_order: categories.length + 1,
+                    show_preset_options: categoryShowPresetOptions
                 };
                 if (categoryDescription) payload.description = categoryDescription;
 
@@ -829,6 +834,17 @@ export default function MenuManagementPage() {
                                     placeholder="Kısaca bu kategoriyi tanıtın (İsteğe bağlı)"
                                     rows={2}
                                 />
+                            </div>
+                            <div className="form-group">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '8px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={categoryShowPresetOptions}
+                                        onChange={e => setCategoryShowPresetOptions(e.target.checked)}
+                                    />
+                                    <span className="form-label" style={{ marginBottom: 0 }}>Hazır menü ayarları (sipariş notu seçenekleri)</span>
+                                </label>
+                                <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>Açıksa, bu kategorideki ürünler masa/paket/garson siparişinde seçildikten sonra hazır seçenekler (örn. Soğansız) ekranı gelir. İçecek gibi kategorilerde kapatabilirsiniz.</p>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
                                 <button type="button" onClick={() => setIsCatModalOpen(false)} className="btn btn-outline btn-sm">İptal</button>

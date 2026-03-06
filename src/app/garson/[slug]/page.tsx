@@ -31,6 +31,7 @@ interface CategoryRow {
     id: string;
     name: string;
     display_order?: number;
+    show_preset_options?: boolean;
 }
 
 interface ProductRow {
@@ -244,7 +245,9 @@ export default function GarsonPage() {
     };
 
     const onMasaProductAddClick = (product: ProductRow, selectedVariants: VariantRow[], excludedIngredients: string[]) => {
-        if (presetOptions.length > 0) {
+        const cat = categories.find((c) => c.id === product.category_id);
+        const showPreset = presetOptions.length > 0 && (cat?.show_preset_options !== false);
+        if (showPreset) {
             setMasaPendingAdd({ product, selectedVariants, excludedIngredients });
             setMasaPresetSelected(new Set());
             setMasaPresetModalOpen(true);
@@ -275,6 +278,16 @@ export default function GarsonPage() {
 
     const removeFromMasaCart = (idx: number) => {
         setMasaCart((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+    const updateMasaCartQuantity = (idx: number, delta: number) => {
+        setMasaCart((prev) => {
+            const item = prev[idx];
+            if (!item) return prev;
+            const newQty = item.quantity + delta;
+            if (newQty <= 0) return prev.filter((_, i) => i !== idx);
+            return prev.map((x, i) => (i === idx ? { ...x, quantity: newQty } : x));
+        });
     };
 
     const submitMasaOrder = async () => {
@@ -447,9 +460,14 @@ export default function GarsonPage() {
                                     <div style={{ fontWeight: 600, marginBottom: '8px' }}>Sepet</div>
                                     <div style={{ maxHeight: '240px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '10px', marginBottom: '10px', fontSize: '0.9rem' }}>
                                         {masaCart.length === 0 ? 'Sepet boş' : masaCart.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #F3F4F6' }}>
-                                                <span>{item.quantity}x {item.product.name} = {item.finalPrice * item.quantity} ₺</span>
-                                                <button type="button" onClick={() => removeFromMasaCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626' }}>&times;</button>
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #F3F4F6', gap: '8px' }}>
+                                                <span style={{ flex: 1 }}>{item.quantity}x {item.product.name} = {item.finalPrice * item.quantity} ₺</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <button type="button" onClick={() => updateMasaCartQuantity(idx, -1)} style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem' }}>−</button>
+                                                    <span style={{ minWidth: '20px', textAlign: 'center', fontWeight: 600, fontSize: '0.9rem' }}>{item.quantity}</span>
+                                                    <button type="button" onClick={() => updateMasaCartQuantity(idx, 1)} style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid #D1D5DB', background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem' }}>+</button>
+                                                    <button type="button" onClick={() => removeFromMasaCart(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontSize: '1rem', marginLeft: '2px' }}>&times;</button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

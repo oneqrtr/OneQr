@@ -694,7 +694,9 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                 }
 
                 if (plan === 'expired') {
-                    window.location.href = 'https://oneqr.tr';
+                    // Anasayfaya değil, restoran menü sayfasına yönlendir (abonelik uyarısı orada gösterilebilir)
+                    const rootUrl = isLocal ? `http://localhost:3000/menu/${slug}` : `https://oneqr.tr/menu/${slug}`;
+                    window.location.href = rootUrl;
                     return;
                 }
 

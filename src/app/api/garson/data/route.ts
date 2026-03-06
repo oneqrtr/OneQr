@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
         const { data: cats } = await supabase
             .from('categories')
-            .select('id, name, display_order')
+            .select('id, name, display_order, show_preset_options')
             .eq('restaurant_id', rest.id)
             .order('display_order', { ascending: true });
         const catIds = (cats || []).map((c: { id: string }) => c.id);
