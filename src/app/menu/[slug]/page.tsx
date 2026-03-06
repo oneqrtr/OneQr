@@ -681,22 +681,19 @@ export function MenuContent({ slug: slugProp, restaurantMode: restaurantModeProp
                 if (isSubdomain) {
                     let allowed = false;
                     if (plan === 'plusimum') allowed = true;
-                    else if (plan === 'freemium') allowed = true; // Freemium allows subdomain too? User request said "Plusimum ile aynı özelliklere" so likely yes.
+                    else if (plan === 'freemium') allowed = true;
                     else if (plan === 'trial' && isTrialActive) allowed = true;
-                    // premium is never allowed on subdomain
 
+                    // Subdomain'deyken başka yere atma (oneqr.tr/menu/slug değil); menüyü göster
                     if (!allowed) {
-                        // Redirect to root path variant
-                        const rootUrl = isLocal ? 'http://localhost:3000/menu/' + slug : 'https://oneqr.tr/menu/' + slug;
-                        window.location.href = rootUrl;
-                        return;
+                        // Yönlendirme yok: kullanıcı slug.oneqr.tr'de kalır, menü gösterilir
                     }
                 }
 
                 if (plan === 'expired') {
-                    // Anasayfaya değil, restoran menü sayfasına yönlendir (abonelik uyarısı orada gösterilebilir)
-                    const rootUrl = isLocal ? `http://localhost:3000/menu/${slug}` : `https://oneqr.tr/menu/${slug}`;
-                    window.location.href = rootUrl;
+                    // Restoran sayfasına subdomain ile yönlendir (oneqr.tr/menu/slug veya anasayfa değil)
+                    const targetUrl = isLocal ? `http://localhost:3000/menu/${slug}` : `https://${slug}.oneqr.tr`;
+                    window.location.href = targetUrl;
                     return;
                 }
 
